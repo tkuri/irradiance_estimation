@@ -122,8 +122,8 @@ class Pix2PixTm2In3Model(BaseModel):
         sub_matrix2 = self.netG2(self.real_ADC) # [1, 1, 256, 256]
         sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)# [1, ls, ls]
         
-        self.matrix_1 = torch.clamp((sub_matrix1.clone()-0.5)/0.5*self.matrix_1_gain, min=-1.0, max=1.0)
-        self.matrix_2 = torch.clamp((F.interpolate(sub_matrix2, (self.real_B.size(-2), self.real_B.size(-1)), mode='nearest')-0.5)/0.5*self.matrix_2_gain, min=-1.0, max=1.0)
+        self.matrix_1 = torch.clamp((sub_matrix1.clone()*self.matrix_1_gain-0.5)/0.5, min=-1.0, max=1.0)
+        self.matrix_2 = torch.clamp((F.interpolate(sub_matrix2, (self.real_B.size(-2), self.real_B.size(-1)), mode='nearest')*self.matrix_2_gain-0.5)/0.5, min=-1.0, max=1.0)
         
         sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1) # [1, 3x256x256, 1]
         sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1)) # [1, 1, lsxls]
