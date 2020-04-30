@@ -6,7 +6,8 @@ from PIL import Image
 import os
 
 
-def tensor2im(input_image, imtype=np.uint8):
+# def tensor2im(input_image, imtype=np.uint8):
+def tensor2im(input_image, imtype=np.uint8, gain=1.0):
     """"Converts a Tensor array into a numpy image array.
 
     Parameters:
@@ -21,7 +22,9 @@ def tensor2im(input_image, imtype=np.uint8):
         image_numpy = image_tensor[0].cpu().float().numpy()  # convert it into a numpy array
         if image_numpy.shape[0] == 1:  # grayscale to RGB
             image_numpy = np.tile(image_numpy, (3, 1, 1))
-        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0  # post-processing: tranpose and scaling
+        # image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0 # post-processing: tranpose and scaling
+        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0 * gain # post-processing: tranpose and scaling
+        image_numpy = np.clip(image_numpy, 0.0, 255.0)
         # image_numpy = np.transpose(image_numpy, (1, 2, 0)) * 255.0  # post-processing: tranpose and scaling
     else:  # if it is a numpy array, do nothing
         image_numpy = input_image
