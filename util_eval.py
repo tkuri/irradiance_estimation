@@ -27,37 +27,45 @@ def rem_checkmodel(target):
 def eval_data(target, docopy=True):
   tgtdir = "/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/results/{}/test_latest/images/".format(target)
   print('Target Directory: {}'.format(tgtdir))
-  realname = "_real_B.png"
-  fakename = "_fake_B.png"
+#   realname = "_real_B.png"
+#   fakename = "_fake_B.png"
+  realname = "_real_B*.png"
+  fakename = "_fake_B*.png"
+  realdir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/'
+  fakedir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/'
   outdir = "/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/results/{}/test_latest/".format(target)
+  ipips_py = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/compute_dists_dirs_rev.py'
   outname = "dist_ipips.txt"
   if docopy:
-    os.makedirs('/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/', exist_ok=True)
-    os.makedirs('/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/', exist_ok=True)
+    shutil.rmtree(realdir)
+    print('Removed:', realdir)
+    shutil.rmtree(fakedir)
+    print('Removed:', fakedir)
+    os.makedirs(realdir, exist_ok=True)
+    print('Maked:', realdir)
+    os.makedirs(fakedir, exist_ok=True)
+    print('Maked:', fakedir)
     for full in glob.glob(tgtdir+'*'+realname):
         p = os.path.basename(full)
         name = p.replace('_real_B', '')
-        name = re.sub('.*_0', '0', name)
-        shutil.copy(full, '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/'+name)
-        print('/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/'+name)
+        name = re.sub('.*\D_0', '0', name, 1)
+        shutil.copy(full, realdir+name)
+        print(realdir+name)
     for full in glob.glob(tgtdir+'*'+fakename):
         p = os.path.basename(full)
         name = p.replace('_fake_B', '')
-        name = re.sub('.*_0', '0', name)
-        shutil.copy(full, '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/'+name)
-        print('/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/'+name)
+        name = re.sub('.*\D_0', '0', name, 1)
+        shutil.copy(full, fakedir+name)
+        print(fakedir+name)
 
   out = outdir+outname
   print('cur dir:', os.getcwd())
-  subprocess.run(['python','/content/drive/My Drive/Colabdata/PerceptualSimilarity/compute_dists_dirs_rev.py','-d0', r'/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/','-d1', r'/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/','--use_gpu','-o','{}'.format(out)])
+  subprocess.run(['python', ipips_py, '-d0', realdir, '-d1', fakedir,'--use_gpu','-o','{}'.format(out)])
 
   from skimage.measure import compare_ssim, compare_psnr
   from skimage.color import rgb2gray
   from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
-  realdir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/'
-  fakedir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/'
-  outdir = "/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/results/{}/test_latest/".format(target)
   outname = "dist_psnr_ssim.txt"
   f = open(outdir+outname,'w')
   f.writelines('file, psnr(rgb), ssim(rgb), psnr(gray), ssim(gray)\n')

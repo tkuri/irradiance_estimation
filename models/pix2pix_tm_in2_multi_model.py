@@ -1,9 +1,10 @@
 import torch
+import torch.nn as nn
 from .base_model import BaseModel
 from . import networks
 from torch.nn import functional as F
 
-class Pix2PixTm2LatentIn2Model(BaseModel):
+class Pix2PixTmIn2MultiModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -47,14 +48,13 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # self.visual_names = ['real_A', 'fake_B', 'real_B']
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp2']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'matrix_1', 'matrix_2', 'ltm_slice00', 'ltm_slice12', 'ltm_slice24']
         # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
-            # self.model_names = ['G', 'D']
-            self.model_names = ['G', 'G2', 'D']
+            self.model_names = ['G', 'D']
         else:  # during test time, only load G
-            self.model_names = ['G', 'G2']
+            self.model_names = ['G']
 
         # define networks (both generator and discriminator)
         self.output_nc = opt.output_nc
@@ -62,24 +62,10 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         print('opt.output_nc', opt.output_nc)
         print('light_res', self.light_res)
 
-        # self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, (self.light_res**2)*opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
+        self.netG = networks.define_G(opt.input_nc + opt.input2_nc, (self.light_res**2)*opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-                                      
-        # self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, 'unet_256_latent', opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-
 
         if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
-            # self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
-            #                               opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             self.netD = networks.define_D(opt.input_nc + opt.input2_nc + opt.output_nc, opt.ndf, opt.netD,
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
@@ -89,13 +75,13 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
             self.criterionL1 = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
-            self.optimizers.append(self.optimizer_G2)
             self.optimizers.append(self.optimizer_D)
             
 
+        self.light_gain = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.tanH = nn.Tanh()
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -105,85 +91,44 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
 
         The option 'direction' can be used to swap images in domain A and domain B.
         """
-        AtoB = self.opt.direction == 'AtoB'
-        self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device)
-        self.real_C = input['C'].to(self.device)
-        self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, 16, 1]
-        self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
-        self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
-        self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        self.real_A = torch.squeeze(input['A'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_B = torch.squeeze(input['B'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_C = torch.squeeze(input['C'],0).to(self.device) # [25, 1, 256, 256]
         
-        self.light_gain = 10.0
+        self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [25, 1, 5, 5]
+        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [25, 25, 1]
+        self.real_C_itp = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [25, 256, 256, 1]
+        self.real_AC = torch.cat([self.real_A, self.real_C], dim=1) # [25, 4, 256, 256]
+        self.image_paths = input['A_paths']
+        
 
     def forward(self):
-        # print("test")
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        sub_matrix1 = self.netG(self.real_AC) # [1, 3, 256, 256]
-        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, ls, ls]
-        # sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        
-        sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1)
-        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1))
-        trans_matrix = torch.matmul(sub_matrix1, sub_matrix2) #[1, 3x256x256, lsxls]
-        # print('trans_matrix:', trans_matrix.size())
-        tmR = trans_matrix[:, 0:256**2, :] # [1, 256x256, lsxls]
-        tmG = trans_matrix[:, 256**2:(256**2)*2, :]
-        tmB = trans_matrix[:, (256**2)*2:(256**2)*3, :]
-        # print('tmR:', tmR.size())
-        bufR = torch.matmul(tmR, self.real_C_itp_flat) # [1, 256x256, 1]
+        trans_matrix = self.netG(self.real_AC) # [25, 3*16, 256, 256]
+        self.ltm_slice00 = torch.clamp((trans_matrix[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        self.ltm_slice12 = torch.clamp((trans_matrix[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        self.ltm_slice24 = torch.clamp((trans_matrix[:, [24, 25+24, 25*2+24], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        trans_matrix = trans_matrix.view(-1, self.output_nc*self.light_res**2, (trans_matrix.size(-1)*trans_matrix.size(-2)))  # [25, 3*16, 256x256]
+        trans_matrix = torch.transpose(trans_matrix, 1, 2)  # [25, 256x256, 3*16]
+        tmR = trans_matrix[:, :, 0:self.light_res**2] # [25, 256x256, 16]
+        tmG = trans_matrix[:, :, self.light_res**2:(self.light_res**2)*2]
+        tmB = trans_matrix[:, :, (self.light_res**2)*2:(self.light_res**2)*3]
+        bufR = torch.matmul(tmR, self.real_C_itp_flat) # [25, 256x256, 1]
         bufG = torch.matmul(tmG, self.real_C_itp_flat)
         bufB = torch.matmul(tmB, self.real_C_itp_flat)
-        # print('bufR:', bufR.size())
-        buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256x256, 3]
-        buf = torch.transpose(buf, 1, 2) # [1, 3, 256x256]
+        buf = torch.cat([bufR, bufG, bufB], dim=2) # [25, 256x256, 3]
+        buf = torch.transpose(buf, 1, 2) # [25, 3, 256x256]
         buf = (buf - 0.5) / 0.5
         buf = torch.clamp(buf, min=-1.0, max=1.0)
-        # print('buf:', buf.size())
-        self.fake_B = buf.view(self.real_B.size()) # [1, 3, 256, 256]
-
-    def forward_linebuf(self):
-        """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        sub_matrix1 = self.netG(self.real_AC) # [1, 3, 256, 256]
-        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, 256, 256]
-        sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        self.fake_B = torch.zeros_like(self.real_B)
-        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1)) * 0.5 + 0.5 # [1, 1, 256x256]
-        
-        for l in range(sub_matrix1.size(2)):
-            sub_matrix1_buf = sub_matrix1[:, :, l, :].reshape(-1, sub_matrix1.size(1)*sub_matrix1.size(3), 1) * 0.5 + 0.5 # [1, 3x256, 1]
-            trans_matrix = torch.matmul(sub_matrix1_buf, sub_matrix2) #[1, 3x256, 256x256]
-            # print('trans_matrix:', trans_matrix.size())
-            tmR = trans_matrix[:, 0:256, :] # [1, 256, 256x256]
-            tmG = trans_matrix[:, 256:256*2, :]
-            tmB = trans_matrix[:, 256*2:256*3, :]
-            # print('self.real_C_itp_flat:', self.real_C_itp_flat.size())
-            # print('tmR:', tmR.size())
-            bufR = torch.matmul(tmR, self.real_C_itp_flat * 10.0) # [1, 256, 1]
-            bufG = torch.matmul(tmG, self.real_C_itp_flat * 10.0)
-            bufB = torch.matmul(tmB, self.real_C_itp_flat * 10.0)
-            # print('bufR:', bufR.size())
-            buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256, 3]
-            buf = torch.transpose(buf, 1, 2) # [1, 3, 256]
-            buf = (buf - 0.5) / 0.5
-            buf = buf.reshape(self.fake_B.size(0), self.fake_B.size(1), self.fake_B.size(3))
-            # print('buf:', buf.size())
-            # print('fake_B:', self.fake_B.size())
-            self.fake_B[:, :, l, :] = buf # [1, 3, 1, 256] <- [1,3,256]
-
+        self.fake_B = buf.view(self.real_B.size()) # [25, 3, 256, 256]
 
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        # fake_AB = torch.cat((self.real_A, self.fake_B), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
-        # pred_fake = self.netD(fake_AB.detach())
         fake_ACB = torch.cat((self.real_AC, self.fake_B), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_ACB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        # real_AB = torch.cat((self.real_A, self.real_B), 1)
-        # pred_real = self.netD(real_AB)
         real_ACB = torch.cat((self.real_AC, self.real_B), 1)
         pred_real = self.netD(real_ACB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
@@ -214,12 +159,6 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         self.optimizer_D.step()          # update D's weights
         # update G
         self.set_requires_grad(self.netD, False)  # D requires no gradients when optimizing G
-        # self.optimizer_G.zero_grad()        # set G's gradients to zero
-        # self.backward_G()                   # calculate graidents for G
-        # self.optimizer_G.step()             # udpate G's weights
-
         self.optimizer_G.zero_grad()        # set G's gradients to zero
-        self.optimizer_G2.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
         self.optimizer_G.step()             # udpate G's weights
-        self.optimizer_G2.step()             # udpate G's weights

@@ -13,7 +13,7 @@ else:
     VisdomExceptionBase = ConnectionError
 
 
-def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0):
+def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
     """Save images to the disk.
 
     Parameters:
@@ -31,16 +31,50 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
 
     webpage.add_header(name)
     ims, txts, links = [], [], []
+    
+    # for label, im_data in visuals.items():
+    #     if multi == True:
+    #         for c in range(multi_ch):
+    #             im = util.tensor2im(im_data, gain=gain, ch=c)
+    #             image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
+    #             save_path = os.path.join(image_dir, image_name)
+    #             util.save_image(im, save_path, aspect_ratio=aspect_ratio)
+    #             ims.append(image_name)
+    #             txts.append(label)
+    #             links.append(image_name)
+    #     else:
+    #         im = util.tensor2im(im_data, gain=gain)
+    #         image_name = '%s_%s.png' % (name, label)
+    #         save_path = os.path.join(image_dir, image_name)
+    #         util.save_image(im, save_path, aspect_ratio=aspect_ratio)
+    #         ims.append(image_name)
+    #         txts.append(label)
+    #         links.append(image_name)
+    # webpage.add_images(ims, txts, links, width=width)
 
-    for label, im_data in visuals.items():
-        im = util.tensor2im(im_data, gain=gain)
-        image_name = '%s_%s.png' % (name, label)
-        save_path = os.path.join(image_dir, image_name)
-        util.save_image(im, save_path, aspect_ratio=aspect_ratio)
-        ims.append(image_name)
-        txts.append(label)
-        links.append(image_name)
-    webpage.add_images(ims, txts, links, width=width)
+    if multi == True:
+        for c in range(multi_ch):
+            ims, txts, links = [], [], []
+            for label, im_data in visuals.items():
+                im = util.tensor2im(im_data, gain=gain, ch=c)
+                image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
+                save_path = os.path.join(image_dir, image_name)
+                util.save_image(im, save_path, aspect_ratio=aspect_ratio)
+                ims.append(image_name)
+                txts.append(label)
+                links.append(image_name)
+            webpage.add_images(ims, txts, links, width=width)
+    else:
+        for label, im_data in visuals.items():
+            im = util.tensor2im(im_data, gain=gain)
+            image_name = '%s_%s.png' % (name, label)
+            save_path = os.path.join(image_dir, image_name)
+            util.save_image(im, save_path, aspect_ratio=aspect_ratio)
+            ims.append(image_name)
+            txts.append(label)
+            links.append(image_name)
+        webpage.add_images(ims, txts, links, width=width)
+
 
 
 class Visualizer():

@@ -2,9 +2,9 @@ import os.path
 from data.base_dataset import BaseDataset, get_params, get_transform
 from data.image_folder import make_dataset
 from PIL import Image, ImageOps
+import torch
 
-
-class Aligned3ThrDataset(BaseDataset):
+class Aligned3TmMaxDataset(BaseDataset):
     """A dataset class for paired image dataset.
 
     It assumes that the directory '/path/to/data/train' contains image pairs in the form of {A,B}.
@@ -44,38 +44,46 @@ class Aligned3ThrDataset(BaseDataset):
         ABC = Image.open(ABC_path).convert('RGB')
         # split AB image into A and B
         w, h = ABC.size
+        h25 = int(h / 25)
         w3 = int(w / 3)
-        A = ABC.crop((0, 0, w3, h))
-        B = ABC.crop((w3, 0, w3*2, h))
-        C = ABC.crop((w3*2, 0, w, h))
-        C = ImageOps.flip(C)
-        C = C.convert("L")
-        C = C.point(lambda x: 0 if x < 128 else x) 
-        # C = Image.new('RGB', (w, h), (64, 64, 64))
-        # C = Image.new('RGB', (w, h), (255, 255, 255))
-
-        # print('A:', A.getextrema())
-        # print('B:', B.getextrema())
-        # print('C:', C.getextrema())
+        A = []
+        B = []
+        C = []
+        
+        for i in range(25):
+            A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
+            B.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
+            Ctmp = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
+            Ctmp = Ctmp.convert("L")
+            _, vmax = Ctmp.getextrema()
+            Ctmp = Ctmp.point(lambda x: 0 if x < vmax else 255) 
+            C.append(Ctmp)
 
         # apply the same transform to both A and B
-        transform_params = get_params(self.opt, A.size)
+        transform_params = get_params(self.opt, A[0].size)
         A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1))
         B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1))
-        # A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1), convert=False)
-        # B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1), convert=False)
         C_transform = get_transform(self.opt, transform_params, grayscale=(self.input2_nc == 1), convert=False)
 
-        A = A_transform(A)
-        B = B_transform(B)
-        C = C_transform(C)
-        # print('A size:', A.size())
+        for i in range(25):
+            A[i] = A_transform(A[i])
+            B[i] = B_transform(B[i])
+            C[i] = C_transform(C[i])
+            
+        Acat = torch.unsqueeze(A[0], 0)
+        Bcat = torch.unsqueeze(B[0], 0)
+        Ccat = torch.unsqueeze(C[0], 0)
+        for i in range(1,25):
+            Acat = torch.cat([Acat, torch.unsqueeze(A[i], 0)], dim=0)
+            Bcat = torch.cat([Bcat, torch.unsqueeze(B[i], 0)], dim=0)
+            Ccat = torch.cat([Ccat, torch.unsqueeze(C[i], 0)], dim=0)
+        
+        # print('Acat size:', Acat.size())
         # print('A_trans:', A.max(), A.min())
         # print('B_trans:', B.max(), B.min())
         # print('C_trans:', C.max(), C.min())
 
-
-        return {'A': A, 'B': B, 'C': C, 'A_paths': ABC_path, 'B_paths': ABC_path, 'C_paths': ABC_path}
+        return {'A': Acat, 'B': Bcat, 'C': Ccat, 'A_paths': ABC_path, 'B_paths': ABC_path, 'C_paths': ABC_path}
 
     def __len__(self):
         """Return the total number of images in the dataset."""

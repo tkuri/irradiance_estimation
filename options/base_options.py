@@ -55,6 +55,7 @@ class BaseOptions():
         parser.add_argument('--no_flip', action='store_true', help='if specified, do not flip the images for data augmentation')
         parser.add_argument('--display_winsize', type=int, default=256, help='display window size for both visdom and HTML')
         # additional parameters
+        parser.add_argument('--show_multi', type=bool, default=False, help='show multi channel images')
         parser.add_argument('--result_gain', type=float, default='1.0', help='gain of result images')
         parser.add_argument('--epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
         parser.add_argument('--load_iter', type=int, default='0', help='which iteration to load? if load_iter > 0, the code will load models by iter_[load_iter]; otherwise, the code will load models by [epoch]')

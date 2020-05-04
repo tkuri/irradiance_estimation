@@ -4,7 +4,7 @@ from data.image_folder import make_dataset
 from PIL import Image, ImageOps
 
 
-class Aligned3ThrDataset(BaseDataset):
+class Aligned3MaxDataset(BaseDataset):
     """A dataset class for paired image dataset.
 
     It assumes that the directory '/path/to/data/train' contains image pairs in the form of {A,B}.
@@ -50,7 +50,8 @@ class Aligned3ThrDataset(BaseDataset):
         C = ABC.crop((w3*2, 0, w, h))
         C = ImageOps.flip(C)
         C = C.convert("L")
-        C = C.point(lambda x: 0 if x < 128 else x) 
+        _, vmax = C.getextrema()
+        C = C.point(lambda x: 0 if x < vmax else 255) 
         # C = Image.new('RGB', (w, h), (64, 64, 64))
         # C = Image.new('RGB', (w, h), (255, 255, 255))
 

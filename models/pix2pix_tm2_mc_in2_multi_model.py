@@ -3,7 +3,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.nn import functional as F
 
-class Pix2PixTm2LatentIn2Model(BaseModel):
+class Pix2PixTm2McIn2MultiModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -46,10 +46,8 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        # self.visual_names = ['real_A', 'fake_B', 'real_B']
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp2']
-        # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
-        # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'matrix_1_0', 'matrix_1_1', 'matrix_1_2', 'matrix_1_3', 'matrix_2_0', 'matrix_2_1', 'matrix_2_2',              # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             # self.model_names = ['G', 'D']
             self.model_names = ['G', 'G2', 'D']
@@ -59,27 +57,19 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         # define networks (both generator and discriminator)
         self.output_nc = opt.output_nc
         self.light_res = opt.light_res
+        self.intermediate_nc = opt.intermediate_nc
         print('opt.output_nc', opt.output_nc)
         print('light_res', self.light_res)
+        print('intermediate_nc', self.intermediate_nc)
 
-        # self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, (self.light_res**2)*opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
+        self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc*self.intermediate_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
                                       
-        # self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, 'unet_256_latent', opt.norm,
+        self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, self.intermediate_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
 
         if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
-            # self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
-            #                               opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             self.netD = networks.define_D(opt.input_nc + opt.input2_nc + opt.output_nc, opt.ndf, opt.netD,
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
@@ -106,71 +96,54 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         AtoB = self.opt.direction == 'AtoB'
-        self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device)
-        self.real_C = input['C'].to(self.device)
+        self.real_A = torch.squeeze(input['A'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_B = torch.squeeze(input['B'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_C = torch.squeeze(input['C'],0).to(self.device) # [25, 1, 256, 256]
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, 16, 1]
-        self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
+        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, lsxls, 1]
+        self.real_C_itp = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
         
-        self.light_gain = 10.0
 
     def forward(self):
         # print("test")
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        sub_matrix1 = self.netG(self.real_AC) # [1, 3, 256, 256]
-        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, ls, ls]
-        # sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
+        sub_matrix1 = self.netG(self.real_AC) # [1, 3xmc, 256, 256]
+        sub_matrix2 = self.netG2(self.real_AC) # [1, mc, 256, 256]
+        sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)# [1, mc, ls, ls]
         
-        sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1)
-        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1))
-        trans_matrix = torch.matmul(sub_matrix1, sub_matrix2) #[1, 3x256x256, lsxls]
-        # print('trans_matrix:', trans_matrix.size())
-        tmR = trans_matrix[:, 0:256**2, :] # [1, 256x256, lsxls]
-        tmG = trans_matrix[:, 256**2:(256**2)*2, :]
-        tmB = trans_matrix[:, (256**2)*2:(256**2)*3, :]
-        # print('tmR:', tmR.size())
-        bufR = torch.matmul(tmR, self.real_C_itp_flat) # [1, 256x256, 1]
-        bufG = torch.matmul(tmG, self.real_C_itp_flat)
-        bufB = torch.matmul(tmB, self.real_C_itp_flat)
-        # print('bufR:', bufR.size())
+        self.sub_matrix_1 = sub_matrix1.clone()
+        self.sub_matrix_2 = sub_matrix2.clone()
+        
+        self.matrix_1 = torch.clamp((sub_matrix1*self.matrix_1_gain-0.5)/0.5, min=-1.0, max=1.0)
+        self.matrix_1_0 = self.matrix_1[:, [0, self.intermediate_nc, self.intermediate_nc*2], :, :]
+        self.matrix_1_1 = self.matrix_1[:, [1, 1 + self.intermediate_nc, 1 + self.intermediate_nc*2], :, :]
+        self.matrix_1_2 = self.matrix_1[:, [2, 2 + self.intermediate_nc, 3 + self.intermediate_nc*2], :, :]
+        self.matrix_1_3 = self.matrix_1[:, [3, 3 + self.intermediate_nc, 2 + self.intermediate_nc*2], :, :]
+        self.matrix_2 = torch.clamp((F.interpolate(sub_matrix2, (self.real_B.size(-2), self.real_B.size(-1)), mode='nearest')*self.matrix_2_gain-0.5)/0.5, min=-1.0, max=1.0)
+        self.matrix_2_0 = self.matrix_2[:, 0, :, :]
+        self.matrix_2_1 = self.matrix_2[:, 1, :, :]
+        self.matrix_2_2 = self.matrix_2[:, 2, :, :]
+        self.matrix_2_3 = self.matrix_2[:, 3, :, :]
+        
+        sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1), sub_matrix1.size(2)*sub_matrix1.size(3)) # [1, 3xmc, 256x256]
+        sub_matrix2 = sub_matrix2.view(-1, sub_matrix2.size(1), sub_matrix2.size(2)*sub_matrix2.size(3)) # [1, mc, lsxls]
+        sub_matrix3 = torch.matmul(sub_matrix2, self.real_C_itp_flat) # [1, mc, 1]
+
+        sub_matrix1 = torch.transpose(sub_matrix1, 1, 2) # [1, 256x256, 3xmc]
+        sm1R = sub_matrix1[:, :, 0:self.intermediate_nc] # [1, 256x256, mc]
+        sm1G = sub_matrix1[:, :, self.intermediate_nc:self.intermediate_nc*2]
+        sm1B = sub_matrix1[:, :, self.intermediate_nc*2:self.intermediate_nc*3]
+        bufR = torch.matmul(sm1R, sub_matrix3) # [1, 256x256, 1]
+        bufG = torch.matmul(sm1G, sub_matrix3)
+        bufB = torch.matmul(sm1B, sub_matrix3)
         buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256x256, 3]
         buf = torch.transpose(buf, 1, 2) # [1, 3, 256x256]
         buf = (buf - 0.5) / 0.5
         buf = torch.clamp(buf, min=-1.0, max=1.0)
         # print('buf:', buf.size())
         self.fake_B = buf.view(self.real_B.size()) # [1, 3, 256, 256]
-
-    def forward_linebuf(self):
-        """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        sub_matrix1 = self.netG(self.real_AC) # [1, 3, 256, 256]
-        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, 256, 256]
-        sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        self.fake_B = torch.zeros_like(self.real_B)
-        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1)) * 0.5 + 0.5 # [1, 1, 256x256]
-        
-        for l in range(sub_matrix1.size(2)):
-            sub_matrix1_buf = sub_matrix1[:, :, l, :].reshape(-1, sub_matrix1.size(1)*sub_matrix1.size(3), 1) * 0.5 + 0.5 # [1, 3x256, 1]
-            trans_matrix = torch.matmul(sub_matrix1_buf, sub_matrix2) #[1, 3x256, 256x256]
-            # print('trans_matrix:', trans_matrix.size())
-            tmR = trans_matrix[:, 0:256, :] # [1, 256, 256x256]
-            tmG = trans_matrix[:, 256:256*2, :]
-            tmB = trans_matrix[:, 256*2:256*3, :]
-            # print('self.real_C_itp_flat:', self.real_C_itp_flat.size())
-            # print('tmR:', tmR.size())
-            bufR = torch.matmul(tmR, self.real_C_itp_flat * 10.0) # [1, 256, 1]
-            bufG = torch.matmul(tmG, self.real_C_itp_flat * 10.0)
-            bufB = torch.matmul(tmB, self.real_C_itp_flat * 10.0)
-            # print('bufR:', bufR.size())
-            buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256, 3]
-            buf = torch.transpose(buf, 1, 2) # [1, 3, 256]
-            buf = (buf - 0.5) / 0.5
-            buf = buf.reshape(self.fake_B.size(0), self.fake_B.size(1), self.fake_B.size(3))
-            # print('buf:', buf.size())
-            # print('fake_B:', self.fake_B.size())
-            self.fake_B[:, :, l, :] = buf # [1, 3, 1, 256] <- [1,3,256]
 
 
     def backward_D(self):

@@ -3,7 +3,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.nn import functional as F
 
-class Pix2PixTm2LatentIn2Model(BaseModel):
+class Pix2PixTm2FullRegIn2Model(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -66,14 +66,10 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, (self.light_res**2)*opt.output_nc, opt.ngf, opt.netG, opt.norm,
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        # self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG = networks.define_G(opt.input_nc + opt.input2_nc, opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
                                       
-        # self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, 'unet_256_latent', opt.norm,
+        self.netG2 = networks.define_G(opt.input_nc + opt.input2_nc, 1, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
 
@@ -106,11 +102,15 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         AtoB = self.opt.direction == 'AtoB'
-        self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device)
+        self.real_A = []
+        for i in range(25):
+            self.real_A.appned(input['A'].to(self.device))
+        # self.real_A = input['A' if AtoB else 'B'].to(self.device)
+        self.real_B = input['B'].to(self.device)
         self.real_C = input['C'].to(self.device)
+        # self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bicubic', align_corners=False)
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
-        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, 16, 1]
+        self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, lsxls, 1]
         self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
@@ -121,11 +121,13 @@ class Pix2PixTm2LatentIn2Model(BaseModel):
         # print("test")
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         sub_matrix1 = self.netG(self.real_AC) # [1, 3, 256, 256]
-        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, ls, ls]
-        # sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
+        sub_matrix2 = self.netG2(self.real_AC) # [1, 1, 256, 256]
+        sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)# [1, ls, ls]
         
-        sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1)
-        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1))
+        # sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1) * 0.5 + 0.5 # [1, 3x256x256, 1]
+        # sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1)) * 0.5 + 0.5 # [1, 1, 16]
+        sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1)*sub_matrix1.size(2)*sub_matrix1.size(3), 1) # [1, 3x256x256, 1]
+        sub_matrix2 = sub_matrix2.view(-1, 1, sub_matrix2.size(-2)*sub_matrix2.size(-1)) # [1, 1, lsxls]
         trans_matrix = torch.matmul(sub_matrix1, sub_matrix2) #[1, 3x256x256, lsxls]
         # print('trans_matrix:', trans_matrix.size())
         tmR = trans_matrix[:, 0:256**2, :] # [1, 256x256, lsxls]

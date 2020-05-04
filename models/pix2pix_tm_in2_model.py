@@ -101,7 +101,7 @@ class Pix2PixTmIn2Model(BaseModel):
         self.real_C = input['C'].to(self.device)
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bicubic', align_corners=False)
         self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, 16, 1]
-        self.real_C_itp2 = F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')
+        self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
         
