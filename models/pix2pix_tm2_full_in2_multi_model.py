@@ -128,9 +128,9 @@ class Pix2PixTm2FullIn2MultiModel(BaseModel):
         ltm = ltm.reshape(ltm.size(0), ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
         ltm = ltmreshape(ltm.size(0), ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
 
-        self.ltm_slice00 = torch.clamp((ltm[:, [0:3], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        self.ltm_slice12 = torch.clamp((ltm[:, [3*12:3*12+3], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        self.ltm_slice24 = torch.clamp((ltm[:, [3*24:3*24+3], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        self.ltm_slice00 = torch.clamp((ltm[:, 0:3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        self.ltm_slice12 = torch.clamp((ltm[:, 3*12:3*12+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        self.ltm_slice24 = torch.clamp((ltm[:, 3*24:3*24+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
 
         tmR = trans_matrix[:, 0:256**2, :] # [25, 256x256, lsxls]
         tmG = trans_matrix[:, 256**2:(256**2)*2, :]
