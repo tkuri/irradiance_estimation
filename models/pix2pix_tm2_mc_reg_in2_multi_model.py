@@ -49,8 +49,8 @@ class Pix2PixTm2McRegIn2MultiModel(BaseModel):
         self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg_1', 'G_LTMReg_2', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # self.visual_names = ['real_A', 'fake_B', 'real_B']
-        # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'matrix_1_0', 'matrix_1_1', 'matrix_1_2', 'matrix_1_3', 'matrix_2_0', 'matrix_2_1', 'matrix_2_2', 'matrix_2_3']
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'matrix_1_0', 'matrix_1_1', 'matrix_1_2', 'matrix_1_3', 'matrix_2_0', 'matrix_2_1', 'matrix_2_2', 'matrix_2_3']
+        # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             # self.model_names = ['G', 'D']
@@ -134,7 +134,19 @@ class Pix2PixTm2McRegIn2MultiModel(BaseModel):
         self.matrix_2_1 = self.matrix_2[:, 1, :, :]
         self.matrix_2_2 = self.matrix_2[:, 2, :, :]
         self.matrix_2_3 = self.matrix_2[:, 3, :, :]
-        
+
+        print('matrix_1 size:', self.matrix_1.size())
+        print('matrix_1_0 size:', self.matrix_1_0.size())
+        print('matrix_1_1 size:', self.matrix_1_1.size())
+        print('matrix_1_2 size:', self.matrix_1_2.size())
+        print('matrix_1_3 size:', self.matrix_1_3.size())
+        print('matrix_2 size:', self.matrix_2.size())
+        print('matrix_2_0 size:', self.matrix_2_0.size())
+        print('matrix_2_1 size:', self.matrix_2_1.size())
+        print('matrix_2_2 size:', self.matrix_2_2.size())
+        print('matrix_2_3 size:', self.matrix_2_3.size())
+
+
         sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1), sub_matrix1.size(2)*sub_matrix1.size(3)) # [1, 3xmc, 256x256]
         sub_matrix2 = sub_matrix2.view(-1, sub_matrix2.size(1), sub_matrix2.size(2)*sub_matrix2.size(3)) # [1, mc, lsxls]
         sub_matrix3 = torch.matmul(sub_matrix2, self.real_C_itp_flat) # [1, mc, 1]
