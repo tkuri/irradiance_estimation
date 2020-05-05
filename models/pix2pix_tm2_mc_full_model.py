@@ -114,7 +114,10 @@ class Pix2PixTm2McFullModel(BaseModel):
         self.real_C_itp = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
-        
+
+        self.matrix_1_gain = 1.0
+        self.matrix_2_gain = 1.0
+
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         src = self.real_A if self.G_input=='A' else self.real_AC
