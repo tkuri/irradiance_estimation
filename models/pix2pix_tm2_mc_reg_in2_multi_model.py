@@ -130,10 +130,10 @@ class Pix2PixTm2McRegIn2MultiModel(BaseModel):
         self.matrix_1_2 = self.matrix_1[:, [2, 2 + self.intermediate_nc, 3 + self.intermediate_nc*2], :, :]
         self.matrix_1_3 = self.matrix_1[:, [3, 3 + self.intermediate_nc, 3 + self.intermediate_nc*2], :, :]
         self.matrix_2 = torch.clamp((F.interpolate(sub_matrix2, (self.real_B.size(-2), self.real_B.size(-1)), mode='nearest')*self.matrix_2_gain-0.5)/0.5, min=-1.0, max=1.0)
-        self.matrix_2_0 = self.matrix_2[:, 0, :, :]
-        self.matrix_2_1 = self.matrix_2[:, 1, :, :]
-        self.matrix_2_2 = self.matrix_2[:, 2, :, :]
-        self.matrix_2_3 = self.matrix_2[:, 3, :, :]
+        self.matrix_2_0 = torch.unsqueeze(self.matrix_2[:, 0, :, :], 1)
+        self.matrix_2_1 = torch.unsqueeze(self.matrix_2[:, 1, :, :], 1)
+        self.matrix_2_2 = torch.unsqueeze(self.matrix_2[:, 2, :, :], 1)
+        self.matrix_2_3 = torch.unsqueeze(self.matrix_2[:, 3, :, :], 1)
 
         print('matrix_1 size:', self.matrix_1.size())
         print('matrix_1_0 size:', self.matrix_1_0.size())
