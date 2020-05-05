@@ -3,7 +3,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.nn import functional as F
 
-class Pix2PixTm2McFullIn2MultiModel(BaseModel):
+class Pix2PixTm2McFullRegIn2MultiModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -44,7 +44,7 @@ class Pix2PixTm2McFullIn2MultiModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
+        self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg_1', 'G_LTMReg_2', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'ltm_slice00', 'ltm_slice12', 'ltm_slice24', 'matrix_1_0', 'matrix_1_1', 'matrix_1_2', 'matrix_1_3', 'matrix_2_0', 'matrix_2_1', 'matrix_2_2', 'matrix_2_3']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -163,7 +163,6 @@ class Pix2PixTm2McFullIn2MultiModel(BaseModel):
         # print('buf:', buf.size())
         self.fake_B = buf.view(self.real_B.size()) # [1, 3, 256, 256]
 
-
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
@@ -184,10 +183,20 @@ class Pix2PixTm2McFullIn2MultiModel(BaseModel):
         fake_ACB = torch.cat((self.real_AC, self.fake_B), 1)
         pred_fake = self.netD(fake_ACB)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
+
         # Second, G(A) = B
         self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.opt.lambda_L1
+
+        # Third, LTM Regularization
+        trans_mean_1 = torch.mean(self.sub_matrix_1, dim=0, keepdim=True) # [1, 75, 256, 256]
+        trans_mean_1 = trans_mean_1.expand(self.sub_matrix_1.size(0), trans_mean_1.size(1), trans_mean_1.size(2), trans_mean_1.size(3))  # [25, 75, 256, 256]
+        self.loss_G_LTMReg_1 = self.criterionL1(self.sub_matrix_1, trans_mean_1) * self.opt.lambda_LTMReg_1
+        trans_mean_2 = torch.mean(self.sub_matrix_2, dim=0, keepdim=True) # [1, 75, 256, 256]
+        trans_mean_2 = trans_mean_2.expand(self.sub_matrix_2.size(0), trans_mean_2.size(1), trans_mean_2.size(2), trans_mean_2.size(3))  # [25, 75, 256, 256]
+        self.loss_G_LTMReg_2 = self.criterionL1(self.sub_matrix_2, trans_mean_2) * self.opt.lambda_LTMReg_2
+
         # combine loss and calculate gradients
-        self.loss_G = self.loss_G_GAN + self.loss_G_L1
+        self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.loss_G_LTMReg_1 + self.loss_G_LTMReg_2
         self.loss_G.backward()
 
     def optimize_parameters(self):

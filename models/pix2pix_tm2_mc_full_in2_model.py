@@ -139,9 +139,6 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         trans_matrix = torch.cat([bufR, bufG, bufB], dim=1) # [1, 3x256x256, lsxls]
 
         ltm = torch.transpose(trans_matrix, 1, 2) #[25, 25, 3x256x256]
-        # print('ltm size:', ltm.size())
-        # print('real_B size:', self.real_B.size()) #[25, 3, 256, 256]
-
         ltm = ltm.reshape(ltm.size(0), ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
         ltm = ltm.reshape(ltm.size(0), ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
 
