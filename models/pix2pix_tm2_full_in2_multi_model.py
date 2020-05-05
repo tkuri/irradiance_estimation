@@ -122,7 +122,7 @@ class Pix2PixTm2FullIn2MultiModel(BaseModel):
         trans_matrix = torch.matmul(sub_matrix1, sub_matrix2) #[25, 3x256x256, lsxls]
 
         ltm = torch.transpose(trans_matrix, 1, 2) #[25, 25, 3x256x256]
-        ltm = ltm.view(-1, ltm.size(1)*self.real_B.size(1), ltm.size(2)) #[25, 25x3, 256x256]
+        ltm = ltm.view(-1, ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
         ltm = ltm.view(-1, ltm.size(1), self.real_B.size(2), self.real_B.size(3))
 
         self.ltm_slice00 = torch.clamp((ltm[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
