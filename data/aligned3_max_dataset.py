@@ -63,7 +63,7 @@ class Aligned3MaxDataset(BaseDataset):
         B = B_transform(B)
         C = C_transform(C)
 
-        A = torch.unsqueeze(A, 0)
+        A = torch.unsqueeze(A, 0) # [1, 3, 256, 256]
         B = torch.unsqueeze(B, 0)
         C = torch.unsqueeze(C, 0)
         # print('A size:', A.size())

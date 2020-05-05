@@ -2,7 +2,7 @@ import os.path
 from data.base_dataset import BaseDataset, get_params, get_transform
 from data.image_folder import make_dataset
 from PIL import Image, ImageOps
-
+import torch
 
 class Aligned4Dataset(BaseDataset):
     """A dataset class for paired image dataset.
@@ -58,8 +58,6 @@ class Aligned4Dataset(BaseDataset):
         transform_params = get_params(self.opt, A.size)
         A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1))
         B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1))
-        # A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1), convert=False)
-        # B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1), convert=False)
         C_transform = get_transform(self.opt, transform_params, grayscale=(self.input2_nc == 1), convert=False)
         D_transform = get_transform(self.opt, transform_params, grayscale=(self.input3_nc == 1))
 
@@ -67,11 +65,11 @@ class Aligned4Dataset(BaseDataset):
         B = B_transform(B)
         C = C_transform(C)
         D = D_transform(D)
-        # print('A size:', A.size())
-        # print('A_trans:', A.max(), A.min())
-        # print('B_trans:', B.max(), B.min())
-        # print('C_trans:', C.max(), C.min())
 
+        A = torch.unsqueeze(A, 0)
+        B = torch.unsqueeze(B, 0)
+        C = torch.unsqueeze(C, 0)
+        D = torch.unsqueeze(D, 0)
 
         return {'A': A, 'B': B, 'C': C, 'D': D, 'A_paths': ABCD_path, 'B_paths': ABCD_path, 'C_paths': ABCD_path, 'D_paths': ABCD_path}
 

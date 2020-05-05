@@ -74,7 +74,7 @@ class Aligned3TmMaxDataset(BaseDataset):
         Bcat = torch.unsqueeze(B[0], 0)
         Ccat = torch.unsqueeze(C[0], 0)
         for i in range(1,25):
-            Acat = torch.cat([Acat, torch.unsqueeze(A[i], 0)], dim=0)
+            Acat = torch.cat([Acat, torch.unsqueeze(A[i], 0)], dim=0) # [25, 3, 256, 256]
             Bcat = torch.cat([Bcat, torch.unsqueeze(B[i], 0)], dim=0)
             Ccat = torch.cat([Ccat, torch.unsqueeze(C[i], 0)], dim=0)
         

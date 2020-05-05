@@ -81,8 +81,8 @@ class Unet256Model(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         AtoB = self.opt.direction == 'AtoB'
-        self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device)
+        self.real_A = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
+        self.real_B = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     def forward(self):
