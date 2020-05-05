@@ -66,7 +66,7 @@ class Aligned4Dataset(BaseDataset):
         C = C_transform(C)
         D = D_transform(D)
 
-        A = torch.unsqueeze(A, 0)
+        A = torch.unsqueeze(A, 0) # [1, 3, 256, 256]
         B = torch.unsqueeze(B, 0)
         C = torch.unsqueeze(C, 0)
         D = torch.unsqueeze(D, 0)

@@ -56,7 +56,6 @@ class Pix2PixTmModel(BaseModel):
         # define networks (both generator and discriminator)
         self.output_nc = opt.output_nc
         self.light_res = opt.light_res
-
         self.G_input = opt.G_input
         self.D_input = opt.D_input
 
