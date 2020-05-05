@@ -48,9 +48,7 @@ class Pix2PixTmRegIn2MultiModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        # self.visual_names = ['real_A', 'fake_B', 'real_B']
         self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'ltm_slice00', 'ltm_slice12', 'ltm_slice24']
-        # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             self.model_names = ['G', 'D']

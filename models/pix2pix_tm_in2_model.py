@@ -48,7 +48,7 @@ class Pix2PixTmIn2Model(BaseModel):
         self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # self.visual_names = ['real_A', 'fake_B', 'real_B']
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp2']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp']
         # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
@@ -62,14 +62,10 @@ class Pix2PixTmIn2Model(BaseModel):
         print('opt.output_nc', opt.output_nc)
         print('light_res', self.light_res)
 
-        # self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG = networks.define_G(opt.input_nc + opt.input2_nc, (self.light_res**2)*opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
-            # self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
-            #                               opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             self.netD = networks.define_D(opt.input_nc + opt.input2_nc + opt.output_nc, opt.ndf, opt.netD,
                                           opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
@@ -101,30 +97,9 @@ class Pix2PixTmIn2Model(BaseModel):
         self.real_C = input['C'].to(self.device)
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bicubic', align_corners=False)
         self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, 16, 1]
-        self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
+        self.real_C_itp = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
-        
-
-    def forward_old(self):
-        """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        trans_matrix = self.netG(self.real_AC) # [1, 3*16, 256, 256]
-        # trans_matrix = self.netG(self.real_A)
-        trans_matrix = trans_matrix.view(-1, self.output_nc*self.light_res**2, (trans_matrix.size(-1)*trans_matrix.size(-2)))  # [1, 3*16, 256x256]
-        # trans_matrix = torch.transpose(trans_matrix, 1, 2) * 0.5 + 0.5  # [1, 256x256, 3*16]
-        trans_matrix = torch.transpose(trans_matrix, 1, 2) # [1, 256x256, 3*16]
-        tmR = trans_matrix[:, :, 0:self.light_res**2] # [1, 256x256, 16]
-        tmG = trans_matrix[:, :, self.light_res**2:(self.light_res**2)*2]
-        tmB = trans_matrix[:, :, (self.light_res**2)*2:(self.light_res**2)*3]
-        bufR = torch.matmul(tmR, self.real_C_itp_flat * self.light_gain) # [1, 256x256, 1]
-        bufG = torch.matmul(tmG, self.real_C_itp_flat * self.light_gain)
-        bufB = torch.matmul(tmB, self.real_C_itp_flat * self.light_gain)
-        buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256x256, 3]
-        buf = torch.transpose(buf, 1, 2) # [1, 3, 256x256]
-        buf = (buf - 0.5) / 0.5
-        buf = torch.clamp(buf, min=-1.0, max=1.0)
-        self.fake_B = buf.view(self.real_B.size()) # [1, 3, 256, 256]
-
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""

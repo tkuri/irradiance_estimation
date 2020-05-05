@@ -49,7 +49,7 @@ class Pix2PixTm2RegIn2MultiModel(BaseModel):
         self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg_1', 'G_LTMReg_2', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C']
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp2', 'matrix_1', 'matrix_2']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'matrix_1', 'matrix_2']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             self.model_names = ['G', 'G2', 'D']
@@ -101,7 +101,7 @@ class Pix2PixTm2RegIn2MultiModel(BaseModel):
         self.real_C = torch.squeeze(input['C'],0).to(self.device) # [25, 1, 256, 256]
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
         self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, lsxls, 1]
-        self.real_C_itp2 = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
+        self.real_C_itp = torch.clamp((F.interpolate(self.real_C_itp, (self.real_C.size(-2), self.real_C.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)
         self.real_AC = torch.cat([self.real_A, self.real_C], dim=1)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
         
