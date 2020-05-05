@@ -46,7 +46,7 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'ltm_slice00', 'ltm_slice12', 'ltm_slice24', 'matrix_1_0', 'matrix_1_1', 'matrix_1_2', 'matrix_1_3', 'matrix_2_0', 'matrix_2_1', 'matrix_2_2', 'matrix_2_3']
+        self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             # self.model_names = ['G', 'D']
@@ -96,9 +96,9 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         AtoB = self.opt.direction == 'AtoB'
-        self.real_A = input['A' if AtoB else 'B'].to(self.device)
-        self.real_B = input['B' if AtoB else 'A'].to(self.device)
-        self.real_C = input['C'].to(self.device)
+        self.real_A = torch.squeeze(input['A'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_B = torch.squeeze(input['B'],0).to(self.device) # [25, 3, 256, 256]
+        self.real_C = torch.squeeze(input['C'],0).to(self.device) # [25, 1, 256, 256]
         # self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bicubic', align_corners=False)
         self.real_C_itp = F.interpolate(self.real_C, (self.light_res, self.light_res), mode='bilinear', align_corners=False)
         self.real_C_itp_flat = self.real_C_itp.view(-1, self.light_res**2, 1) # [1, lsxls, 1]
@@ -112,20 +112,6 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         sub_matrix1 = self.netG(self.real_AC) # [1, 3xmc, 256, 256]
         sub_matrix2 = self.netG2(self.real_AC) # [1, mc, 256, 256]
         sub_matrix2 = F.interpolate(sub_matrix2, (self.light_res, self.light_res), mode='bilinear', align_corners=False)# [1, mc, ls, ls]
-
-        self.sub_matrix_1 = sub_matrix1.clone()
-        self.sub_matrix_2 = sub_matrix2.clone()
-        
-        self.matrix_1 = torch.clamp((sub_matrix1*self.matrix_1_gain-0.5)/0.5, min=-1.0, max=1.0)
-        self.matrix_1_0 = self.matrix_1[:, [0, self.intermediate_nc, self.intermediate_nc*2], :, :]
-        self.matrix_1_1 = self.matrix_1[:, [1, 1 + self.intermediate_nc, 1 + self.intermediate_nc*2], :, :]
-        self.matrix_1_2 = self.matrix_1[:, [2, 2 + self.intermediate_nc, 3 + self.intermediate_nc*2], :, :]
-        self.matrix_1_3 = self.matrix_1[:, [3, 3 + self.intermediate_nc, 3 + self.intermediate_nc*2], :, :]
-        self.matrix_2 = torch.clamp((F.interpolate(sub_matrix2, (self.real_B.size(-2), self.real_B.size(-1)), mode='nearest')*self.matrix_2_gain-0.5)/0.5, min=-1.0, max=1.0)
-        self.matrix_2_0 = torch.unsqueeze(self.matrix_2[:, 0, :, :], 1)
-        self.matrix_2_1 = torch.unsqueeze(self.matrix_2[:, 1, :, :], 1)
-        self.matrix_2_2 = torch.unsqueeze(self.matrix_2[:, 2, :, :], 1)
-        self.matrix_2_3 = torch.unsqueeze(self.matrix_2[:, 3, :, :], 1)
         
         sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1), sub_matrix1.size(2)*sub_matrix1.size(3)) # [1, 3xmc, 256x256]
         sub_matrix2 = sub_matrix2.view(-1, sub_matrix2.size(1), sub_matrix2.size(2)*sub_matrix2.size(3)) # [1, mc, lsxls]
@@ -137,18 +123,6 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         bufG = torch.matmul(sm1G, sub_matrix2)
         bufB = torch.matmul(sm1B, sub_matrix2)
         trans_matrix = torch.cat([bufR, bufG, bufB], dim=1) # [1, 3x256x256, lsxls]
-
-        ltm = torch.transpose(trans_matrix, 1, 2) #[25, 25, 3x256x256]
-        # print('ltm size:', ltm.size())
-        # print('real_B size:', self.real_B.size()) #[25, 3, 256, 256]
-
-        ltm = ltm.reshape(ltm.size(0), ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
-        ltm = ltm.reshape(ltm.size(0), ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
-
-        self.ltm_slice00 = torch.clamp((ltm[:, 0:3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        self.ltm_slice12 = torch.clamp((ltm[:, 3*12:3*12+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        self.ltm_slice24 = torch.clamp((ltm[:, 3*24:3*24+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-
 
         # trans_matrix = torch.matmul(sub_matrix1, sub_matrix2) #[1, 3x256x256, lsxls]
         # print('trans_matrix:', trans_matrix.size())
