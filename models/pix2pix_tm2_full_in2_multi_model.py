@@ -123,7 +123,7 @@ class Pix2PixTm2FullIn2MultiModel(BaseModel):
 
         ltm = torch.transpose(trans_matrix, 1, 2) #[25, 25, 3x256x256]
         print('ltm size:', ltm.size())
-        print('real_B size:', self_real_B.size())
+        print('real_B size:', self.real_B.size())
         ltm = ltm.view(-1, ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
         ltm = ltm.view(-1, ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
 
