@@ -49,24 +49,21 @@ class Aligned3Dataset(BaseDataset):
         B = ABC.crop((w3, 0, w3*2, h))
         C = ABC.crop((w3*2, 0, w, h))
         C = ImageOps.flip(C)
-        # C = Image.new('RGB', (w, h), (64, 64, 64))
-        # C = Image.new('RGB', (w, h), (255, 255, 255))
-
-        # print('A:', A.getextrema())
-        # print('B:', B.getextrema())
-        # print('C:', C.getextrema())
 
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, A.size)
         A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1))
         B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1))
-        # A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1), convert=False)
-        # B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1), convert=False)
         C_transform = get_transform(self.opt, transform_params, grayscale=(self.input2_nc == 1), convert=False)
 
         A = A_transform(A)
         B = B_transform(B)
         C = C_transform(C)
+
+        A = torch.unsqueeze(A, 0)
+        B = torch.unsqueeze(B, 0)
+        C = torch.unsqueeze(C, 0)
+
         # print('A size:', A.size())
         # print('A_trans:', A.max(), A.min())
         # print('B_trans:', B.max(), B.min())
