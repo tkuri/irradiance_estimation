@@ -3,7 +3,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.nn import functional as F
 
-class Pix2PixTm2McFullIn2Model(BaseModel):
+class Pix2PixTm2McFullModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -157,18 +157,18 @@ class Pix2PixTm2McFullIn2Model(BaseModel):
         self.ltm_slice24 = torch.clamp((ltm[:, 3*24:3*24+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
 
         # Calc C = L * T
-        tmR = trans_matrix[:, 0:256**2, :] # [1, 256x256, lsxls]
+        tmR = trans_matrix[:, 0:256**2, :] # [bn, 256x256, lsxls]
         tmG = trans_matrix[:, 256**2:(256**2)*2, :]
         tmB = trans_matrix[:, (256**2)*2:(256**2)*3, :]
-        bufR = torch.matmul(tmR, self.real_C_itp_flat) # [1, 256x256, 1]
+        bufR = torch.matmul(tmR, self.real_C_itp_flat) # [bn, 256x256, 1]
         bufG = torch.matmul(tmG, self.real_C_itp_flat)
         bufB = torch.matmul(tmB, self.real_C_itp_flat)
-        buf = torch.cat([bufR, bufG, bufB], dim=2) # [1, 256x256, 3]
-        buf = torch.transpose(buf, 1, 2) # [1, 3, 256x256]
+        buf = torch.cat([bufR, bufG, bufB], dim=2) # [bn, 256x256, 3]
+        buf = torch.transpose(buf, 1, 2) # [bn, 3, 256x256]
         buf = (buf - 0.5) / 0.5
         buf = torch.clamp(buf, min=-1.0, max=1.0)
 
-        self.fake_B = buf.view(self.real_B.size()) # [1, 3, 256, 256]
+        self.fake_B = buf.view(self.real_B.size()) # [bn, 3, 256, 256]
 
 
     def backward_D(self):
