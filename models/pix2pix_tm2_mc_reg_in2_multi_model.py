@@ -135,18 +135,6 @@ class Pix2PixTm2McRegIn2MultiModel(BaseModel):
         self.matrix_2_2 = torch.unsqueeze(self.matrix_2[:, 2, :, :], 1)
         self.matrix_2_3 = torch.unsqueeze(self.matrix_2[:, 3, :, :], 1)
 
-        print('matrix_1 size:', self.matrix_1.size())
-        print('matrix_1_0 size:', self.matrix_1_0.size())
-        print('matrix_1_1 size:', self.matrix_1_1.size())
-        print('matrix_1_2 size:', self.matrix_1_2.size())
-        print('matrix_1_3 size:', self.matrix_1_3.size())
-        print('matrix_2 size:', self.matrix_2.size())
-        print('matrix_2_0 size:', self.matrix_2_0.size())
-        print('matrix_2_1 size:', self.matrix_2_1.size())
-        print('matrix_2_2 size:', self.matrix_2_2.size())
-        print('matrix_2_3 size:', self.matrix_2_3.size())
-
-
         sub_matrix1 = sub_matrix1.view(-1, sub_matrix1.size(1), sub_matrix1.size(2)*sub_matrix1.size(3)) # [1, 3xmc, 256x256]
         sub_matrix2 = sub_matrix2.view(-1, sub_matrix2.size(1), sub_matrix2.size(2)*sub_matrix2.size(3)) # [1, mc, lsxls]
         sub_matrix3 = torch.matmul(sub_matrix2, self.real_C_itp_flat) # [1, mc, 1]
