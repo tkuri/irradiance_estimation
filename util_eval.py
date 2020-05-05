@@ -5,7 +5,7 @@ import subprocess
 
 
 def rem_checkmodel(target):
-  remdir = '/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/checkpoints/{}/'.format(target)
+  remdir = '/content/drive/My Drive/Colabdata/irradiance_estimation/checkpoints/{}/'.format(target)
   for i in range(5, 195, 5):
     remfile = remdir+'{}_net_G.pth'.format(i)
     try:
@@ -25,7 +25,7 @@ def rem_checkmodel(target):
 
 
 def eval_data(target, docopy=True):
-  tgtdir = "/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/results/{}/test_latest/images/".format(target)
+  tgtdir = "/content/drive/My Drive/Colabdata/irradiance_estimation/results/{}/test_latest/images/".format(target)
   print('Target Directory: {}'.format(tgtdir))
 #   realname = "_real_B.png"
 #   fakename = "_fake_B.png"
@@ -33,7 +33,7 @@ def eval_data(target, docopy=True):
   fakename = "_fake_B*.png"
   realdir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/real/'
   fakedir = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/test/fake/'
-  outdir = "/content/drive/My Drive/Colabdata/pytorch-CycleGAN-and-pix2pix/results/{}/test_latest/".format(target)
+  outdir = "/content/drive/My Drive/Colabdata/irradiance_estimation/results/{}/test_latest/".format(target)
   ipips_py = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/compute_dists_dirs_rev.py'
   outname = "dist_ipips.txt"
   if docopy:
