@@ -111,7 +111,7 @@ class Pix2PixTmRegModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         src = self.real_A if self.G_input=='A' else self.real_AC
-        trans_matrix = self.netG(src) # [25, 3*16, 256, 256]
+        self.trans_matrix = self.netG(src) # [25, 3*16, 256, 256]
         self.ltm_slice00 = torch.clamp((self.trans_matrix[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
         self.ltm_slice12 = torch.clamp((self.trans_matrix[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
         self.ltm_slice24 = torch.clamp((self.trans_matrix[:, [24, 25+24, 25*2+24], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
