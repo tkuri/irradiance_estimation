@@ -123,9 +123,12 @@ class Pix2PixTm2FullIn2MultiModel(BaseModel):
 
         ltm = torch.transpose(trans_matrix, 1, 2) #[25, 25, 3x256x256]
         print('ltm size:', ltm.size())
-        print('real_B size:', self.real_B.size())
-        ltm = ltm.view(-1, ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
-        ltm = ltm.view(-1, ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
+        print('real_B size:', self.real_B.size()) #[25, 3, 256, 256]
+        ltm = ltm.view(25, 25*3, 256*256) #[25, 25x3, 256x256]
+        ltm = ltm.view(25, 25*3, 256, 256) #[25, 25x3, 256x256]
+
+        # ltm = ltm.view(ltm.size(0), ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[25, 25x3, 256x256]
+        # ltm = ltm.view(ltm.size(0), ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[25, 25x3, 256, 256]
 
         self.ltm_slice00 = torch.clamp((ltm[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
         self.ltm_slice12 = torch.clamp((ltm[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
