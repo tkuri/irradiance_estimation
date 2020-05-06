@@ -6,7 +6,7 @@ import subprocess
 
 def rem_checkmodel(target):
   remdir = '/content/drive/My Drive/Colabdata/irradiance_estimation/checkpoints/{}/'.format(target)
-  for i in range(5, 195, 5):
+  for i in range(5, 205, 5):
     remfile = remdir+'{}_net_G.pth'.format(i)
     try:
       os.remove(remfile)
@@ -22,6 +22,15 @@ def rem_checkmodel(target):
     except OSError as e:
       print('No exist: ', remfile)
       pass  
+
+    remfile = remdir+'{}_net_D.pth'.format(i)
+    try:
+      os.remove(remfile)
+      print('Rem: ', remfile)
+    except OSError as e:
+      print('No exist: ', remfile)
+      pass  
+
 
 
 def eval_data(target, docopy=True):
