@@ -33,8 +33,10 @@ class Pix2PixTm2FullRegModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
+            parser.add_argument('--lambda_LTMReg', type=float, default=100.0, help='weight for LTM Regularization (Full)')
             parser.add_argument('--lambda_LTMReg_1', type=float, default=100.0, help='weight for LTM Regularization 1')
             parser.add_argument('--lambda_LTMReg_2', type=float, default=100.0, help='weight for LTM Regularization 2')
+            parser.add_argument('--reg_mode', type=str, default='full', help='Regularization Mode [full | sub]')
 
         return parser
 
@@ -46,7 +48,10 @@ class Pix2PixTm2FullRegModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg_1', 'G_LTMReg_2', 'D_real', 'D_fake']
+        if opt.reg_mode=='full':
+            self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg', 'D_real', 'D_fake']
+        else:
+            self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg_1', 'G_LTMReg_2', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         if opt.intermediate_nc < 4:
             self.visual_names = ['real_A', 'fake_B', 'real_B', 'real_C', 'real_C_itp', 'ltm_slice00', 'ltm_slice12', 'ltm_slice24', 'matrix_1', 'matrix_2']
@@ -65,12 +70,14 @@ class Pix2PixTm2FullRegModel(BaseModel):
         self.intermediate_nc = opt.intermediate_nc
         self.G_input = opt.G_input
         self.D_input = opt.D_input
+        self.reg_mode = opt.reg_mode
 
         print('opt.output_nc', opt.output_nc)
         print('light_res', self.light_res)
         print('intermediate_nc', self.intermediate_nc)
         print('G_input', self.G_input)
         print('D_input', self.D_input)
+        print('reg_mode', self.reg_mode)
 
         G_input = opt.input_nc if self.G_input=='A' else opt.input_nc + opt.input2_nc
         D_input = opt.input_nc if self.D_input=='A' else opt.input_nc + opt.input2_nc
@@ -155,10 +162,10 @@ class Pix2PixTm2FullRegModel(BaseModel):
         bufR = torch.matmul(sm1R, sub_matrix2) # [bn, 256x256, lsxls]
         bufG = torch.matmul(sm1G, sub_matrix2)
         bufB = torch.matmul(sm1B, sub_matrix2)
-        trans_matrix = torch.cat([bufR, bufG, bufB], dim=1) # [bn, 3x256x256, lsxls]
+        self.trans_matrix = torch.cat([bufR, bufG, bufB], dim=1) # [bn, 3x256x256, lsxls]
 
         # Calc LTM slice for display
-        ltm = torch.transpose(trans_matrix, 1, 2) #[bn, 25, 3x256x256]
+        ltm = torch.transpose(self.trans_matrix, 1, 2) #[bn, 25, 3x256x256]
         ltm = ltm.reshape(ltm.size(0), ltm.size(1)*self.real_B.size(1), self.real_B.size(2)*self.real_B.size(3)) #[bn, 25x3, 256x256]
         ltm = ltm.reshape(ltm.size(0), ltm.size(1), self.real_B.size(2), self.real_B.size(3)) #[bn, 25x3, 256, 256]
         self.ltm_slice00 = torch.clamp((ltm[:, 0:3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
@@ -166,9 +173,9 @@ class Pix2PixTm2FullRegModel(BaseModel):
         self.ltm_slice24 = torch.clamp((ltm[:, 3*24:3*24+3, :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [bn, 3, 256, 256]
 
         # Calc C = L * T
-        tmR = trans_matrix[:, 0:256**2, :] # [bn, 256x256, lsxls]
-        tmG = trans_matrix[:, 256**2:(256**2)*2, :]
-        tmB = trans_matrix[:, (256**2)*2:(256**2)*3, :]
+        tmR = self.trans_matrix[:, 0:256**2, :] # [bn, 256x256, lsxls]
+        tmG = self.trans_matrix[:, 256**2:(256**2)*2, :]
+        tmB = self.trans_matrix[:, (256**2)*2:(256**2)*3, :]
         bufR = torch.matmul(tmR, self.real_C_itp_flat) # [bn, 256x256, 1]
         bufG = torch.matmul(tmG, self.real_C_itp_flat)
         bufB = torch.matmul(tmB, self.real_C_itp_flat)
@@ -206,16 +213,24 @@ class Pix2PixTm2FullRegModel(BaseModel):
         # Second, G(A) = B
         self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.opt.lambda_L1
 
-        # Third, LTM Regularization
-        trans_mean_1 = torch.mean(self.sub_matrix_1, dim=0, keepdim=True) # [1, 75, 256, 256]
-        trans_mean_1 = trans_mean_1.expand(self.sub_matrix_1.size(0), trans_mean_1.size(1), trans_mean_1.size(2), trans_mean_1.size(3))  # [25, 75, 256, 256]
-        self.loss_G_LTMReg_1 = self.criterionL1(self.sub_matrix_1, trans_mean_1) * self.opt.lambda_LTMReg_1
-        trans_mean_2 = torch.mean(self.sub_matrix_2, dim=0, keepdim=True) # [1, 75, 256, 256]
-        trans_mean_2 = trans_mean_2.expand(self.sub_matrix_2.size(0), trans_mean_2.size(1), trans_mean_2.size(2), trans_mean_2.size(3))  # [25, 75, 256, 256]
-        self.loss_G_LTMReg_2 = self.criterionL1(self.sub_matrix_2, trans_mean_2) * self.opt.lambda_LTMReg_2
+        if self.reg_mode=='full':
+            # Third, LTM Regularization
+            trans_mean = torch.mean(self.trans_matrix, dim=0, keepdim=True) # [1, 75, 256, 256]
+            trans_mean = trans_mean.expand(self.trans_matrix.size(0), trans_mean.size(1), trans_mean.size(2), trans_mean.size(3))  # [25, 75, 256, 256]
+            self.loss_G_LTMReg = self.criterionL1(self.trans_matrix, trans_mean) * self.opt.lambda_LTMReg
+            # combine loss and calculate gradients
+            self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.loss_G_LTMReg
+        else:
+            # Third, LTM Regularization (Sub Matrix)
+            trans_mean_1 = torch.mean(self.sub_matrix_1, dim=0, keepdim=True) # [1, 75, 256, 256]
+            trans_mean_1 = trans_mean_1.expand(self.sub_matrix_1.size(0), trans_mean_1.size(1), trans_mean_1.size(2), trans_mean_1.size(3))  # [25, 75, 256, 256]
+            self.loss_G_LTMReg_1 = self.criterionL1(self.sub_matrix_1, trans_mean_1) * self.opt.lambda_LTMReg_1
+            trans_mean_2 = torch.mean(self.sub_matrix_2, dim=0, keepdim=True) # [1, 75, 256, 256]
+            trans_mean_2 = trans_mean_2.expand(self.sub_matrix_2.size(0), trans_mean_2.size(1), trans_mean_2.size(2), trans_mean_2.size(3))  # [25, 75, 256, 256]
+            self.loss_G_LTMReg_2 = self.criterionL1(self.sub_matrix_2, trans_mean_2) * self.opt.lambda_LTMReg_2
+            # combine loss and calculate gradients
+            self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.loss_G_LTMReg_1 + self.loss_G_LTMReg_2
 
-        # combine loss and calculate gradients
-        self.loss_G = self.loss_G_GAN + self.loss_G_L1
         self.loss_G.backward()
 
     def optimize_parameters(self):
