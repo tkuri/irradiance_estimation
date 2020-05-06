@@ -215,8 +215,8 @@ class Pix2PixTm2FullRegModel(BaseModel):
 
         if self.reg_mode=='full':
             # Third, LTM Regularization
-            trans_mean = torch.mean(self.trans_matrix, dim=0, keepdim=True) # [1, 75, 256, 256]
-            trans_mean = trans_mean.expand(self.trans_matrix.size(0), trans_mean.size(1), trans_mean.size(2), trans_mean.size(3))  # [25, 75, 256, 256]
+            trans_mean = torch.mean(self.trans_matrix, dim=0, keepdim=True) # [1, 3x256x256, 25]
+            trans_mean = trans_mean.expand(self.trans_matrix.size(0), trans_mean.size(1), trans_mean.size(2)) # [25, 3x256x256, 25]
             self.loss_G_LTMReg = self.criterionL1(self.trans_matrix, trans_mean) * self.opt.lambda_LTMReg
             # combine loss and calculate gradients
             self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.loss_G_LTMReg
