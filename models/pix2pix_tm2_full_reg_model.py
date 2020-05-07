@@ -36,7 +36,6 @@ class Pix2PixTm2FullRegModel(BaseModel):
             parser.add_argument('--lambda_LTMReg', type=float, default=100.0, help='weight for LTM Regularization (Full)')
             parser.add_argument('--lambda_LTMReg_1', type=float, default=100.0, help='weight for LTM Regularization 1')
             parser.add_argument('--lambda_LTMReg_2', type=float, default=100.0, help='weight for LTM Regularization 2')
-            parser.add_argument('--reg_mode', type=str, default='full', help='Regularization Mode [full | sub]')
 
         return parser
 
@@ -48,6 +47,7 @@ class Pix2PixTm2FullRegModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
+        
         if opt.reg_mode=='full':
             self.loss_names = ['G_GAN', 'G_L1', 'G_LTMReg', 'D_real', 'D_fake']
         else:
