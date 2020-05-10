@@ -54,7 +54,7 @@ class Aligned3TmMaxCntDataset(BaseDataset):
         
         for i in range(25):
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
-            A.append(ABC.crop((0, h25*tidx, w3, h25*(i+tidx))))
+            A.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
             B.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
             Ctmp = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
             Ctmp = Ctmp.convert("L")
