@@ -62,7 +62,7 @@ class BaseOptions():
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
         # Self-added parameters
-        parser.add_argument('--show_multi', type=bool, default=False, help='show multi channel images')
+        parser.add_argument('--show_multi', action='store_true', help='show multi channel images')
         parser.add_argument('--result_gain', type=float, default='1.0', help='gain of result images')
         parser.add_argument('--reg_mode', type=str, default='full', help='Regularization Mode [full | sub]')
 
