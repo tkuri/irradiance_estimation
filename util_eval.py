@@ -46,14 +46,20 @@ def eval_data(target, docopy=True):
   ipips_py = '/content/drive/My Drive/Colabdata/PerceptualSimilarity/compute_dists_dirs_rev.py'
   outname = "dist_ipips.txt"
   if docopy:
-    shutil.rmtree(realdir)
-    print('Removed:', realdir)
-    shutil.rmtree(fakedir)
-    print('Removed:', fakedir)
+    try:
+      shutil.rmtree(realdir)
+      print('Removed:', realdir)
+    except OSError as e:
+      print('Failed to remove directory:', realdir)      
+    try:
+      shutil.rmtree(fakedir)
+      print('Removed:', fakedir)
+    except OSError as e:
+      print('Failed to remove directory:', fakedir)      
     os.makedirs(realdir, exist_ok=True)
-    print('Maked:', realdir)
+    print('Created:', realdir)
     os.makedirs(fakedir, exist_ok=True)
-    print('Maked:', fakedir)
+    print('Created:', fakedir)
     for full in glob.glob(tgtdir+'*'+realname):
         p = os.path.basename(full)
         name = p.replace('_real_B', '')
