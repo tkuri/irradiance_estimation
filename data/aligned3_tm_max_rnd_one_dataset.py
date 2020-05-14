@@ -49,6 +49,7 @@ class Aligned3TmMaxRndOneDataset(BaseDataset):
         w3 = int(w / 3)
 
         # tidx = 12
+        random.seed(100)
         Aidx = random.randrange(25)
         BCidx = random.randrange(25)
 

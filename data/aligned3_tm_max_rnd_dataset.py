@@ -52,7 +52,7 @@ class Aligned3TmMaxRndDataset(BaseDataset):
         C = []
 
         # tidx = 12
-        
+        random.seed(100)        
         for i in range(25):
             tidx = random.randrange(25)
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
