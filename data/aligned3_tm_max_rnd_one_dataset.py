@@ -48,7 +48,6 @@ class Aligned3TmMaxRndOneDataset(BaseDataset):
         h25 = int(h / 25)
         w3 = int(w / 3)
 
-        # tidx = 12
         random.seed(100)
         Aidx = random.randrange(25)
         BCidx = random.randrange(25)
@@ -74,7 +73,7 @@ class Aligned3TmMaxRndOneDataset(BaseDataset):
         B = torch.unsqueeze(B, 0)
         C = torch.unsqueeze(C, 0)
 
-        return {'A': Acat, 'B': Bcat, 'C': Ccat, 'A_paths': ABC_path, 'B_paths': ABC_path, 'C_paths': ABC_path}
+        return {'A': A, 'B': B, 'C': C, 'A_paths': ABC_path, 'B_paths': ABC_path, 'C_paths': ABC_path}
 
     def __len__(self):
         """Return the total number of images in the dataset."""
