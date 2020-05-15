@@ -25,6 +25,7 @@ class Aligned3TmMaxRndOneDataset(BaseDataset):
         self.input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc
         self.output_nc = self.opt.input_nc if self.opt.direction == 'BtoA' else self.opt.output_nc
         self.input2_nc = self.opt.input2_nc
+        random.seed(100)
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -48,7 +49,6 @@ class Aligned3TmMaxRndOneDataset(BaseDataset):
         h25 = int(h / 25)
         w3 = int(w / 3)
 
-        random.seed(100)
         Aidx = random.randrange(25)
         BCidx = random.randrange(25)
 
