@@ -393,7 +393,7 @@ class CGIntrinsicDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        list_dir = '../../CGIntrinsics/CGIntrinsics/intrinsic_final/train_list/'
+        list_dir = '../CGIntrinsics/CGIntrinsics/intrinsic_final/train_list/'
         self.img_paths = make_dataset(list_dir)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
@@ -416,14 +416,14 @@ class CGIntrinsicDataset(BaseDataset):
             B_paths (str)    -- image paths
         """
         # read a image given a random integer index
-        img_path = "../../CGIntrinsics/CGIntrinsics/intrinsics_final/images/" + self.img_paths[index]
+        img_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/" + self.img_paths[index]
         srgb_img = Image.open(img_path).convert('RGB') /255.0
         file_name = self.img_paths[index].split('/')
 
-        R_path = "../../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
+        R_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
         gt_R = Image.open(R_path).convert('RGB') / 255.0
 
-        mask_path = "../../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
+        mask_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB') / 255.0
         
         gt_R_gray = np.mean(gt_R, 2)
