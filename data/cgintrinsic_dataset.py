@@ -4,6 +4,8 @@ from data.image_folder import make_dataset
 from PIL import Image
 import pickle
 import torch
+from skimage.morphology import square
+
 
 # import os.path
 # from data.base_dataset import BaseDataset, get_params, get_transform
