@@ -465,11 +465,11 @@ class CGIntrinsicDataset(BaseDataset):
 
         gt_R_gray = torch.mean(gt_R, 2)
         mask[gt_R_gray < 1e-6] = 0 
-        mask[np.mean(srgb_img,2) < 1e-6] = 0 
+        mask[torch.mean(srgb_img,2) < 1e-6] = 0 
 
         mask = skimage.morphology.binary_erosion(mask, square(11))
-        mask = np.expand_dims(mask, axis = 2)
-        mask = np.repeat(mask, 3, axis= 2)
+        # mask = np.expand_dims(mask, axis = 2)
+        # mask = np.repeat(mask, 3, axis= 2)
 
         # gt_R[gt_R <1e-6] = 1e-6
         # rgb_img = (srgb_img*0.5+0.5)**2.2
