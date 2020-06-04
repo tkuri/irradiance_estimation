@@ -46,7 +46,7 @@ class IntrinsicPix2PixModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        self.visual_names = ['real_A', 'fake_R', 'real_R', 'fake_S', 'real_S']
+        self.visual_names = ['real_A', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             self.model_names = ['G', 'D']
@@ -81,6 +81,7 @@ class IntrinsicPix2PixModel(BaseModel):
         self.real_A = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_R = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_S = torch.squeeze(input['C'],0).to(self.device) # [bn, 3, 256, 256]
+        self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
     
     def calc_shading(self, img, albedo):
