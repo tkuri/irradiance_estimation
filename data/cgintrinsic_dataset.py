@@ -463,7 +463,7 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
-        srgb_img = img_transform(srgb_img)
+        srgb_img = srgb_img_transform(srgb_img)
         gt_R = gt_R_transform(gt_R)
         # gt_S = gt_R_transform(gt_S)
 
