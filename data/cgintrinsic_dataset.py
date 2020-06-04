@@ -461,7 +461,7 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R = gt_R_transform(gt_R)
         gt_S = gt_R_transform(gt_S)
 
-        return {'A': img, 'B': gt_R, , 'C': gt_S, 'img_paths': img_path}
+        return {'A': img, 'B': gt_R, 'C': gt_S, 'img_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
