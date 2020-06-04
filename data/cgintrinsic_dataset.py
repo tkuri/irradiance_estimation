@@ -1,5 +1,5 @@
 import os.path
-from data.base_dataset import BaseDataset, get_params, get_transform
+from data.base_dataset import BaseDataset, get_params, get_transform, normalize
 from data.image_folder import make_dataset
 from PIL import Image
 import pickle
@@ -427,13 +427,6 @@ class CGIntrinsicDataset(BaseDataset):
         mask_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
         
-        gt_R_gray = np.mean(gt_R, 2)
-        mask[gt_R_gray < 1e-6] = 0 
-        mask[np.mean(srgb_img,2) < 1e-6] = 0 
-
-        mask = skimage.morphology.binary_erosion(mask, square(11))
-        mask = np.expand_dims(mask, axis = 2)
-        mask = np.repeat(mask, 3, axis= 2)
         # gt_R[gt_R <1e-6] = 1e-6
 
         # rgb_img = srgb_img**2.2
@@ -460,9 +453,9 @@ class CGIntrinsicDataset(BaseDataset):
 
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img.size)
-        srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False)
-        gt_R_transform = get_transform(self.opt, transform_params, grayscale=False)
-        mask_transform = get_transform(self.opt, transform_params, grayscale=True)
+        srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+        gt_R_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+        mask_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
         srgb_img = srgb_img_transform(srgb_img)
@@ -470,10 +463,24 @@ class CGIntrinsicDataset(BaseDataset):
         mask = mask_transform(mask)
         # gt_S = gt_R_transform(gt_S)
 
+        gt_R_gray = torch.mean(gt_R, 2)
+        mask[gt_R_gray < 1e-6] = 0 
+        mask[np.mean(srgb_img,2) < 1e-6] = 0 
+
+        mask = skimage.morphology.binary_erosion(mask, square(11))
+        mask = np.expand_dims(mask, axis = 2)
+        mask = np.repeat(mask, 3, axis= 2)
+
         # gt_R[gt_R <1e-6] = 1e-6
-        rgb_img = (srgb_img*0.5+0.5)**2.2
-        gt_S = rgb_img / torch.clamp(gt_R*0.5+0.5, min=1e-6)
-        gt_S = torch.clamp((gt_S-0.5)/0.5, min=-1.0, max=1.0)
+        # rgb_img = (srgb_img*0.5+0.5)**2.2
+        # gt_S = rgb_img / torch.clamp(gt_R*0.5+0.5, min=1e-6)
+        # gt_S = torch.clamp((gt_S-0.5)/0.5, min=-1.0, max=1.0)
+        rgb_img = srgb_img**2.2
+        gt_S = rgb_img / torch.clamp(gt_R, min=1e-6)
+
+        srgb_img = normalize()(srgb_img)
+        gt_R = normalize()(gt_R)
+        gt_S = normalize()(gt_S)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
