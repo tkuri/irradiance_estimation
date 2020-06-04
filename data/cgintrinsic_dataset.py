@@ -458,7 +458,7 @@ class CGIntrinsicDataset(BaseDataset):
         # gt_S = gt_S/max_S
 
         # apply the same transform to both A and B
-        transform_params = get_params(self.opt, A.size)
+        transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
