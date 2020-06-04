@@ -469,9 +469,9 @@ class CGIntrinsicDataset(BaseDataset):
         # gt_S = gt_R_transform(gt_S)
 
         # gt_R[gt_R <1e-6] = 1e-6
-        rgb_img = srgb_img**2.2
-        gt_S = rgb_img / torch.clamp(gt_R, min=1e-6)
-        gt_S = torch.clamp(gt_S, min=-1.0, max=1.0)
+        rgb_img = (srgb_img*0.5+0.5)**2.2
+        gt_S = rgb_img / torch.clamp(gt_R*0.5+0.5, min=1e-6)
+        gt_S = torch.clamp((gt_S-0.5)/0.5, min=-1.0, max=1.0)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
