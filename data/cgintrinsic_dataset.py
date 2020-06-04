@@ -455,7 +455,7 @@ class CGIntrinsicDataset(BaseDataset):
         transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
-        mask_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
+        mask_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
         srgb_img = srgb_img_transform(srgb_img)
