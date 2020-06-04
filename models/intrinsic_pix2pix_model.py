@@ -82,7 +82,7 @@ class IntrinsicPix2PixModel(BaseModel):
         self.real_R = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
     
-    def calc_shading(img, albedo):
+    def calc_shading(self, img, albedo):
         img = (img - 0.5) / 0.5
         albedo = torch.clamp((albedo - 0.5) / 0.5, min=1e-6)
         shading = img**2.2/albedo
