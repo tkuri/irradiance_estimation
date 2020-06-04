@@ -393,7 +393,7 @@ class CGIntrinsicDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        list_dir = '../CGIntrinsics/CGIntrinsics/intrinsic_final/train_list/'
+        list_dir = '../CGIntrinsics/CGIntrinsics/intrinsics_final/train_list/'
         self.img_paths = make_dataset(list_dir)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
