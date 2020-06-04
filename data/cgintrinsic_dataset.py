@@ -4,8 +4,8 @@ from data.image_folder import make_dataset
 from PIL import Image
 import pickle
 import torch
-import skimage
-from skimage.morphology import square
+# import skimage
+# from skimage.morphology import square
 
 
 # import os.path
@@ -470,7 +470,7 @@ class CGIntrinsicDataset(BaseDataset):
         mask[gt_R_gray < 1e-6] = 0 
         mask[torch.mean(srgb_img,2) < 1e-6] = 0 
 
-        mask = skimage.morphology.binary_erosion(mask, square(11))
+        # mask = skimage.morphology.binary_erosion(mask, square(11))
         # mask = np.expand_dims(mask, axis = 2)
         # mask = np.repeat(mask, 3, axis= 2)
 
