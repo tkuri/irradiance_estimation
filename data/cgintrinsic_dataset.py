@@ -484,6 +484,7 @@ class CGIntrinsicDataset(BaseDataset):
         srgb_img = normalize()(srgb_img)
         gt_R = normalize()(gt_R)
         gt_S = normalize()(gt_S)
+        mask = normalize()(mask)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
