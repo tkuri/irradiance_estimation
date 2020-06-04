@@ -417,26 +417,26 @@ class CGIntrinsicDataset(BaseDataset):
         """
         # read a image given a random integer index
         img_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/" + self.img_paths[index]
-        srgb_img = Image.open(img_path).convert('RGB') /255.0
+        srgb_img = Image.open(img_path).convert('RGB')
         file_name = self.img_paths[index].split('/')
 
         R_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
-        gt_R = Image.open(R_path).convert('RGB') / 255.0
+        gt_R = Image.open(R_path).convert('RGB')
 
         mask_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
-        mask = Image.open(mask_path).convert('RGB') / 255.0
+        mask = Image.open(mask_path).convert('RGB')
         
-        gt_R_gray = np.mean(gt_R, 2)
-        mask[gt_R_gray < 1e-6] = 0 
-        mask[np.mean(srgb_img,2) < 1e-6] = 0 
+        # gt_R_gray = np.mean(gt_R, 2)
+        # mask[gt_R_gray < 1e-6] = 0 
+        # mask[np.mean(srgb_img,2) < 1e-6] = 0 
 
-        mask = skimage.morphology.binary_erosion(mask, square(11))
-        mask = np.expand_dims(mask, axis = 2)
-        mask = np.repeat(mask, 3, axis= 2)
-        gt_R[gt_R <1e-6] = 1e-6
+        # mask = skimage.morphology.binary_erosion(mask, square(11))
+        # mask = np.expand_dims(mask, axis = 2)
+        # mask = np.repeat(mask, 3, axis= 2)
+        # gt_R[gt_R <1e-6] = 1e-6
 
-        rgb_img = srgb_img**2.2
-        gt_S = rgb_img / gt_R
+        # rgb_img = srgb_img**2.2
+        # gt_S = rgb_img / gt_R
 
         # search_name = img_path[:-4] + ".rgbe"
         # irridiance = self.stat_dict[search_name]
@@ -445,10 +445,10 @@ class CGIntrinsicDataset(BaseDataset):
         #     srgb_img = denoise_tv_chambolle(srgb_img, weight=0.05, multichannel=True)            
         #     gt_S = denoise_tv_chambolle(gt_S, weight=0.1, multichannel=True)
 
-        mask[gt_S > 10] = 0
-        gt_S[gt_S > 20] = 20
-        mask[gt_S < 1e-4] = 0
-        gt_S[gt_S < 1e-4] = 1e-4
+        # mask[gt_S > 10] = 0
+        # gt_S[gt_S > 20] = 20
+        # mask[gt_S < 1e-4] = 0
+        # gt_S[gt_S < 1e-4] = 1e-4
 
         # if np.sum(mask) < 10:
         #     max_S = 1.0
