@@ -427,13 +427,13 @@ class CGIntrinsicDataset(BaseDataset):
         mask_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
         
-        # gt_R_gray = np.mean(gt_R, 2)
-        # mask[gt_R_gray < 1e-6] = 0 
-        # mask[np.mean(srgb_img,2) < 1e-6] = 0 
+        gt_R_gray = np.mean(gt_R, 2)
+        mask[gt_R_gray < 1e-6] = 0 
+        mask[np.mean(srgb_img,2) < 1e-6] = 0 
 
-        # mask = skimage.morphology.binary_erosion(mask, square(11))
-        # mask = np.expand_dims(mask, axis = 2)
-        # mask = np.repeat(mask, 3, axis= 2)
+        mask = skimage.morphology.binary_erosion(mask, square(11))
+        mask = np.expand_dims(mask, axis = 2)
+        mask = np.repeat(mask, 3, axis= 2)
         # gt_R[gt_R <1e-6] = 1e-6
 
         # rgb_img = srgb_img**2.2
