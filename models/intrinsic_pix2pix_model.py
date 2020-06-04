@@ -92,7 +92,7 @@ class IntrinsicPix2PixModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         self.fake_R = self.netG(self.real_A)  # G(A)
-        self.fake_S = calc_shading(self.real_A, self.fake_R)
+        self.fake_S = self.calc_shading(self.real_A, self.fake_R)
 
     def backward_D(self):
         """Calculate GAN loss for the discriminator"""
