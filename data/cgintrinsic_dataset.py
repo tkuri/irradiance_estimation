@@ -397,7 +397,8 @@ class CGIntrinsicDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        list_dir = '../CGIntrinsics/CGIntrinsics/intrinsics_final/train_list/'
+        self.dataroot = opt.dataroot # ../CGIntrinsics/CGIntrinsics/intrinsics_final
+        list_dir = self.dataroot + '/train_list/'
         self.img_paths = make_dataset(list_dir, opt.max_dataset_size)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
@@ -420,14 +421,14 @@ class CGIntrinsicDataset(BaseDataset):
             B_paths (str)    -- image paths
         """
         # read a image given a random integer index
-        img_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/" + self.img_paths[index]
+        img_path = self.dataroot + "/images/" + self.img_paths[index]
         srgb_img = Image.open(img_path).convert('RGB')
         file_name = self.img_paths[index].split('/')
 
-        R_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
+        R_path = self.dataroot + "/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
         gt_R = Image.open(R_path).convert('RGB')
 
-        mask_path = "../CGIntrinsics/CGIntrinsics/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
+        mask_path = self.dataroot + "/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
         
         # gt_R[gt_R <1e-6] = 1e-6
@@ -458,7 +459,7 @@ class CGIntrinsicDataset(BaseDataset):
         transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
-        mask_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+        mask_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
         srgb_img = srgb_img_transform(srgb_img)
@@ -466,9 +467,10 @@ class CGIntrinsicDataset(BaseDataset):
         mask = mask_transform(mask)
         # gt_S = gt_R_transform(gt_S)
 
-        gt_R_gray = torch.mean(gt_R, 2)
+        gt_R_gray = torch.mean(gt_R, 0, keepdim=True)
+
         mask[gt_R_gray < 1e-6] = 0 
-        mask[torch.mean(srgb_img,2) < 1e-6] = 0 
+        mask[torch.mean(srgb_img, 0, keepdim=True) < 1e-6] = 0 
 
         # mask = skimage.morphology.binary_erosion(mask, square(11))
         # mask = np.expand_dims(mask, axis = 2)
@@ -484,7 +486,7 @@ class CGIntrinsicDataset(BaseDataset):
         srgb_img = normalize()(srgb_img)
         gt_R = normalize()(gt_R)
         gt_S = normalize()(gt_S)
-        mask = normalize()(mask)
+        mask = normalize(grayscale=True)(mask)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
