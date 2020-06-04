@@ -84,11 +84,11 @@ class IntrinsicPix2PixModel(BaseModel):
         self.image_paths = input['A_paths']
     
     def calc_shading(self, img, albedo):
-        img = (img - 0.5) / 0.5
-        albedo = torch.clamp((albedo - 0.5) / 0.5, min=1e-6)
+        img = torch.clamp(img * 0.5 + 0.5, min=0.0, max=1.0) # 0~1
+        albedo = torch.clamp(albedo * 0.5 + 0.5, min=1e-6, max=1.0) # 0~1
         shading = img**2.2/albedo
-        shading = shading*0.5 +0.5
-        return shading
+        shading = (shading - 0.5) / 0.5
+        return torch.clamp(shading, min=-1.0, max=1.0) # -1~1
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
