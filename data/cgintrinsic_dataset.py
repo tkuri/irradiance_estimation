@@ -369,11 +369,11 @@ import torch
 #     return data_loader
 
 
-def make_dataset(list_dir):
+def make_dataset(list_dir, max_dataset_size=float("inf")):
     file_name = list_dir + "img_batch.p"
     images_list = pickle.load( open( file_name, "rb" ) )
 
-    return images_list
+    return images_list[:min(max_dataset_size, len(images_list))]
 
 
 class CGIntrinsicDataset(BaseDataset):
@@ -395,7 +395,7 @@ class CGIntrinsicDataset(BaseDataset):
         """
         BaseDataset.__init__(self, opt)
         list_dir = '../CGIntrinsics/CGIntrinsics/intrinsics_final/train_list/'
-        self.img_paths = make_dataset(list_dir)
+        self.img_paths = make_dataset(list_dir, opt.max_dataset_size)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
