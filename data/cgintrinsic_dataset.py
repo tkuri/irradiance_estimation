@@ -462,10 +462,12 @@ class CGIntrinsicDataset(BaseDataset):
         transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False)
+        mask_transform = get_transform(self.opt, transform_params, grayscale=True)
         # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
         srgb_img = srgb_img_transform(srgb_img)
         gt_R = gt_R_transform(gt_R)
+        mask = mask_transform(mask)
         # gt_S = gt_R_transform(gt_S)
 
         # gt_R[gt_R <1e-6] = 1e-6
@@ -476,9 +478,9 @@ class CGIntrinsicDataset(BaseDataset):
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
         gt_S = torch.unsqueeze(gt_S, 0)
-
+        mask = torch.unsqueeze(mask, 0)
         
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'A_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
