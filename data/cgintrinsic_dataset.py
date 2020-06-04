@@ -471,7 +471,7 @@ class CGIntrinsicDataset(BaseDataset):
         rgb_img = srgb_img**2.2
         gt_S = rgb_img / gt_R
         
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'img_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
