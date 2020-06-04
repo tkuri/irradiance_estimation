@@ -80,6 +80,7 @@ class IntrinsicPix2PixModel(BaseModel):
         """
         self.real_A = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_R = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
+        self.real_S = torch.squeeze(input['C'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
     
     def calc_shading(self, img, albedo):
