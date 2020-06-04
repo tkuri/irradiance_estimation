@@ -470,6 +470,11 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R[gt_R <1e-6] = 1e-6
         rgb_img = srgb_img**2.2
         gt_S = rgb_img / gt_R
+
+        srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
+        gt_R = torch.unsqueeze(gt_R, 0)
+        gt_S = torch.unsqueeze(gt_S, 0)
+
         
         return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'A_paths': img_path}
 
