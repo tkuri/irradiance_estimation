@@ -459,15 +459,19 @@ class CGIntrinsicDataset(BaseDataset):
 
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, A.size)
-        img_transform = get_transform(self.opt, transform_params, grayscale=False)
+        srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False)
-        gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
+        # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
-        img = img_transform(img)
+        srgb_img = img_transform(srgb_img)
         gt_R = gt_R_transform(gt_R)
-        gt_S = gt_R_transform(gt_S)
+        # gt_S = gt_R_transform(gt_S)
 
-        return {'A': img, 'B': gt_R, 'C': gt_S, 'img_paths': img_path}
+        gt_R[gt_R <1e-6] = 1e-6
+        rgb_img = srgb_img**2.2
+        gt_S = rgb_img / gt_R
+        
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'img_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
