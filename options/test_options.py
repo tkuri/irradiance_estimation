@@ -17,6 +17,7 @@ class TestOptions(BaseOptions):
         parser.add_argument('--eval', action='store_true', help='use eval mode during test time.')
         # parser.add_argument('--num_test', type=int, default=50, help='how many test images to run')
         parser.add_argument('--num_test', type=int, default=256, help='how many test images to run')
+        parser.add_argument('--re_index', action='store_true', help='Named of re-index for test image.')
         # rewrite devalue values
         parser.set_defaults(model='test')
         # To avoid cropping, the load_size should be the same as crop_size
