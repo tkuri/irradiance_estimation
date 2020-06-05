@@ -63,7 +63,7 @@ if __name__ == '__main__':
         model.test()           # run inference
         visuals = model.get_current_visuals()  # get image results
         if opt.re_index:
-            img_path = str(i).zfill(5)
+            img_path = [str(i).zfill(5)]
         else:
             img_path = model.get_image_paths()     # get image paths
         if i % 5 == 0:  # save images to an HTML file
