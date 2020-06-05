@@ -472,9 +472,6 @@ class CGIntrinsicDataset(BaseDataset):
         mask = Image.open(mask_path).convert('RGB')
 
         irradiance = self.stat_dict[self.img_paths[index][:-4]+'.rgbe']
-        print('index:', index)
-        print('path:', self.img_paths[index])
-        print('irradiance:', irradiance)
         
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img.size)
