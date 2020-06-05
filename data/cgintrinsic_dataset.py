@@ -435,7 +435,7 @@ class CGIntrinsicDataset(BaseDataset):
 
         # irradiance scale
         self.stat_dict = {}
-        f = open(self.dataroot + "/rgbe_image_stats.txt","r")
+        f = open(self.dataroot + "/intrinsics_final/rgbe_image_stats.txt","r")
         line = f.readline()
         while line:
             line = line.split()
