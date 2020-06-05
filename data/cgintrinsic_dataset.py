@@ -4,6 +4,10 @@ from data.image_folder import make_dataset
 from PIL import Image
 import pickle
 import torch
+import torch.nn as nn
+import skimage
+from skimage.restoration import denoise_tv_chambolle
+
 # import skimage
 # from skimage.morphology import square
 
@@ -372,12 +376,37 @@ import torch
 #     return data_loader
 
 
+from typing import Union
+
+import torch
+import numpy as np
+
+
+def percentile(t: torch.tensor, q: float) -> Union[int, float]:
+    """
+    Return the ``q``-th percentile of the flattened input tensor's data.
+    
+    CAUTION:
+     * Needs PyTorch >= 1.1.0, as ``torch.kthvalue()`` is used.
+     * Values are not interpolated, which corresponds to
+       ``numpy.percentile(..., interpolation="nearest")``.
+       
+    :param t: Input tensor.
+    :param q: Percentile to compute, which must be between 0 and 100 inclusive.
+    :return: Resulting value (scalar).
+    """
+    # Note that ``kthvalue()`` works one-based, i.e. the first sorted value
+    # indeed corresponds to k=1, not k=0! Use float(q) instead of q directly,
+    # so that ``round()`` returns an integer, even if q is a np.float32.
+    k = 1 + round(.01 * float(q) * (t.numel() - 1))
+    result = t.view(-1).kthvalue(k).values.item()
+    return result
+
 def make_dataset(list_dir, max_dataset_size=float("inf")):
     file_name = list_dir + "img_batch.p"
     images_list = pickle.load( open( file_name, "rb" ) )
 
     return images_list[:min(max_dataset_size, len(images_list))]
-
 
 class CGIntrinsicDataset(BaseDataset):
     """
@@ -404,9 +433,20 @@ class CGIntrinsicDataset(BaseDataset):
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
 
+        # irradiance scale
+        self.stat_dict = {}
+        f = open(self.dataroot + "/rgbe_image_stats.txt","r")
+        line = f.readline()
+        while line:
+            line = line.split()
+            self.stat_dict[line[0]] = float(line[2])
+            line = f.readline()
+
         assert(self.opt.load_size >= self.opt.crop_size)   # crop_size should be smaller than the size of loaded image
+        
         # self.input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc
         # self.output_nc = self.opt.input_nc if self.opt.direction == 'BtoA' else self.opt.output_nc
+        self.erosion = nn.MaxPool2d(5, stride=1, padding=2)
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -430,58 +470,52 @@ class CGIntrinsicDataset(BaseDataset):
 
         mask_path = self.dataroot + "/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
+
+        irradiance = self.stat_dict[self.img_paths[index][:-4]+'.rgbe']
+        print('index:', index)
+        print('path:', self.img_paths[index])
+        print('irradiance:', irradiance)
         
-        # gt_R[gt_R <1e-6] = 1e-6
-
-        # rgb_img = srgb_img**2.2
-        # gt_S = rgb_img / gt_R
-
-        # search_name = img_path[:-4] + ".rgbe"
-        # irridiance = self.stat_dict[search_name]
-
-        # if irridiance < 0.25:
-        #     srgb_img = denoise_tv_chambolle(srgb_img, weight=0.05, multichannel=True)            
-        #     gt_S = denoise_tv_chambolle(gt_S, weight=0.1, multichannel=True)
-
-        # mask[gt_S > 10] = 0
-        # gt_S[gt_S > 20] = 20
-        # mask[gt_S < 1e-4] = 0
-        # gt_S[gt_S < 1e-4] = 1e-4
-
-        # if np.sum(mask) < 10:
-        #     max_S = 1.0
-        # else:
-        #     max_S = np.percentile(gt_S[mask > 0.5], 90)
-
-        # gt_S = gt_S/max_S
-
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         gt_R_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         mask_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
-        # gt_S_transform = get_transform(self.opt, transform_params, grayscale=False)
 
         srgb_img = srgb_img_transform(srgb_img)
         gt_R = gt_R_transform(gt_R)
         mask = mask_transform(mask)
-        # gt_S = gt_R_transform(gt_S)
 
+        gt_S = srgb_img**2.2 / torch.clamp(gt_R, min=1e-6)
+
+        srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
         gt_R_gray = torch.mean(gt_R, 0, keepdim=True)
+        gt_S_gray = torch.mean(gt_S, 0, keepdim=True)
 
+        gt_R[gt_R < 1e-6] = 1e-6
         mask[gt_R_gray < 1e-6] = 0 
-        mask[torch.mean(srgb_img, 0, keepdim=True) < 1e-6] = 0 
+        mask[srgb_img_gray < 1e-6] = 0 
+        mask[gt_S_gray > 10] = 0
+        gt_S[gt_S_gray.expand(gt_S.size()) > 20] = 20
+        mask[gt_S_gray < 1e-4] = 0
+        gt_S[gt_S_gray.expand(gt_S.size()) < 1e-4] = 1e-4
 
-        # mask = skimage.morphology.binary_erosion(mask, square(11))
-        # mask = np.expand_dims(mask, axis = 2)
-        # mask = np.repeat(mask, 3, axis= 2)
+        mask = 1.0 - self.erosion(1.0-mask)
 
-        # gt_R[gt_R <1e-6] = 1e-6
-        # rgb_img = (srgb_img*0.5+0.5)**2.2
-        # gt_S = rgb_img / torch.clamp(gt_R*0.5+0.5, min=1e-6)
-        # gt_S = torch.clamp((gt_S-0.5)/0.5, min=-1.0, max=1.0)
-        rgb_img = srgb_img**2.2
-        gt_S = rgb_img / torch.clamp(gt_R, min=1e-6)
+        if torch.sum(mask) < 10:
+            max_S = 1.0
+        else:
+            max_S = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 90)
+
+        gt_S = gt_S/max_S
+
+        if irradiance < 0.25:
+            srgb_img = srgb_img.cpu().numpy()
+            gt_S = gt_S.cpu().numpy()
+            srgb_img = denoise_tv_chambolle(srgb_img, weight=0.05, multichannel=True)            
+            gt_S = denoise_tv_chambolle(gt_S, weight=0.1, multichannel=True)
+            srgb_img = torch.from_numpy(srgb_img)
+            gt_S = torch.from_numpy(gt_S)
 
         srgb_img = normalize()(srgb_img)
         gt_R = normalize()(gt_R)
