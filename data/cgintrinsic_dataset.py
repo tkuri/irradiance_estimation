@@ -426,8 +426,8 @@ class CGIntrinsicDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        self.dataroot = opt.dataroot # ../CGIntrinsics/CGIntrinsics/intrinsics_final
-        list_dir = self.dataroot + '/train_list/'
+        self.dataroot = opt.dataroot # ../CGIntrinsics/CGIntrinsics
+        list_dir = self.dataroot + '/intrinsics_final/train_list/'
         self.img_paths = make_dataset(list_dir, opt.max_dataset_size)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
@@ -461,14 +461,14 @@ class CGIntrinsicDataset(BaseDataset):
             B_paths (str)    -- image paths
         """
         # read a image given a random integer index
-        img_path = self.dataroot + "/images/" + self.img_paths[index]
+        img_path = self.dataroot + "/intrinsics_final/images/" + self.img_paths[index]
         srgb_img = Image.open(img_path).convert('RGB')
         file_name = self.img_paths[index].split('/')
 
-        R_path = self.dataroot + "/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
+        R_path = self.dataroot + "/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
         gt_R = Image.open(R_path).convert('RGB')
 
-        mask_path = self.dataroot + "/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
+        mask_path = self.dataroot + "/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
 
         irradiance = self.stat_dict[self.img_paths[index][:-4]+'.rgbe']
