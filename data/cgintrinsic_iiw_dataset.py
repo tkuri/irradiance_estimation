@@ -36,7 +36,8 @@ def make_dataset(list_dir, max_dataset_size=float("inf"), iiw=False):
     images_list = pickle.load( open( file_name, "rb" ) )
 
     if iiw:
-        dataset = images_list[0][:min(max_dataset_size, len(images_list))]
+        concat_list = images_list[0]+images_list[1]+images_list[2]
+        dataset = concat_list[:min(max_dataset_size, len(concat_list))]
     else:    
         dataset = images_list[:min(max_dataset_size, len(images_list))]
 
