@@ -33,6 +33,7 @@ class IntrinsicPix2PixModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
+            parser.add_argument('--loss_mask', action='store_true', help='Masked image when calculating loss')
 
         return parser
 
@@ -117,7 +118,11 @@ class IntrinsicPix2PixModel(BaseModel):
         pred_fake = self.netD(fake_AR)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
-        self.loss_G_L1 = self.criterionL1(self.fake_R, self.real_R) * self.opt.lambda_L1
+        if self.loss_mask:
+            mask = self.mask*0.5 + 0.5
+            self.loss_G_L1 = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_L1
+        else:
+            self.loss_G_L1 = self.criterionL1(self.fake_R, self.real_R) * self.opt.lambda_L1
         # combine loss and calculate gradients
         self.loss_G = self.loss_G_GAN + self.loss_G_L1
         self.loss_G.backward()
