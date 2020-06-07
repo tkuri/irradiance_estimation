@@ -1,6 +1,7 @@
 import torch
 from .base_model import BaseModel
 from . import networks
+from typing import Union
 
 
 class IntrinsicUnetModel(BaseModel):
@@ -88,10 +89,23 @@ class IntrinsicUnetModel(BaseModel):
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
     
-    def calc_shading(self, img, albedo):
+    def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
+        k = 1 + round(.01 * float(q) * (t.numel() - 1))
+        result = t.view(-1).kthvalue(k).values.item()
+        return result
+
+    def calc_shading(self, img, albedo, mask):
         img = torch.clamp(img * 0.5 + 0.5, min=0.0, max=1.0) # 0~1
         albedo = torch.clamp(albedo * 0.5 + 0.5, min=1e-6, max=1.0) # 0~1
         shading = img**2.2/albedo
+        if self.opt.shading_norm:
+            if torch.sum(mask) < 10:
+                max_S = 1.0
+            else:
+                max_S = self.percentile(shading[self.mask.expand(shading.size()) > 0.5], 90)
+
+            shading = shading/max_S
+
         shading = (shading - 0.5) / 0.5
         return torch.clamp(shading, min=-1.0, max=1.0) # -1~1
 
@@ -99,12 +113,12 @@ class IntrinsicUnetModel(BaseModel):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         if self.opt.netG_dec==1:
             self.fake_R = self.netG(self.real_I)  # G(A)
-            self.fake_S = self.calc_shading(self.real_I, self.fake_R)
+            self.fake_S = self.calc_shading(self.real_I, self.fake_R, self.mask)
         else:
             fake_RS = self.netG(self.real_I)  # G(A)
             self.fake_R = fake_RS[:,:self.opt.output_nc,:,:]
             self.fake_S = fake_RS[:,self.opt.output_nc:,:,:]
-            self.fake_I_R = self.calc_shading(self.real_I, self.fake_R)
+            self.fake_I_R = self.calc_shading(self.real_I, self.fake_R, self.mask)
             self.fake_I = self.fake_R + self.fake_S
 
     def backward_G(self):

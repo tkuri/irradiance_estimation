@@ -499,12 +499,13 @@ class CGIntrinsicDataset(BaseDataset):
 
         mask = 1.0 - self.erosion(1.0-mask)
 
-        # if torch.sum(mask) < 10:
-        #     max_S = 1.0
-        # else:
-        #     max_S = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 90)
+        if self.opt.shading_norm:
+            if torch.sum(mask) < 10:
+                max_S = 1.0
+            else:
+                max_S = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 90)
 
-        # gt_S = gt_S/max_S
+            gt_S = gt_S/max_S
 
         if irradiance < 0.25:
             srgb_img = srgb_img.cpu().numpy()
