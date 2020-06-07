@@ -49,10 +49,11 @@ class IntrinsicUnetModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         if opt.netG_dec==1:
             self.loss_names = ['G_R']
+            self.visual_names = ['real_I', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         else:
             self.loss_names = ['G_R', 'G_S']
+            self.visual_names = ['fake_I', 'real_I', 'fake_R', 'real_R', 'fake_S', 'fake_I-R', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        self.visual_names = ['real_I', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
             self.model_names = ['G']
@@ -103,6 +104,8 @@ class IntrinsicUnetModel(BaseModel):
             fake_RS = self.netG(self.real_I)  # G(A)
             self.fake_R = fake_RS[:,:self.opt.output_nc,:,:]
             self.fake_S = fake_RS[:,self.opt.output_nc:,:,:]
+            self.fake_I-R = self.calc_shading(self.real_I, self.fake_R)
+            self.fake_I = self.fake_R + self.fake_S
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
