@@ -62,7 +62,6 @@ class IntrinsicUnetModel(BaseModel):
         # if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
         #     self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
         #                                   opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.loss_mask = opt.loss_mask
 
         if self.isTrain:
             # define loss functions
@@ -122,7 +121,7 @@ class IntrinsicUnetModel(BaseModel):
         # self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
 
-        if self.loss_mask:
+        if self.opt.loss_mask:
             mask = self.mask*0.5 + 0.5
             self.loss_G_L1 = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_L1
         else:
