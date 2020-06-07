@@ -65,6 +65,7 @@ class BaseOptions():
         parser.add_argument('--show_multi', action='store_true', help='show multi channel images')
         parser.add_argument('--result_gain', type=float, default='1.0', help='gain of result images')
         parser.add_argument('--reg_mode', type=str, default='full', help='Regularization Mode [full | sub]')
+        parser.add_argument('--shading_norm', action='store_true', help='max 90% normalized shading')
 
         self.initialized = True
         return parser
