@@ -30,9 +30,11 @@ class IntrinsicUnetModel(BaseModel):
         """
         # changing the default values to match the pix2pix paper (https://phillipi.github.io/pix2pix/)
         parser.set_defaults(norm='batch', netG='unet_256', dataset_mode='aligned')
+        parser.add_argument('--netG_dec', type=int, default='1', help='The number of generator output')
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
-            parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
+            parser.add_argument('--lambda_S', type=float, default=100.0, help='weight for Shading loss')
+            parser.add_argument('--lambda_R', type=float, default=100.0, help='weight for Reflection loss')
             parser.add_argument('--loss_mask', action='store_true', help='Masked image when calculating loss')
 
         return parser
@@ -45,33 +47,28 @@ class IntrinsicUnetModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        # self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         self.loss_names = ['G_L1']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        self.visual_names = ['real_A', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
+        self.visual_names = ['real_I', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if self.isTrain:
-            # self.model_names = ['G', 'D']
             self.model_names = ['G']
         else:  # during test time, only load G
             self.model_names = ['G']
         # define networks (both generator and discriminator)
-        self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
-        # if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
-        #     self.netD = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf, opt.netD,
-        #                                   opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
+        output = opt.output_nc*opt.netG_dec
+        print('generator output:', output)
+    
+        self.netG = networks.define_G(opt.input_nc, output, opt.ngf, opt.netG, opt.norm,
+                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:
             # define loss functions
-            # self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionL1 = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            # self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
-            # self.optimizers.append(self.optimizer_D)
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -81,7 +78,7 @@ class IntrinsicUnetModel(BaseModel):
 
         The option 'direction' can be used to swap images in domain A and domain B.
         """
-        self.real_A = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
+        self.real_I = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_R = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_S = torch.squeeze(input['C'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 3, 256, 256]
@@ -96,50 +93,36 @@ class IntrinsicUnetModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.fake_R = self.netG(self.real_A)  # G(A)
-        self.fake_S = self.calc_shading(self.real_A, self.fake_R)
-
-    # def backward_D(self):
-    #     """Calculate GAN loss for the discriminator"""
-    #     # Fake; stop backprop to the generator by detaching fake_R
-    #     fake_AR = torch.cat((self.real_A, self.fake_R), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
-    #     pred_fake = self.netD(fake_AR.detach())
-    #     self.loss_D_fake = self.criterionGAN(pred_fake, False)
-    #     # Real
-    #     real_AR = torch.cat((self.real_A, self.real_R), 1)
-    #     pred_real = self.netD(real_AR)
-    #     self.loss_D_real = self.criterionGAN(pred_real, True)
-    #     # combine loss and calculate gradients
-    #     self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
-    #     self.loss_D.backward()
+        if self.opt.netG_dec==1:
+            self.fake_R = self.netG(self.real_I)  # G(A)
+            self.fake_S = self.calc_shading(self.real_I, self.fake_R)
+        else:
+            fake_RS = self.netG(self.real_I)  # G(A)
+            self.fake_R = fake_RS[:,:self.opt.output_nc,:,:]
+            self.fake_S = fake_RS[:,self.opt.output_nc:,:,:]
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
-        # First, G(A) should fake the discriminator
-        # fake_AR = torch.cat((self.real_A, self.fake_R), 1)
-        # pred_fake = self.netD(fake_AR)
-        # self.loss_G_GAN = self.criterionGAN(pred_fake, True)
-        # Second, G(A) = B
-
-        if self.opt.loss_mask:
-            mask = self.mask*0.5 + 0.5
-            self.loss_G_L1 = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_L1
+        if self.opt.netG_dec==1:
+            if self.opt.loss_mask:
+                mask = self.mask*0.5 + 0.5
+                self.loss_G_R = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
+            else:
+                self.loss_G_R = self.criterionL1(self.fake_R, self.real_R) * self.opt.lambda_R
+            self.loss_G = self.loss_G_R
         else:
-            self.loss_G_L1 = self.criterionL1(self.fake_R, self.real_R) * self.opt.lambda_L1
-        # combine loss and calculate gradients
-        # self.loss_G = self.loss_G_GAN + self.loss_G_L1
-        self.loss_G = self.loss_G_L1
+            if self.opt.loss_mask:
+                mask = self.mask*0.5 + 0.5
+                self.loss_G_R = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
+                self.loss_G_S = self.criterionL1(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
+            else:
+                self.loss_G_R = self.criterionL1(self.fake_R, self.real_R) * self.opt.lambda_R
+                self.loss_G_S = self.criterionL1(self.fake_S, self.real_S) * self.opt.lambda_S
+            self.loss_G = self.loss_G_R + self.loss_G_S 
         self.loss_G.backward()
 
     def optimize_parameters(self):
         self.forward()                   # compute fake images: G(A)
-        # update D
-        # self.set_requires_grad(self.netD, True)  # enable backprop for D
-        # self.optimizer_D.zero_grad()     # set D's gradients to zero
-        # self.backward_D()                # calculate gradients for D
-        # self.optimizer_D.step()          # update D's weights
-        # update G
-        # self.set_requires_grad(self.netD, False)  # D requires no gradients when optimizing G
         self.optimizer_G.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
         self.optimizer_G.step()             # udpate G's weights
