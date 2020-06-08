@@ -5,6 +5,7 @@ import ntpath
 import time
 from . import util, html
 from subprocess import Popen, PIPE
+import cv2
 
 
 if sys.version_info[0] == 2:
@@ -57,6 +58,9 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
             ims, txts, links = [], [], []
             for label, im_data in visuals.items():
                 im = util.tensor2im(im_data, gain=gain, ch=c)
+                if label == 'fake_BM' or label == 'real_BM':
+                    im = cv2.applyColorMap(im, cv2.COLORMAP_JET)
+                    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
                 image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
                 save_path = os.path.join(image_dir, image_name)
                 util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -67,6 +71,9 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
     else:
         for label, im_data in visuals.items():
             im = util.tensor2im(im_data, gain=gain)
+            if label == 'fake_BM' or label == 'real_BM':
+                im = cv2.applyColorMap(im, cv2.COLORMAP_JET)
+                im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
             image_name = '%s_%s.png' % (name, label)
             save_path = os.path.join(image_dir, image_name)
             util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -154,6 +161,9 @@ class Visualizer():
                 idx = 0
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
+                    if label == 'fake_BM' or label == 'real_BM':
+                        image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
+                        image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
@@ -181,6 +191,9 @@ class Visualizer():
                 try:
                     for label, image in visuals.items():
                         image_numpy = util.tensor2im(image)
+                        if label == 'fake_BM' or label == 'real_BM':
+                            image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
+                            image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
                         self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                        win=self.display_id + idx)
                         idx += 1
@@ -192,6 +205,16 @@ class Visualizer():
             # save images to the disk
             for label, image in visuals.items():
                 image_numpy = util.tensor2im(image)
+                if label == 'fake_BM' or label == 'real_BM':
+                    mask = np.zeros_like(image_numpy)
+                    mask[image_numpy>25] = 1
+                    invmask = 1 - mask
+                    image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
+                    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)                
+                    image_org = util.tensor2im(visuals['real_I'])
+                    image_numpy = image_numpy*mask + image_org*invmask
+                    # alpha = 0.3
+                    # image_numpy = cv2.addWeighted(image_org, alpha, image_numpy, 1 - alpha, 0)
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)
 
@@ -202,7 +225,7 @@ class Visualizer():
                 ims, txts, links = [], [], []
 
                 for label, image_numpy in visuals.items():
-                    image_numpy = util.tensor2im(image)
+                    # image_numpy = util.tensor2im(image)
                     img_path = 'epoch%.3d_%s.png' % (n, label)
                     ims.append(img_path)
                     txts.append(label)
