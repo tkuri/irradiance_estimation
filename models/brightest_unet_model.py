@@ -51,7 +51,7 @@ class BrightestUnetModel(BaseModel):
         if opt.netG_dec==1:
             self.loss_names = ['G_B']
             self.visual_names = ['real_I', 'fake_B', 'real_B', 'mask']
-            output = opt.output_nc
+            output = 1
         else:
             self.loss_names = ['G_R', 'G_S', 'G_B']
             self.visual_names = ['fake_I', 'real_I', 'fake_B', 'real_B', 'fake_R', 'real_R', 'fake_S', 'fake_I_R', 'real_S', 'mask']
@@ -127,7 +127,7 @@ class BrightestUnetModel(BaseModel):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         if self.opt.netG_dec==1:
-            self.loss_G_B = self.criterionL1(self.fake_B*mask, self.real_B*mask) * self.opt.lambda_B
+            self.loss_G = self.criterionL1(self.fake_B*mask, self.real_B*mask) * self.opt.lambda_B
         else:
             self.loss_G_R = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
             self.loss_G_S = self.criterionL1(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
