@@ -49,7 +49,7 @@ class BrightestUnetModel(BaseModel):
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         if opt.netG_dec==1:
-            self.loss_names = ['G_B']
+            self.loss_names = ['G']
             self.visual_names = ['real_I', 'fake_B', 'real_B', 'mask']
             output = 1
         else:
