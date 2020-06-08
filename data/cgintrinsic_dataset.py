@@ -499,12 +499,17 @@ class CGIntrinsicDataset(BaseDataset):
 
         mask = 1.0 - self.erosion(1.0-mask)
 
+        brightest_point = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 90)
+        # print('brightest_point:', brightest_point)
+
+        brightest = torch.zeros_like(mask)
+        brightest[gt_S_gray > brightest_point] = 255
+
         if self.opt.shading_norm:
             if torch.sum(mask) < 10:
                 max_S = 1.0
             else:
-                max_S = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 90)
-
+                max_S = brightest_point
             gt_S = gt_S/max_S
 
         if irradiance < 0.25:
@@ -519,13 +524,16 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R = normalize()(gt_R)
         gt_S = normalize()(gt_S)
         mask = normalize(grayscale=True)(mask)
+        brightest = normalize(grayscale=True)(brightest)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
         gt_S = torch.unsqueeze(gt_S, 0)
         mask = torch.unsqueeze(mask, 0)
+        brightest = torch.unsqueeze(brightest, 0)
         
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'A_paths': img_path}
+        # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'A_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
