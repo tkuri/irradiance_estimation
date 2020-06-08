@@ -514,7 +514,7 @@ class CGIntrinsicDataset(BaseDataset):
         # print('brightest_point:', brightest_point)
 
         if torch.sum(brightest_mask) < 10:
-            max_S = 1.0
+            max_S = torch.ones(1)
         else:
             max_S = torch.max(gt_S_gray[brightest_mask > 0.5])
         brightest = torch.zeros_like(brightest_mask)
