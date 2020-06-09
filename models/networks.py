@@ -158,6 +158,8 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGeneratorLastRelu(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256_latent':
         net = UnetGeneratorLatentOut(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif netG == 'unet_256_2decoder':
+        net = UnetGenerator2Decoder(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -555,6 +557,427 @@ class UnetGeneratorLatentOut(nn.Module):
     def forward(self, input):
         """Standard forward"""
         return self.model(input)
+
+class MultiUnetGenerator(nn.Module):
+	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
+				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+		super(MultiUnetGenerator, self).__init__()
+		self.gpu_ids = gpu_ids
+
+		# currently support only input_nc == output_nc
+		# assert(input_nc == output_nc)
+
+		# construct unet structure
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
+		for i in range(num_downs - 5):
+			unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
+		unet_block = MultiUnetSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
+
+		unet_block = MultiUnetSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
+
+		self.model = unet_block
+
+	def forward(self, input):
+		if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+			return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+		else:
+			return self.model(input)
+			# self.model(input)
+
+# Defines the submodule with skip connection.
+# X -------------------identity---------------------- X
+#   |-- downsampling -- |submodule| -- upsampling --|
+
+class MultiUnetGenerator(nn.Module):
+	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
+				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+		super(MultiUnetGenerator, self).__init__()
+		self.gpu_ids = gpu_ids
+
+		# currently support only input_nc == output_nc
+		# assert(input_nc == output_nc)
+
+		# construct unet structure
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
+		for i in range(num_downs - 5):
+			unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
+		unet_block = MultiUnetSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
+		unet_block = MultiUnetSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
+		unet_block = MultiUnetSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
+
+		self.model = unet_block
+
+	def forward(self, input):
+		if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+			return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+		else:
+			return self.model(input)
+			# self.model(input)
+
+# Defines the submodule with skip connection.
+# X -------------------identity---------------------- X
+#   |-- downsampling -- |submodule| -- upsampling --|
+class MultiUnetSkipConnectionBlock(nn.Module):
+	def __init__(self, outer_nc, inner_nc,
+				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
+		super(MultiUnetSkipConnectionBlock, self).__init__()
+		self.outermost = outermost
+		self.innermost = innermost
+		# print("we are in mutilUnet")
+		downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+							 stride=2, padding=1)
+		downrelu = nn.LeakyReLU(0.2, False)
+		downnorm = norm_layer(inner_nc, affine=True)
+		uprelu = nn.ReLU(False)
+		upnorm = norm_layer(outer_nc, affine=True)
+
+		if outermost:
+			n_output_dim = 3
+
+			down = [downconv]
+
+			upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
+										kernel_size=4, stride=2,
+										padding=1)]
+			upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 3,
+										kernel_size=4, stride=2,
+										padding=1)]
+
+		elif innermost:
+
+			down = [downrelu, downconv]
+			upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+										kernel_size=4, stride=2,
+										padding=1), norm_layer(outer_nc, affine=True)]
+			upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+										kernel_size=4, stride=2,
+										padding=1), norm_layer(outer_nc, affine=True)]
+			#  for rgb shading 
+			int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
+			fc = [nn.Linear(256, 3)]
+			self.int_conv = nn.Sequential(* int_conv) 
+			self.fc = nn.Sequential(* fc)
+		else:
+
+			down = [downrelu, downconv, downnorm]
+			up_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+										kernel_size=4, stride=2,
+										padding=1), norm_layer(outer_nc, affine=True)]
+			up_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+										kernel_size=4, stride=2,
+										padding=1), norm_layer(outer_nc, affine=True)]
+
+			if use_dropout:
+				upconv_model_1 = up_1 + [nn.Dropout(0.5)]
+				upconv_model_2 = up_2 + [nn.Dropout(0.5)]
+			else:
+				upconv_model_1 = up_1
+				upconv_model_2 = up_2
+		
+
+		self.downconv_model = nn.Sequential(*down)
+		self.submodule = submodule
+		self.upconv_model_1 = nn.Sequential(*upconv_model_1)
+		self.upconv_model_2 = nn.Sequential(*upconv_model_2)
+
+	def forward(self, x):
+
+		if self.outermost:
+			down_x = self.downconv_model(x)
+
+			y_1, y_2, color_s = self.submodule.forward(down_x)
+			y_1 = self.upconv_model_1(y_1)
+			y_2 = self.upconv_model_2(y_2)
+
+			return y_1, y_2, color_s
+
+		elif self.innermost:
+			down_output = self.downconv_model(x)
+			color_s = self.int_conv(down_output)
+			color_s = color_s.view(color_s.size(0), -1)
+			color_s  = self.fc(color_s)
+
+			y_1 = self.upconv_model_1(down_output)
+			y_2 = self.upconv_model_2(down_output)  
+			y_1 = torch.cat([y_1, x], 1)
+			y_2 = torch.cat([y_2, x], 1)
+
+
+			return y_1, y_2, color_s
+		else:
+			down_x = self.downconv_model(x)
+			y_1, y_2, color_s = self.submodule.forward(down_x)
+			y_1 = self.upconv_model_1(y_1)
+			y_2 = self.upconv_model_2(y_2)
+			y_1 = torch.cat([y_1, x], 1)
+			y_2 = torch.cat([y_2, x], 1)
+
+			return y_1, y_2, color_s
+
+
+class UnetGenerator2Decoder(nn.Module):
+    """Create a Unet-based generator (Out latent feature)"""
+
+    def __init__(self, input_nc, output_nc, num_downs, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
+        """Construct a Unet Latentout generator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            output_nc (int) -- the number of channels in output images
+            num_downs (int) -- the number of downsamplings in UNet. For example, # if |num_downs| == 7,
+                                image of size 128x128 will become of size 1x1 # at the bottleneck
+            ngf (int)       -- the number of filters in the last conv layer
+            norm_layer      -- normalization layer
+
+        We construct the U-Net from the innermost layer to the outermost layer.
+        It is a recursive process.
+        """
+        super(UnetGenerator2Decoder, self).__init__()
+        # construct unet structure
+        
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d        
+        # Down 128x128
+        layer = []
+        layer.append(nn.Conv2d(input_nc, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #128x128x64
+        self.down_128 = nn.Sequential(*layer)        
+
+        # Down 64x64
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #64x64x128
+        layer.append(norm_layer(ngf*2))
+        self.down_64 = nn.Sequential(*layer)  
+        
+        # Down 32x32
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*2, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*4))
+        self.down_32 = nn.Sequential(*layer)  
+
+        # Down 16x16
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*4, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        self.down_16 = nn.Sequential(*layer)  
+
+        # Down 8x8
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        self.down_8 = nn.Sequential(*layer)  
+
+        # Down 4x4
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        self.down_4 = nn.Sequential(*layer)  
+
+        # Down 2x2
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        self.down_2 = nn.Sequential(*layer)  
+
+        # Down 1x1
+        layer = []
+        layer.append(nn.LeakyReLU(0.2, False))
+        layer.append(nn.Conv2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        self.down_1 = nn.Sequential(*layer)  
+
+        # Up 2x2
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        self.up_2 = nn.Sequential(*layer)  
+
+        # Up 4x4
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_4 = nn.Sequential(*layer)  
+
+        # Up 4x4 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_4_cat = nn.Sequential(*layer)  
+
+        # Up 8x8
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_8 = nn.Sequential(*layer)  
+
+        # Up 8x8 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_8_cat = nn.Sequential(*layer)  
+
+        # Up 16x16
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_16 = nn.Sequential(*layer)  
+
+        # Up 16x16 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*8))
+        layer.append(nn.Dropout(0.5))
+        self.up_16_cat = nn.Sequential(*layer)  
+
+        # Up 32x32
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*4))
+        layer.append(nn.Dropout(0.5))
+        self.up_32 = nn.Sequential(*layer)  
+
+        # Up 32x32 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*16, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*4))
+        layer.append(nn.Dropout(0.5))
+        self.up_32_cat = nn.Sequential(*layer)  
+        
+        # Up 64x64
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*4, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*2))
+        layer.append(nn.Dropout(0.5))
+        self.up_64 = nn.Sequential(*layer)  
+
+        # Up 64x64 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*8, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf*2))
+        layer.append(nn.Dropout(0.5))
+        self.up_64_cat = nn.Sequential(*layer)  
+
+        # Up 128x128
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*2, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf))
+        layer.append(nn.Dropout(0.5))
+        self.up_128 = nn.Sequential(*layer)  
+
+        # Up 128x128 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*4, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(norm_layer(ngf))
+        layer.append(nn.Dropout(0.5))
+        self.up_128_cat = nn.Sequential(*layer)  
+
+        # Up 256x256
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf, 1, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(nn.Tanh())
+        self.up_256 = nn.Sequential(*layer)  
+
+        # Up 256x256 skip
+        layer = []
+        layer.append(nn.ReLU(False))
+        layer.append(nn.ConvTranspose2d(ngf*2, 3, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+        layer.append(nn.Tanh())
+        self.up_256_cat = nn.Sequential(*layer)  
+
+
+
+    def forward(self, input):
+        """Standard forward"""
+
+        # Common Encoder
+        d_128 = self.down_128(input)
+        d_64 = self.down_64(d_128)
+        d_32 = self.down_32(d_64)
+        d_16 = self.down_16(d_32)
+        d_8 = self.down_8(d_16)
+        d_4 = self.down_4(d_8)
+        d_2 = self.down_2(d_4)
+        d_1 = self.down_1(d_2)
+
+        # Reflectance Decoder with skip connection
+        R_2 = self.up_2(d_1)
+        R_4 = self.up_4_cat(torch.cat([d_2, R_2], 1))
+        R_8 = self.up_8_cat(torch.cat([d_4, R_4], 1))
+        R_16 = self.up_16_cat(torch.cat([d_8, R_8], 1))
+        R_32 = self.up_32_cat(torch.cat([d_16, R_16], 1))
+        R_64 = self.up_64_cat(torch.cat([d_32, R_32], 1))
+        R_128 = self.up_128_cat(torch.cat([d_64, R_64], 1))
+        R_256 = self.up_256_cat(torch.cat([d_128, R_128], 1))
+
+        # Shadowing Decoder with skip connection
+        S_2 = self.up_2(d_1)
+        S_4 = self.up_4_cat(torch.cat([d_2, S_2], 1))
+        S_8 = self.up_8_cat(torch.cat([d_4, S_4], 1))
+        S_16 = self.up_16_cat(torch.cat([d_8, S_8], 1))
+        S_32 = self.up_32_cat(torch.cat([d_16, S_16], 1))
+        S_64 = self.up_64_cat(torch.cat([d_32, S_32], 1))
+        S_128 = self.up_128_cat(torch.cat([d_64, S_64], 1))
+        S_256 = self.up_256_cat(torch.cat([d_128, S_128], 1))
+
+        # Brightest portion Decoder
+        x = self.up_2(d_1)
+        x = self.up_4(x)
+        x = self.up_8(x)
+        x = self.up_16(x)
+        x = self.up_32(x)
+        x = self.up_64(x)
+        x = self.up_128(x)
+        x = self.up_256(x)
+        output = torch.cat([R_256, S_256, x], 1)
+        # output = torch.cat([R_256, x], 1)
+        # output = R_256
+        # output = R_256, S_256, x
+
+        # x = self.down_128(input)
+        # x = self.down_64(x)
+        # x = self.down_32(x)
+        # x = self.down_16(x)
+        # x = self.down_8(x)
+        # x = self.down_4(x)
+        # x = self.down_2(x)
+        # x = self.down_1(x)
+        # x = self.up_2(x)
+        # x = self.up_4(x)
+        # x = self.up_8(x)
+        # x = self.up_16(x)
+        # x = self.up_32(x)
+        # x = self.up_64(x)
+        # x = self.up_128(x)
+        # output = self.up_256(x)
+        return output
+
 
 
 class UnetSkipConnectionBlock(nn.Module):
