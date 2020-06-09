@@ -1,11 +1,79 @@
 """This module contains simple helper functions """
 from __future__ import print_function
 import torch
+import torch.nn as nn
 import numpy as np
 from PIL import Image
 import os
 import matplotlib as plt
 import cv2
+from typing import Union
+import torchvision.transforms as transforms
+
+erosion = nn.MaxPool2d(5, stride=1, padding=2)
+
+def normalize_0p1_to_n1p1(grayscale=False):
+    transform_list = []
+    if grayscale:
+        transform_list += [transforms.Normalize((0.5,), (0.5,))]
+    else:
+        transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    return transforms.Compose(transform_list)
+
+def normalize_n1p1_to_0p1(grayscale=False):
+    transform_list = []
+    if grayscale:
+        transform_list += [transforms.Normalize((-1.0,), (2.0,))]
+    else:
+        transform_list += [transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))]
+    return transforms.Compose(transform_list)
+
+
+def percentile(t: torch.tensor, q: float) -> Union[int, float]:
+    """
+    Return the ``q``-th percentile of the flattened input tensor's data.
+    
+    CAUTION:
+     * Needs PyTorch >= 1.1.0, as ``torch.kthvalue()`` is used.
+     * Values are not interpolated, which corresponds to
+       ``numpy.percentile(..., interpolation="nearest")``.
+       
+    :param t: Input tensor.
+    :param q: Percentile to compute, which must be between 0 and 100 inclusive.
+    :return: Resulting value (scalar).
+    """
+    # Note that ``kthvalue()`` works one-based, i.e. the first sorted value
+    # indeed corresponds to k=1, not k=0! Use float(q) instead of q directly,
+    # so that ``round()`` returns an integer, even if q is a np.float32.
+    k = 1 + round(.01 * float(q) * (t.numel() - 1))
+    result = t.view(-1).kthvalue(k).values.item()
+    return result
+
+
+def calc_brightest_area(src, mask):
+    erosion = nn.MaxPool2d(5, stride=1, padding=2)
+
+    if torch.sum(mask) < 10:
+        brightest_point = 1.0
+    else:
+        brightest_point = percentile(src[mask > 0.5], 80)
+
+    brightest_mask = torch.zeros_like(mask)
+    brightest_mask[src >= brightest_point] = 1.0
+    brightest_mask = 1.0 - erosion(1.0-brightest_mask)
+    brightest_mask = erosion(brightest_mask)
+    brightest_mask = brightest_mask * mask
+            
+    if torch.sum(brightest_mask) < 10:
+        max_value = torch.ones(1)
+    else:
+        max_value = torch.max(src[brightest_mask > 0.5])
+    brightest = torch.zeros_like(brightest_mask)
+    brightest = torch.clamp((src - brightest_point) / torch.clamp(max_value - brightest_point, min=1e-6), min=0)
+    brightest = brightest * brightest_mask
+
+    return brightest, brightest_point
+
 
 # def tensor2im(input_image, imtype=np.uint8):
 def tensor2im(input_image, imtype=np.uint8, gain=1.0, ch=0):
