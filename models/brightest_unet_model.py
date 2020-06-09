@@ -54,7 +54,7 @@ class BrightestUnetModel(BaseModel):
             output = 1
         else:
             self.loss_names = ['G_R', 'G_S', 'G_BM']
-            self.visual_names = ['fake_I', 'real_I', 'fake_BM', 'real_BM', 'fake_R', 'real_R', 'fake_S', 'fake_I_R', 'real_S', 'mask']
+            self.visual_names = ['real_I', 'radiantest', 'fake_BM', 'real_BM', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
             output = opt.output_nc*2+1
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -89,6 +89,7 @@ class BrightestUnetModel(BaseModel):
         self.real_S = torch.squeeze(input['C'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BM = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
+        self.radiantest = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -120,8 +121,6 @@ class BrightestUnetModel(BaseModel):
             self.fake_R = fake_RSB[:,:self.opt.output_nc,:,:]
             self.fake_S = fake_RSB[:,self.opt.output_nc:self.opt.output_nc*2,:,:]
             self.fake_BM = fake_RSB[:,self.opt.output_nc*2:,:,:]
-            self.fake_I_R = self.calc_shading(self.real_I, self.fake_R, self.mask)
-            self.fake_I = self.fake_R + self.fake_S
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
