@@ -136,6 +136,7 @@ class BrightestUnetModel(BaseModel):
         self.loss_G.backward()
 
     def optimize_parameters(self):
+        # with torch.autograd.set_detect_anomaly(True):
         self.forward()                   # compute fake images: G(A)
         self.optimizer_G.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
