@@ -14,6 +14,22 @@ else:
     VisdomExceptionBase = ConnectionError
 
 
+def jet_on_image(src, visuals, mode='alpha'):
+    jet = cv2.applyColorMap(src, cv2.COLORMAP_JET)
+    jet = cv2.cvtColor(jet, cv2.COLOR_BGR2RGB)                
+    image = util.tensor2im(visuals['real_I'])
+    
+    if mode=='alpha':
+        alpha = 0.8
+        out = cv2.addWeighted(jet, alpha, image, 1 - alpha, 0)
+    else:
+        mask = np.zeros_like(src)
+        mask[src>25] = 1
+        invmask = 1 - mask
+        out = jet*mask + image*invmask
+    return out
+
+
 def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
     """Save images to the disk.
 
@@ -59,8 +75,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
             for label, im_data in visuals.items():
                 im = util.tensor2im(im_data, gain=gain, ch=c)
                 if label == 'fake_BM' or label == 'real_BM':
-                    im = cv2.applyColorMap(im, cv2.COLORMAP_JET)
-                    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+                    im = jet_on_image(im, visuals, mode='alpha')
                 image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
                 save_path = os.path.join(image_dir, image_name)
                 util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -72,8 +87,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
         for label, im_data in visuals.items():
             im = util.tensor2im(im_data, gain=gain)
             if label == 'fake_BM' or label == 'real_BM':
-                im = cv2.applyColorMap(im, cv2.COLORMAP_JET)
-                im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+                im = jet_on_image(im, visuals, mode='alpha')
             image_name = '%s_%s.png' % (name, label)
             save_path = os.path.join(image_dir, image_name)
             util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -162,8 +176,7 @@ class Visualizer():
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
                     if label == 'fake_BM' or label == 'real_BM':
-                        image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
-                        image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+                        image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
@@ -192,8 +205,7 @@ class Visualizer():
                     for label, image in visuals.items():
                         image_numpy = util.tensor2im(image)
                         if label == 'fake_BM' or label == 'real_BM':
-                            image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
-                            image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+                            image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                         self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                        win=self.display_id + idx)
                         idx += 1
@@ -206,15 +218,7 @@ class Visualizer():
             for label, image in visuals.items():
                 image_numpy = util.tensor2im(image)
                 if label == 'fake_BM' or label == 'real_BM':
-                    mask = np.zeros_like(image_numpy)
-                    mask[image_numpy>25] = 1
-                    invmask = 1 - mask
-                    image_numpy = cv2.applyColorMap(image_numpy, cv2.COLORMAP_JET)
-                    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)                
-                    image_org = util.tensor2im(visuals['real_I'])
-                    image_numpy = image_numpy*mask + image_org*invmask
-                    # alpha = 0.3
-                    # image_numpy = cv2.addWeighted(image_org, alpha, image_numpy, 1 - alpha, 0)
+                    image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)
 
