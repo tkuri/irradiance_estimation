@@ -795,11 +795,14 @@ class UnetGenerator2Decoder(nn.Module):
         self.down_1 = nn.Sequential(*layer)  
 
         # Up 2x2
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*8))
-        self.up_2 = nn.Sequential(*layer)  
+        up_2 = []
+        for i in range(3):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*8, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*8))
+            up_2.append(nn.Sequential(*layer))  
+        self.up_2 = nn.ModuleList(up_2)
 
         # Up 4x4
         layer = []
@@ -810,12 +813,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_4 = nn.Sequential(*layer)  
 
         # Up 4x4 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*8))
-        layer.append(nn.Dropout(0.5))
-        self.up_4_cat = nn.Sequential(*layer)  
+        up_4_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*8))
+            layer.append(nn.Dropout(0.5))
+            up_4_cat.append(nn.Sequential(*layer))  
+        self.up_4_cat = nn.ModuleList(up_4_cat)
 
         # Up 8x8
         layer = []
@@ -826,12 +832,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_8 = nn.Sequential(*layer)  
 
         # Up 8x8 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*8))
-        layer.append(nn.Dropout(0.5))
-        self.up_8_cat = nn.Sequential(*layer)  
+        up_8_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*8))
+            layer.append(nn.Dropout(0.5))
+            up_8_cat.append(nn.Sequential(*layer))  
+        self.up_8_cat = nn.ModuleList(up_8_cat)
 
         # Up 16x16
         layer = []
@@ -842,12 +851,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_16 = nn.Sequential(*layer)  
 
         # Up 16x16 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*8))
-        layer.append(nn.Dropout(0.5))
-        self.up_16_cat = nn.Sequential(*layer)  
+        up_16_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*8))
+            layer.append(nn.Dropout(0.5))
+            up_16_cat.append(nn.Sequential(*layer))  
+        self.up_16_cat = nn.ModuleList(up_16_cat)
 
         # Up 32x32
         layer = []
@@ -858,12 +870,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_32 = nn.Sequential(*layer)  
 
         # Up 32x32 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*16, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*4))
-        layer.append(nn.Dropout(0.5))
-        self.up_32_cat = nn.Sequential(*layer)  
+        up_32_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*16, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*4))
+            layer.append(nn.Dropout(0.5))
+            up_32_cat.append(nn.Sequential(*layer))  
+        self.up_32_cat = nn.ModuleList(up_32_cat)
         
         # Up 64x64
         layer = []
@@ -874,12 +889,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_64 = nn.Sequential(*layer)  
 
         # Up 64x64 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*8, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf*2))
-        layer.append(nn.Dropout(0.5))
-        self.up_64_cat = nn.Sequential(*layer)  
+        up_64_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*8, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf*2))
+            layer.append(nn.Dropout(0.5))
+            up_64_cat.append(nn.Sequential(*layer))  
+        self.up_64_cat = nn.ModuleList(up_64_cat)
 
         # Up 128x128
         layer = []
@@ -890,12 +908,15 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_128 = nn.Sequential(*layer)  
 
         # Up 128x128 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*4, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(ngf))
-        layer.append(nn.Dropout(0.5))
-        self.up_128_cat = nn.Sequential(*layer)  
+        up_128_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*4, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(norm_layer(ngf))
+            layer.append(nn.Dropout(0.5))
+            up_128_cat.append(nn.Sequential(*layer))  
+        self.up_128_cat = nn.ModuleList(up_128_cat)
 
         # Up 256x256
         layer = []
@@ -905,12 +926,14 @@ class UnetGenerator2Decoder(nn.Module):
         self.up_256 = nn.Sequential(*layer)  
 
         # Up 256x256 skip
-        layer = []
-        layer.append(nn.ReLU(False))
-        layer.append(nn.ConvTranspose2d(ngf*2, 3, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(nn.Tanh())
-        self.up_256_cat = nn.Sequential(*layer)  
-
+        up_256_cat = []
+        for i in range(2):
+            layer = []
+            layer.append(nn.ReLU(False))
+            layer.append(nn.ConvTranspose2d(ngf*2, 3, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(nn.Tanh())
+            up_256_cat.append(nn.Sequential(*layer))  
+        self.up_256_cat = nn.ModuleList(up_256_cat)
 
 
     def forward(self, input):
@@ -927,27 +950,27 @@ class UnetGenerator2Decoder(nn.Module):
         d_1 = self.down_1(d_2)
 
         # Reflectance Decoder with skip connection
-        R_2 = self.up_2(d_1)
-        R_4 = self.up_4_cat(torch.cat([d_2, R_2], 1))
-        R_8 = self.up_8_cat(torch.cat([d_4, R_4], 1))
-        R_16 = self.up_16_cat(torch.cat([d_8, R_8], 1))
-        R_32 = self.up_32_cat(torch.cat([d_16, R_16], 1))
-        R_64 = self.up_64_cat(torch.cat([d_32, R_32], 1))
-        R_128 = self.up_128_cat(torch.cat([d_64, R_64], 1))
-        R_256 = self.up_256_cat(torch.cat([d_128, R_128], 1))
+        R_2 = self.up_2[0](d_1)
+        R_4 = self.up_4_cat[0](torch.cat([d_2, R_2], 1))
+        R_8 = self.up_8_cat[0](torch.cat([d_4, R_4], 1))
+        R_16 = self.up_16_cat[0](torch.cat([d_8, R_8], 1))
+        R_32 = self.up_32_cat[0](torch.cat([d_16, R_16], 1))
+        R_64 = self.up_64_cat[0](torch.cat([d_32, R_32], 1))
+        R_128 = self.up_128_cat[0](torch.cat([d_64, R_64], 1))
+        R_256 = self.up_256_cat[0](torch.cat([d_128, R_128], 1))
 
         # Shadowing Decoder with skip connection
-        S_2 = self.up_2(d_1)
-        S_4 = self.up_4_cat(torch.cat([d_2, S_2], 1))
-        S_8 = self.up_8_cat(torch.cat([d_4, S_4], 1))
-        S_16 = self.up_16_cat(torch.cat([d_8, S_8], 1))
-        S_32 = self.up_32_cat(torch.cat([d_16, S_16], 1))
-        S_64 = self.up_64_cat(torch.cat([d_32, S_32], 1))
-        S_128 = self.up_128_cat(torch.cat([d_64, S_64], 1))
-        S_256 = self.up_256_cat(torch.cat([d_128, S_128], 1))
+        S_2 = self.up_2[1](d_1)
+        S_4 = self.up_4_cat[1](torch.cat([d_2, S_2], 1))
+        S_8 = self.up_8_cat[1](torch.cat([d_4, S_4], 1))
+        S_16 = self.up_16_cat[1](torch.cat([d_8, S_8], 1))
+        S_32 = self.up_32_cat[1](torch.cat([d_16, S_16], 1))
+        S_64 = self.up_64_cat[1](torch.cat([d_32, S_32], 1))
+        S_128 = self.up_128_cat[1](torch.cat([d_64, S_64], 1))
+        S_256 = self.up_256_cat[1](torch.cat([d_128, S_128], 1))
 
         # Brightest portion Decoder
-        x = self.up_2(d_1)
+        x = self.up_2[2](d_1)
         x = self.up_4(x)
         x = self.up_8(x)
         x = self.up_16(x)
