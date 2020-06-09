@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import skimage
 from skimage.restoration import denoise_tv_chambolle
+from util import util
 
 # import skimage
 # from skimage.morphology import square
@@ -375,33 +376,6 @@ from skimage.restoration import denoise_tv_chambolle
 #     data_loader = CGIntrinsics_DataLoader(_root, _list_dir)
 #     return data_loader
 
-
-from typing import Union
-
-import torch
-import numpy as np
-
-
-def percentile(t: torch.tensor, q: float) -> Union[int, float]:
-    """
-    Return the ``q``-th percentile of the flattened input tensor's data.
-    
-    CAUTION:
-     * Needs PyTorch >= 1.1.0, as ``torch.kthvalue()`` is used.
-     * Values are not interpolated, which corresponds to
-       ``numpy.percentile(..., interpolation="nearest")``.
-       
-    :param t: Input tensor.
-    :param q: Percentile to compute, which must be between 0 and 100 inclusive.
-    :return: Resulting value (scalar).
-    """
-    # Note that ``kthvalue()`` works one-based, i.e. the first sorted value
-    # indeed corresponds to k=1, not k=0! Use float(q) instead of q directly,
-    # so that ``round()`` returns an integer, even if q is a np.float32.
-    k = 1 + round(.01 * float(q) * (t.numel() - 1))
-    result = t.view(-1).kthvalue(k).values.item()
-    return result
-
 def make_dataset(list_dir, max_dataset_size=float("inf")):
     file_name = list_dir + "img_batch.p"
     images_list = pickle.load( open( file_name, "rb" ) )
@@ -446,8 +420,7 @@ class CGIntrinsicDataset(BaseDataset):
         
         # self.input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc
         # self.output_nc = self.opt.input_nc if self.opt.direction == 'BtoA' else self.opt.output_nc
-        self.erosion = nn.MaxPool2d(5, stride=1, padding=2)
-
+    
     def __getitem__(self, index):
         """Return a data point and its metadata information.
 
@@ -483,9 +456,11 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R = gt_R_transform(gt_R)
         mask = mask_transform(mask)
 
-        gt_S = srgb_img**2.2 / torch.clamp(gt_R, min=1e-6)
+        rgb_img = srgb_img**2.2
+        gt_S = rgb_img / torch.clamp(gt_R, min=1e-6)
 
         srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
+        rgb_img_gray = torch.mean(rgb_img, 0, keepdim=True)
         gt_R_gray = torch.mean(gt_R, 0, keepdim=True)
         gt_S_gray = torch.mean(gt_S, 0, keepdim=True)
 
@@ -498,35 +473,12 @@ class CGIntrinsicDataset(BaseDataset):
         mask[gt_S_gray < 1e-4] = 0
         gt_S[gt_S_gray.expand(gt_S.size()) < 1e-4] = 1e-4
 
-        mask = 1.0 - self.erosion(1.0-mask)
+        mask = 1.0 - util.erosion(1.0-mask)
 
-        if torch.sum(mask) < 10:
-            brightest_point = 1.0
-        else:
-            brightest_point = percentile(gt_S[mask.expand(gt_S.size()) > 0.5], 80)
-
-        brightest_mask = torch.zeros_like(mask)
-        brightest_mask[gt_S_gray >= brightest_point] = 1.0
-        brightest_mask = 1.0 - self.erosion(1.0-brightest_mask)
-        brightest_mask = self.erosion(brightest_mask)
-        brightest_mask = brightest_mask * mask
-                
-        # print('brightest_point:', brightest_point)
-
-        if torch.sum(brightest_mask) < 10:
-            max_S = torch.ones(1)
-        else:
-            max_S = torch.max(gt_S_gray[brightest_mask > 0.5])
-        brightest = torch.zeros_like(brightest_mask)
-        # brightest[gt_S_gray > brightest_point] = 1.0
-        brightest = torch.clamp((gt_S_gray - brightest_point) / torch.clamp(max_S - brightest_point, min=1e-6), min=0)
-        brightest = brightest * brightest_mask
+        brightest, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
+        radiantest, _ = util.calc_brightest_area(rgb_img_gray, mask)
 
         if self.opt.shading_norm:
-            # if torch.sum(mask) < 10:
-            #     max_S = 1.0
-            # else:
-            #     max_S = brightest_point
             gt_S = gt_S/brightest_point
 
         if irradiance < 0.25:
@@ -542,15 +494,17 @@ class CGIntrinsicDataset(BaseDataset):
         gt_S = normalize()(gt_S)
         mask = normalize(grayscale=True)(mask)
         brightest = normalize(grayscale=True)(brightest)
+        radiantest = normalize(grayscale=True)(radiantest)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
         gt_S = torch.unsqueeze(gt_S, 0)
         mask = torch.unsqueeze(mask, 0)
         brightest = torch.unsqueeze(brightest, 0)
+        radiantest = torch.unsqueeze(radiantest, 0)
         
         # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'A_paths': img_path}
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest, 'A_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest, 'F': radiantest, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
