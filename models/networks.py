@@ -814,7 +814,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 4x4 skip
         up_4_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -833,7 +833,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 8x8 skip
         up_8_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -852,7 +852,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 16x16 skip
         up_16_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*16, ngf*8, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -871,7 +871,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 32x32 skip
         up_32_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*16, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -890,7 +890,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 64x64 skip
         up_64_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*8, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -909,7 +909,7 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 128x128 skip
         up_128_cat = []
-        for i in range(2):
+        for i in range(3):
             layer = []
             layer.append(nn.ReLU(False))
             layer.append(nn.ConvTranspose2d(ngf*4, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
@@ -927,10 +927,11 @@ class UnetGenerator2Decoder(nn.Module):
 
         # Up 256x256 skip
         up_256_cat = []
-        for i in range(2):
+        for i in range(3):
+            outnc = 1 if i==2 else 3
             layer = []
             layer.append(nn.ReLU(False))
-            layer.append(nn.ConvTranspose2d(ngf*2, 3, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
+            layer.append(nn.ConvTranspose2d(ngf*2, outnc, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
             layer.append(nn.Tanh())
             up_256_cat.append(nn.Sequential(*layer))  
         self.up_256_cat = nn.ModuleList(up_256_cat)
@@ -970,15 +971,24 @@ class UnetGenerator2Decoder(nn.Module):
         S_256 = self.up_256_cat[1](torch.cat([d_128, S_128], 1))
 
         # Brightest portion Decoder
-        x = self.up_2[2](d_1)
-        x = self.up_4(x)
-        x = self.up_8(x)
-        x = self.up_16(x)
-        x = self.up_32(x)
-        x = self.up_64(x)
-        x = self.up_128(x)
-        x = self.up_256(x)
-        output = torch.cat([R_256, S_256, x], 1)
+        # x = self.up_2[2](d_1)
+        # x = self.up_4(x)
+        # x = self.up_8(x)
+        # x = self.up_16(x)
+        # x = self.up_32(x)
+        # x = self.up_64(x)
+        # x = self.up_128(x)
+        # x = self.up_256(x)
+        BM_2 = self.up_2[2](d_1)
+        BM_4 = self.up_4_cat[2](torch.cat([BM_2, S_2], 1))
+        BM_8 = self.up_8_cat[2](torch.cat([BM_4, S_4], 1))
+        BM_16 = self.up_16_cat[2](torch.cat([BM_8, S_8], 1))
+        BM_32 = self.up_32_cat[2](torch.cat([BM_16, S_16], 1))
+        BM_64 = self.up_64_cat[2](torch.cat([BM_32, S_32], 1))
+        BM_128 = self.up_128_cat[2](torch.cat([BM_64, S_64], 1))
+        BM_256 = self.up_256_cat[2](torch.cat([BM_128, S_128], 1))
+
+        output = torch.cat([R_256, S_256, BM_256], 1)
         # output = torch.cat([R_256, x], 1)
         # output = R_256
         # output = R_256, S_256, x
