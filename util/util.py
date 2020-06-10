@@ -10,6 +10,7 @@ import cv2
 from typing import Union
 import torchvision.transforms as transforms
 import torch.nn.functional as F
+import kornia.filters
 
 erosion = nn.MaxPool2d(5, stride=1, padding=2)
 
@@ -54,9 +55,22 @@ def percentile(t: torch.tensor, q: float) -> Union[int, float]:
 def calc_brightest_area(src, mask):
     erosion = nn.MaxPool2d(5, stride=1, padding=2)
 
-    src_numpy = tensor2im(torch.unsqueeze(src,0))
-    src_numpy = cv2.blur(src_numpy, (11,11))
-    src_blur = im2tensor(src_numpy, grayscale=True)
+    # conv_filter = torch.randn(1, 1, 5, 5)
+    # src = torch.unsqueeze(src,0)
+    # print('size src:', src.size())
+    # print('size filter:', conv_filter.size())
+    # # x = torch.randn(1, 3, 24, 24)
+    # src_blur = F.conv2d(src, conv_filter, padding=2)
+
+    # torch.squeeze(src_blur,0)
+
+    src = torch.unsqueeze(src,0)
+    # create the operator
+    gauss = kornia.filters.GaussianBlur2d((11, 11), (5, 5))
+
+    # blur the image
+    src_blur = gauss(src)
+    src_blur = torch.squeeze(src_blur, 0)
     
     if torch.sum(mask) < 10:
         brightest_point = 1.0
@@ -64,20 +78,19 @@ def calc_brightest_area(src, mask):
         brightest_point = percentile(src_blur[mask > 0.5], 80)
 
     brightest_mask = torch.zeros_like(mask)
-    brightest_mask[src >= brightest_point] = 1.0
+    brightest_mask[src_blur >= brightest_point] = 1.0
     # brightest_mask = 1.0 - erosion(1.0-brightest_mask)
     # brightest_mask = erosion(brightest_mask)
     brightest_mask = brightest_mask * mask
             
     if torch.sum(brightest_mask) < 10:
-        max_value = torch.ones(1)
+        max_value = torch.max(torch.ones_like(src_blur))
     else:
-        max_value = torch.max(src[brightest_mask > 0.5])
-    brightest = torch.zeros_like(brightest_mask)
-    brightest = torch.clamp((src_blur - brightest_point) / torch.clamp(max_value - brightest_point, min=1e-6), min=0)
-    brightest = brightest * brightest_mask
+        max_value = torch.max(src_blur[brightest_mask > 0.5])
+    brightest_area = torch.clamp((src_blur - brightest_point) / torch.clamp(max_value - brightest_point, min=1e-6), min=0)
+    brightest_area = brightest_area * brightest_mask
 
-    return brightest, brightest_point
+    return brightest_area, brightest_point
 
 def im2tensor(input_numpy, grayscale=False):
     img = input_numpy.astype(np.float32)/255.0
