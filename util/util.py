@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 import torch.nn.functional as F
 import kornia.filters
 
-erosion = nn.MaxPool2d(5, stride=1, padding=2)
+erosion = nn.MaxPool2d(11, stride=1, padding=5)
 
 def normalize_0p1_to_n1p1(grayscale=False):
     transform_list = []
