@@ -9,6 +9,7 @@ import matplotlib as plt
 import cv2
 from typing import Union
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 
 erosion = nn.MaxPool2d(5, stride=1, padding=2)
 
@@ -53,15 +54,19 @@ def percentile(t: torch.tensor, q: float) -> Union[int, float]:
 def calc_brightest_area(src, mask):
     erosion = nn.MaxPool2d(5, stride=1, padding=2)
 
+    src_numpy = tensor2im(torch.unsqueeze(src,0))
+    src_numpy = cv2.blur(src_numpy, (11,11))
+    src_blur = im2tensor(src_numpy, grayscale=True)
+    
     if torch.sum(mask) < 10:
         brightest_point = 1.0
     else:
-        brightest_point = percentile(src[mask > 0.5], 80)
+        brightest_point = percentile(src_blur[mask > 0.5], 80)
 
     brightest_mask = torch.zeros_like(mask)
     brightest_mask[src >= brightest_point] = 1.0
-    brightest_mask = 1.0 - erosion(1.0-brightest_mask)
-    brightest_mask = erosion(brightest_mask)
+    # brightest_mask = 1.0 - erosion(1.0-brightest_mask)
+    # brightest_mask = erosion(brightest_mask)
     brightest_mask = brightest_mask * mask
             
     if torch.sum(brightest_mask) < 10:
@@ -74,6 +79,17 @@ def calc_brightest_area(src, mask):
 
     return brightest, brightest_point
 
+def im2tensor(input_numpy, grayscale=False):
+    img = input_numpy.astype(np.float32)/255.0
+    transform_list = []
+    transform_list += [transforms.ToTensor()]
+    if grayscale:
+        transform_list += [transforms.Normalize((0.5,), (0.5,))]
+    else:
+        transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    
+    image_tensor = transforms.Compose(transform_list)(img)
+    return image_tensor
 
 # def tensor2im(input_image, imtype=np.uint8):
 def tensor2im(input_image, imtype=np.uint8, gain=1.0, ch=0):
