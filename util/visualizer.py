@@ -35,8 +35,8 @@ def calc_bm_shading(visuals):
 
 def mask_on_image(src, visuals):
     mask = util.tensor2im(visuals['mask'])
-    src = src * mask
-    return src
+    src = src * mask/255.0
+    return src.astype(np.uint8)
 
 
 def jet_on_image(src, visuals, mode='alpha'):
