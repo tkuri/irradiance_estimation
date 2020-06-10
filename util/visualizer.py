@@ -35,7 +35,7 @@ def calc_bm_shading(visuals):
 
 def mask_on_image(src, visuals):
     mask = util.tensor2im(visuals['mask'])
-    src = src * mask/255.0
+    src = src.astype(np.float32) * mask.astype(np.float32) / 255.0
     return src.astype(np.uint8)
 
 
