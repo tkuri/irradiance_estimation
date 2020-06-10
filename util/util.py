@@ -74,7 +74,7 @@ def calc_brightest_area(src, mask):
     else:
         max_value = torch.max(src[brightest_mask > 0.5])
     brightest = torch.zeros_like(brightest_mask)
-    brightest = torch.clamp((src - brightest_point) / torch.clamp(max_value - brightest_point, min=1e-6), min=0)
+    brightest = torch.clamp((src_blur - brightest_point) / torch.clamp(max_value - brightest_point, min=1e-6), min=0)
     brightest = brightest * brightest_mask
 
     return brightest, brightest_point
