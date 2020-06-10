@@ -50,7 +50,7 @@ def jet_on_image(src, visuals, mode='alpha'):
     return out
 
 
-def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
+def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25, disp_bm_shading=False):
     """Save images to the disk.
 
     Parameters:
@@ -89,7 +89,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
     #         links.append(image_name)
     # webpage.add_images(ims, txts, links, width=width)
 
-    if self.opt.disp_bm_shading:
+    if disp_bm_shading:
         visuals = calc_bm_shading(visuals)
 
     if multi == True:
