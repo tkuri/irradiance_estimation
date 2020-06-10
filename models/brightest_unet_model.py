@@ -71,7 +71,12 @@ class BrightestUnetModel(BaseModel):
 
         if self.isTrain:
             # define loss functions
-            self.criterionL1 = torch.nn.L1Loss()
+            # self.criterionR = torch.nn.L1Loss()
+            # self.criterionS = torch.nn.L1Loss()
+            # self.criterionBM = torch.nn.L1Loss()
+            self.criterionR = torch.nn.MSELoss()
+            self.criterionS = torch.nn.MSELoss()
+            self.criterionBM = torch.nn.MSELoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
@@ -126,11 +131,11 @@ class BrightestUnetModel(BaseModel):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         if self.opt.netG_dec==1:
-            self.loss_G = self.criterionL1(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
+            self.loss_G = self.criterionBM(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
         else:
-            self.loss_G_R = self.criterionL1(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
-            self.loss_G_S = self.criterionL1(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
-            self.loss_G_BM = self.criterionL1(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
+            self.loss_G_R = self.criterionR(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
+            self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
+            self.loss_G_BM = self.criterionBM(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
             self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BM
         self.loss_G.backward()
 
