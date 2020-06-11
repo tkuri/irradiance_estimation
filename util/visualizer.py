@@ -16,20 +16,32 @@ else:
     VisdomExceptionBase = ConnectionError
 
 
-def calc_bm_shading(visuals):
-    img = torch.squeeze(visuals['fake_S'], 0)
+def calc_brightest_portions(visuals, shading=True):
+    if shading:
+        name = 'fake_S'
+        disp = 'shading'
+        insert_idx = (2, 6)
+    else:
+        name = 'real_I'
+        disp = 'radiance'
+        insert_idx = (1, 4)        
+    img = torch.squeeze(visuals[name], 0)
     mask = torch.squeeze(visuals['mask'], 0)
 
     img_gray = torch.mean(img, 0, keepdim=True)
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
     mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
     brightest_area, _ = util.calc_brightest_area(img_gray, mask)
+    brightest_pixel = util.calc_brightest_pixel(brightest_area)
 
-    brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest)
+    brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_area)
     brightest_area = torch.unsqueeze(brightest_area, 0)
+    brightest_pixel = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_pixel)
+    brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
 
     tmp = list(visuals.items())
-    tmp.insert(2, ('BA_shading', brightest))
+    tmp.insert(insert_idx[0], ('BA_{}'.format(disp), brightest_area))
+    tmp.insert(insert_idx[1], ('BP_{}'.format(disp), brightest_pixel))
     added_vis = OrderedDict(tmp)
     return added_vis
 
@@ -95,7 +107,8 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
     # webpage.add_images(ims, txts, links, width=width)
 
     if disp_bm_shading:
-        visuals = calc_bm_shading(visuals)
+        visuals = calc_brightest_portions(visuals, False) # GT Radiance
+        visuals = calc_brightest_portions(visuals, True) # Est irradiance 
 
     if multi == True:
         for c in range(multi_ch):
@@ -104,7 +117,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
                 im = util.tensor2im(im_data, gain=gain, ch=c)
                 if label == 'fake_BA':
                     im = mask_on_image(im, visuals)
-                if label == 'fake_BA' or label == 'real_BA' or label=='radiantest' or label=='BA_shading':
+                if label == 'fake_BA' or label == 'real_BA' or label == 'fake_BP' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
                     im = jet_on_image(im, visuals, mode='alpha')
                 image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
                 save_path = os.path.join(image_dir, image_name)
@@ -118,7 +131,7 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
             im = util.tensor2im(im_data, gain=gain)
             if label == 'fake_BA':
                 im = mask_on_image(im, visuals)
-            if label == 'fake_BA' or label == 'real_BA' or label=='radiantest' or label=='BA_shading':
+            if label == 'fake_BA' or label == 'real_BA' or label == 'fake_BP' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
                 im = jet_on_image(im, visuals, mode='alpha')
             image_name = '%s_%s.png' % (name, label)
             save_path = os.path.join(image_dir, image_name)
@@ -191,7 +204,8 @@ class Visualizer():
             save_result (bool) - - if save the current results to an HTML file
         """
         if self.opt.disp_bm_shading:
-            visuals = calc_bm_shading(visuals)
+            visuals = calc_brightest_portions(visuals, False) # GT Radiance
+            visuals = calc_brightest_portions(visuals, True) # Est irradiance 
             
         if self.display_id > 0:  # show images in the browser using visdom
             ncols = self.ncols
@@ -212,7 +226,7 @@ class Visualizer():
                     image_numpy = util.tensor2im(image)
                     if label == 'fake_BA':
                         image_numpy = mask_on_image(image_numpy, visuals)
-                    if label == 'fake_BA' or label == 'real_BA' or label=='radiantest' or label=='BA_shading':
+                    if label == 'fake_BA' or label == 'real_BA' or label == 'fake_BP' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
                         image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
@@ -243,7 +257,7 @@ class Visualizer():
                         image_numpy = util.tensor2im(image)
                         if label == 'fake_BA':
                             image_numpy = mask_on_image(image_numpy, visuals)
-                        if label == 'fake_BA' or label == 'real_BA' or label=='radiantest' or label=='BA_shading':
+                        if label == 'fake_BA' or label == 'real_BA' or label == 'fake_BP' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
                             image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                         self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                        win=self.display_id + idx)
@@ -258,7 +272,7 @@ class Visualizer():
                 image_numpy = util.tensor2im(image)
                 if label == 'fake_BA':
                     image_numpy = mask_on_image(image_numpy, visuals)
-                if label == 'fake_BA' or label == 'real_BA' or label=='radiantest' or label=='BA_shading':
+                if label == 'fake_BA' or label == 'real_BA' or label == 'fake_BP' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
                     image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)

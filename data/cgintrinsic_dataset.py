@@ -477,7 +477,7 @@ class CGIntrinsicDataset(BaseDataset):
 
         brightest_area, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
         brightest_pixel = util.calc_brightest_pixel(brightest_area)
-        radiantest, _ = util.calc_brightest_area(rgb_img_gray, mask)
+        # radiantest, _ = util.calc_brightest_area(rgb_img_gray, mask)
 
         if self.opt.shading_norm:
             gt_S = gt_S/brightest_point
@@ -496,7 +496,7 @@ class CGIntrinsicDataset(BaseDataset):
         mask = normalize(grayscale=True)(mask)
         brightest_area = normalize(grayscale=True)(brightest_area)
         brightest_pixel = normalize(grayscale=True)(brightest_pixel)
-        radiantest = normalize(grayscale=True)(radiantest)
+        # radiantest = normalize(grayscale=True)(radiantest)
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
         gt_R = torch.unsqueeze(gt_R, 0)
@@ -504,10 +504,10 @@ class CGIntrinsicDataset(BaseDataset):
         mask = torch.unsqueeze(mask, 0)
         brightest_area = torch.unsqueeze(brightest_area, 0)
         brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
-        radiantest = torch.unsqueeze(radiantest, 0)
+        # radiantest = torch.unsqueeze(radiantest, 0)
         
-        # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'A_paths': img_path}
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_area, 'G': radiantest, 'A_paths': img_path}
+        # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_area, 'G': radiantest, 'A_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_pixel, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.

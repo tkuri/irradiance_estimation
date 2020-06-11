@@ -82,9 +82,10 @@ def calc_brightest_pixel(brightest_area):
     brightest_pixel[brightest_area>=torch.max(brightest_area)] = 1.0
 
     # blur the image
-    brightest_pixel = torch.unsqueeze(brightest_pixel,0)
-    gauss = kornia.filters.GaussianBlur2d((5, 5), (2, 2))
+    brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
+    gauss = kornia.filters.GaussianBlur2d((31, 31), (5, 5))
     brightest_pixel = gauss(brightest_pixel)
+    brightest_pixel = brightest_pixel / torch.clamp(torch.max(brightest_pixel), min=1e-6)
     brightest_pixel = torch.squeeze(brightest_pixel, 0)
     
     return brightest_pixel

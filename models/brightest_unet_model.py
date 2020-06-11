@@ -36,7 +36,8 @@ class BrightestUnetModel(BaseModel):
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
             parser.add_argument('--lambda_R', type=float, default=1.0, help='weight for Reflection loss')
-            parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest loss')
+            parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
+            parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
 
         return parser
 
@@ -53,8 +54,8 @@ class BrightestUnetModel(BaseModel):
             self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'mask']
             output = 1
         else:
-            self.loss_names = ['G_R', 'G_S', 'G_BM']
-            self.visual_names = ['real_I', 'radiantest', 'fake_BA', 'real_BA', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
+            self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP']
+            self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'fake_BP', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
             output = opt.output_nc*2+1
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -73,10 +74,11 @@ class BrightestUnetModel(BaseModel):
             # define loss functions
             # self.criterionR = torch.nn.L1Loss()
             # self.criterionS = torch.nn.L1Loss()
-            # self.criterionBM = torch.nn.L1Loss()
+            # self.criterionBA = torch.nn.L1Loss()
             self.criterionR = torch.nn.MSELoss()
             self.criterionS = torch.nn.MSELoss()
-            self.criterionBM = torch.nn.MSELoss()
+            self.criterionBA = torch.nn.MSELoss()
+            self.criterionBP = torch.nn.MSELoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
@@ -95,7 +97,6 @@ class BrightestUnetModel(BaseModel):
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BA = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BP = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
-        self.radiantest = torch.squeeze(input['G'],0).to(self.device) # [bn, 1, 256, 256]
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -126,18 +127,20 @@ class BrightestUnetModel(BaseModel):
             fake_RSB = self.netG(self.real_I)  # G(A)
             self.fake_R = fake_RSB[:,:self.opt.output_nc,:,:]
             self.fake_S = fake_RSB[:,self.opt.output_nc:self.opt.output_nc*2,:,:]
-            self.fake_BA = fake_RSB[:,self.opt.output_nc*2:,:,:]
+            self.fake_BA = fake_RSB[:,-2:-1,:,:]
+            self.fake_BP = fake_RSB[:,-1:,:,:]
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         if self.opt.netG_dec==1:
-            self.loss_G = self.criterionBM(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
+            self.loss_G = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         else:
             self.loss_G_R = self.criterionR(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
             self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
-            self.loss_G_BM = self.criterionBM(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
-            self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BM
+            self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
+            self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP
+            self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
         self.loss_G.backward()
 
     def optimize_parameters(self):
