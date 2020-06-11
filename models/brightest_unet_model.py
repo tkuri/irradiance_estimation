@@ -36,7 +36,7 @@ class BrightestUnetModel(BaseModel):
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
             parser.add_argument('--lambda_R', type=float, default=1.0, help='weight for Reflection loss')
-            parser.add_argument('--lambda_BM', type=float, default=1.0, help='weight for Brightest loss')
+            parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest loss')
 
         return parser
 
@@ -50,11 +50,11 @@ class BrightestUnetModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         if opt.netG_dec==1:
             self.loss_names = ['G']
-            self.visual_names = ['real_I', 'fake_BM', 'real_BM', 'mask']
+            self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'mask']
             output = 1
         else:
             self.loss_names = ['G_R', 'G_S', 'G_BM']
-            self.visual_names = ['real_I', 'radiantest', 'fake_BM', 'real_BM', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
+            self.visual_names = ['real_I', 'radiantest', 'fake_BA', 'real_BA', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
             output = opt.output_nc*2+1
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -93,8 +93,9 @@ class BrightestUnetModel(BaseModel):
         self.real_R = torch.squeeze(input['B'],0).to(self.device) # [bn, 3, 256, 256]
         self.real_S = torch.squeeze(input['C'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 1, 256, 256]
-        self.real_BM = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
-        self.radiantest = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
+        self.real_BA = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
+        self.real_BP = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
+        self.radiantest = torch.squeeze(input['G'],0).to(self.device) # [bn, 1, 256, 256]
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -120,22 +121,22 @@ class BrightestUnetModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         if self.opt.netG_dec==1:
-            self.fake_BM = self.netG(self.real_I)  # G(A)
+            self.fake_BA = self.netG(self.real_I)  # G(A)
         else:
             fake_RSB = self.netG(self.real_I)  # G(A)
             self.fake_R = fake_RSB[:,:self.opt.output_nc,:,:]
             self.fake_S = fake_RSB[:,self.opt.output_nc:self.opt.output_nc*2,:,:]
-            self.fake_BM = fake_RSB[:,self.opt.output_nc*2:,:,:]
+            self.fake_BA = fake_RSB[:,self.opt.output_nc*2:,:,:]
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         if self.opt.netG_dec==1:
-            self.loss_G = self.criterionBM(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
+            self.loss_G = self.criterionBM(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         else:
             self.loss_G_R = self.criterionR(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
             self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
-            self.loss_G_BM = self.criterionBM(self.fake_BM*mask, self.real_BM*mask) * self.opt.lambda_BM
+            self.loss_G_BM = self.criterionBM(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
             self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BM
         self.loss_G.backward()
 

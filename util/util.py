@@ -53,22 +53,9 @@ def percentile(t: torch.tensor, q: float) -> Union[int, float]:
 
 
 def calc_brightest_area(src, mask):
-    erosion = nn.MaxPool2d(5, stride=1, padding=2)
-
-    # conv_filter = torch.randn(1, 1, 5, 5)
-    # src = torch.unsqueeze(src,0)
-    # print('size src:', src.size())
-    # print('size filter:', conv_filter.size())
-    # # x = torch.randn(1, 3, 24, 24)
-    # src_blur = F.conv2d(src, conv_filter, padding=2)
-
-    # torch.squeeze(src_blur,0)
-
-    src = torch.unsqueeze(src,0)
-    # create the operator
-    gauss = kornia.filters.GaussianBlur2d((11, 11), (5, 5))
-
     # blur the image
+    src = torch.unsqueeze(src,0)
+    gauss = kornia.filters.GaussianBlur2d((11, 11), (5, 5))
     src_blur = gauss(src)
     src_blur = torch.squeeze(src_blur, 0)
     
@@ -79,8 +66,6 @@ def calc_brightest_area(src, mask):
 
     brightest_mask = torch.zeros_like(mask)
     brightest_mask[src_blur >= brightest_point] = 1.0
-    # brightest_mask = 1.0 - erosion(1.0-brightest_mask)
-    # brightest_mask = erosion(brightest_mask)
     brightest_mask = brightest_mask * mask
             
     if torch.sum(brightest_mask) < 10:
@@ -91,6 +76,19 @@ def calc_brightest_area(src, mask):
     brightest_area = brightest_area * brightest_mask
 
     return brightest_area, brightest_point
+
+def calc_brightest_pixel(brightest_area):
+    brightest_pixel = torch.zeros_like(brightest_area)
+    brightest_pixel[brightest_area>=torch.max(brightest_area)] = 1.0
+
+    # blur the image
+    brightest_pixel = torch.unsqueeze(brightest_pixel,0)
+    gauss = kornia.filters.GaussianBlur2d((5, 5), (2, 2))
+    brightest_pixel = gauss(brightest_pixel)
+    brightest_pixel = torch.squeeze(brightest_pixel, 0)
+    
+    return brightest_pixel
+
 
 def im2tensor(input_numpy, grayscale=False):
     img = input_numpy.astype(np.float32)/255.0
