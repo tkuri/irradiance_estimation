@@ -31,7 +31,7 @@ class BrightestResnetModel(BaseModel):
         """
         # changing the default values to match the pix2pix paper (https://phillipi.github.io/pix2pix/)
         parser.set_defaults(norm='batch', netG='unet_256', dataset_mode='aligned')
-        parser.add_argument('--netG_dec', type=int, default='1', help='The number of generator output')
+        parser.add_argument('--joint_enc', action='store_true', help='joint encoder')
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
@@ -53,8 +53,8 @@ class BrightestResnetModel(BaseModel):
         self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'fake_BP', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
-        if self.isTrain:
-            self.model_names = ['G1', 'G2', 'G3']
+        if opt.joint_enc:
+            self.model_names = ['G1', 'G2']
         else:  # during test time, only load G
             self.model_names = ['G1', 'G2', 'G3']
         # define networks (both generator and discriminator)
@@ -65,10 +65,14 @@ class BrightestResnetModel(BaseModel):
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG1 = networks.define_G(opt.input_nc, 3, opt.ngf, 'unet_256_multi', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG3 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        if opt.joint_enc:
+            self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        else:
+            self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+            self.netG3 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:
             # define loss functions
@@ -79,10 +83,11 @@ class BrightestResnetModel(BaseModel):
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G1 = torch.optim.Adam(self.netG1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_G3 = torch.optim.Adam(self.netG3.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G1)
             self.optimizers.append(self.optimizer_G2)
-            self.optimizers.append(self.optimizer_G3)
+            if not opt.joint_enc:
+                self.optimizer_G3 = torch.optim.Adam(self.netG3.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizers.append(self.optimizer_G3)
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -128,8 +133,11 @@ class BrightestResnetModel(BaseModel):
         fake_S = fake_S.repeat(1, 3, 1, 1)
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.fake_S = fake_S * color
-        self.fake_BA = self.netG2(self.real_I)
-        self.fake_BP = self.netG3(self.real_I)
+        if self.opt.joint_enc:
+            self.fake_BA, self.fake_BP = self.netG2(self.real_I)
+        else:
+            self.fake_BA = self.netG2(self.real_I)
+            self.fake_BP = self.netG3(self.real_I)
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
@@ -146,8 +154,10 @@ class BrightestResnetModel(BaseModel):
         self.forward()                   # compute fake images: G(A)
         self.optimizer_G1.zero_grad()        # set G's gradients to zero
         self.optimizer_G2.zero_grad()        # set G's gradients to zero
-        self.optimizer_G3.zero_grad()        # set G's gradients to zero
+        if not self.opt.joint_enc:
+            self.optimizer_G3.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
         self.optimizer_G1.step()             # udpate G's weights
         self.optimizer_G2.step()             # udpate G's weights
-        self.optimizer_G3.step()             # udpate G's weights
+        if not self.opt.joint_enc:
+            self.optimizer_G3.step()             # udpate G's weights
