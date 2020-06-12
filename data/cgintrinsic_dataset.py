@@ -476,7 +476,7 @@ class CGIntrinsicDataset(BaseDataset):
         mask = 1.0 - util.erosion(1.0-mask)
 
         brightest_area, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
-        brightest_pixel = util.calc_brightest_pixel(brightest_area)
+        brightest_pixel = util.calc_brightest_pixel(brightest_area, self.opt.brightest_sigma)
         # radiantest, _ = util.calc_brightest_area(rgb_img_gray, mask)
 
         if self.opt.shading_norm:

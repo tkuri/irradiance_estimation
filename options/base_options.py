@@ -66,7 +66,8 @@ class BaseOptions():
         parser.add_argument('--result_gain', type=float, default='1.0', help='gain of result images')
         parser.add_argument('--reg_mode', type=str, default='full', help='Regularization Mode [full | sub]')
         parser.add_argument('--shading_norm', action='store_true', help='max 90% normalized shading')
-        parser.add_argument('--disp_bm_shading', action='store_true', help='display brightest from shading estimation.')
+        parser.add_argument('--disp_brighest_info', action='store_true', help='display brightest area and pixel from shading estimation and radiance.')
+        parser.add_argument('--brightest_sigma', type=float, default=5.0, help='sigma of gaussian filter to calculate brighest point.')
 
         self.initialized = True
         return parser

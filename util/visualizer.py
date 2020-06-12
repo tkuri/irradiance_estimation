@@ -16,7 +16,7 @@ else:
     VisdomExceptionBase = ConnectionError
 
 
-def calc_brightest_portions(visuals, shading=True):
+def calc_brightest_portions(visuals, shading=True, brightest_sigma=5.0):
     if shading:
         name = 'fake_S'
         disp = 'shading'
@@ -32,7 +32,7 @@ def calc_brightest_portions(visuals, shading=True):
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
     mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
     brightest_area, _ = util.calc_brightest_area(img_gray, mask)
-    brightest_pixel = util.calc_brightest_pixel(brightest_area)
+    brightest_pixel = util.calc_brightest_pixel(brightest_area, brightest_sigma)
 
     brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_area)
     brightest_area = torch.unsqueeze(brightest_area, 0)
@@ -52,7 +52,8 @@ def mask_on_image(src, visuals):
 
 
 def jet_on_image(src, visuals, mode='alpha'):
-    jet = cv2.applyColorMap(src, cv2.COLORMAP_JET)
+    # jet = cv2.applyColorMap(src, cv2.COLORMAP_JET)
+    jet = cv2.applyColorMap(src, cv2.COLORMAP_TURBO)
     jet = cv2.cvtColor(jet, cv2.COLOR_BGR2RGB)                
     image = util.tensor2im(visuals['real_I'])
     
@@ -67,7 +68,7 @@ def jet_on_image(src, visuals, mode='alpha'):
     return out
 
 
-def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25, disp_bm_shading=False):
+def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
     """Save images to the disk.
 
     Parameters:
@@ -106,9 +107,9 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256, gain=
     #         links.append(image_name)
     # webpage.add_images(ims, txts, links, width=width)
 
-    if disp_bm_shading:
-        visuals = calc_brightest_portions(visuals, False) # GT Radiance
-        visuals = calc_brightest_portions(visuals, True) # Est irradiance 
+    if opt.disp_brighest_info:
+        visuals = calc_brightest_portions(visuals, False, opt.brightest_sigma) # GT Radiance
+        visuals = calc_brightest_portions(visuals, True,  opt.brightest_sigma) # Est irradiance 
 
     if multi == True:
         for c in range(multi_ch):
@@ -203,9 +204,9 @@ class Visualizer():
             epoch (int) - - the current epoch
             save_result (bool) - - if save the current results to an HTML file
         """
-        if self.opt.disp_bm_shading:
-            visuals = calc_brightest_portions(visuals, False) # GT Radiance
-            visuals = calc_brightest_portions(visuals, True) # Est irradiance 
+        if self.opt.disp_brighest_info:
+            visuals = calc_brightest_portions(visuals, False, self.opt.brightest_sigma) # GT Radiance
+            visuals = calc_brightest_portions(visuals, True,  self.opt.brightest_sigma) # Est irradiance 
             
         if self.display_id > 0:  # show images in the browser using visdom
             ncols = self.ncols
