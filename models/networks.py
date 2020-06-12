@@ -156,8 +156,8 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256_lastrelu':
         net = UnetGeneratorLastRelu(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
-    elif netG == 'unet_256_latent':
-        net = UnetGeneratorLatentOut(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif netG == 'unet_256_multi':
+        net = MultiUnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256_2decoder':
         net = UnetGenerator2Decoder(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     else:
@@ -501,91 +501,6 @@ class UnetGeneratorLastRelu(nn.Module):
         """Standard forward"""
         return self.model(input)
 
-class UnetGeneratorLatentOut(nn.Module):
-    """Create a Unet-based generator (Out latent feature)"""
-
-    def __init__(self, input_nc, output_nc, num_downs, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
-        """Construct a Unet Latentout generator
-        Parameters:
-            input_nc (int)  -- the number of channels in input images
-            output_nc (int) -- the number of channels in output images
-            num_downs (int) -- the number of downsamplings in UNet. For example, # if |num_downs| == 7,
-                                image of size 128x128 will become of size 1x1 # at the bottleneck
-            ngf (int)       -- the number of filters in the last conv layer
-            norm_layer      -- normalization layer
-
-        We construct the U-Net from the innermost layer to the outermost layer.
-        It is a recursive process.
-        """
-        super(UnetGeneratorLatentOut, self).__init__()
-        # construct unet structure
-        
-        if type(norm_layer) == functools.partial:
-            use_bias = norm_layer.func == nn.InstanceNorm2d
-        else:
-            use_bias = norm_layer == nn.InstanceNorm2d        
-        layer = []
-        # 128x128
-        layer.append(nn.Conv2d(input_nc, ngf, kernel_size=4,stride=2, padding=1, bias=use_bias)) #128x128x64
-
-        # 64x64
-        layer.append(nn.LeakyReLU(0.2, True))
-        layer.append(nn.Conv2d(ngf, ngf*2, kernel_size=4,stride=2, padding=1, bias=use_bias)) #64x64x128
-        layer.append(norm_layer(ngf*2))
-        layer.append(nn.Dropout(0.5))
-
-        # 32x32 out
-        layer.append(nn.LeakyReLU(0.2, True))
-        layer.append(nn.Conv2d(ngf*2, output_nc, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        layer.append(norm_layer(output_nc))
-        
-        # 32x32
-        # layer.append(nn.LeakyReLU(0.2, True))
-        # layer.append(nn.Conv2d(ngf*2, ngf*4, kernel_size=4,stride=2, padding=1, bias=use_bias)) #32x32x256
-        # layer.append(norm_layer(ngf*4))
-        # layer.append(nn.Dropout(0.5))
-
-        # 16x16
-        # layer.append(nn.LeakyReLU(0.2, True))
-        # layer.append(nn.Conv2d(ngf*4, output_nc, kernel_size=4,stride=2, padding=1, bias=use_bias)) #16x16x512
-        # layer.append(norm_layer(output_nc))
-
-        layer.append(nn.ReLU())
-
-        self.model = nn.Sequential(*layer)        
-        
-    def forward(self, input):
-        """Standard forward"""
-        return self.model(input)
-
-class MultiUnetGenerator(nn.Module):
-	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
-				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
-		super(MultiUnetGenerator, self).__init__()
-		self.gpu_ids = gpu_ids
-
-		# currently support only input_nc == output_nc
-		# assert(input_nc == output_nc)
-
-		# construct unet structure
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
-		for i in range(num_downs - 5):
-			unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
-		unet_block = MultiUnetSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
-
-		unet_block = MultiUnetSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
-
-		self.model = unet_block
-
-	def forward(self, input):
-		if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
-			return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
-		else:
-			return self.model(input)
-			# self.model(input)
-
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
@@ -611,10 +526,11 @@ class MultiUnetGenerator(nn.Module):
 		self.model = unet_block
 
 	def forward(self, input):
-		if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
-			return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
-		else:
-			return self.model(input)
+		return self.model(input)
+		# if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+		# 	return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+		# else:
+		# 	return self.model(input)
 			# self.model(input)
 
 # Defines the submodule with skip connection.
@@ -639,9 +555,11 @@ class MultiUnetSkipConnectionBlock(nn.Module):
 
 			down = [downconv]
 
+            # Shading (1ch out)
 			upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
 										kernel_size=4, stride=2,
 										padding=1)]
+            # Albedo (3ch out)
 			upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 3,
 										kernel_size=4, stride=2,
 										padding=1)]
@@ -973,14 +891,6 @@ class UnetGenerator2Decoder(nn.Module):
         S_256 = self.up_256_cat[1](torch.cat([d_128, S_128], 1))
 
         # Brightest portion Decoder
-        # x = self.up_2[2](d_1)
-        # x = self.up_4(x)
-        # x = self.up_8(x)
-        # x = self.up_16(x)
-        # x = self.up_32(x)
-        # x = self.up_64(x)
-        # x = self.up_128(x)
-        # x = self.up_256(x)
         BA_2 = self.up_2[2](d_1)
         BA_4 = self.up_4_cat[2](torch.cat([d_2, BA_2], 1))
         BA_8 = self.up_8_cat[2](torch.cat([d_4, BA_4], 1))
@@ -1000,26 +910,6 @@ class UnetGenerator2Decoder(nn.Module):
         BP_256 = self.up_256_cat[3](torch.cat([d_128, BP_128], 1))
 
         output = torch.cat([R_256, S_256, BA_256, BP_256], 1)
-        # output = torch.cat([R_256, x], 1)
-        # output = R_256
-        # output = R_256, S_256, x
-
-        # x = self.down_128(input)
-        # x = self.down_64(x)
-        # x = self.down_32(x)
-        # x = self.down_16(x)
-        # x = self.down_8(x)
-        # x = self.down_4(x)
-        # x = self.down_2(x)
-        # x = self.down_1(x)
-        # x = self.up_2(x)
-        # x = self.up_4(x)
-        # x = self.up_8(x)
-        # x = self.up_16(x)
-        # x = self.up_32(x)
-        # x = self.up_64(x)
-        # x = self.up_128(x)
-        # output = self.up_256(x)
         return output
 
 
