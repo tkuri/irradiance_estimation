@@ -47,6 +47,7 @@ if __name__ == '__main__':
     model.setup(opt)               # regular setup: load and print networks; create schedulers
     # create a website
     web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
+    print(web_dir)
     if opt.load_iter > 0:  # load_iter is 0 by default
         web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
     print('creating web directory', web_dir)
@@ -76,7 +77,7 @@ if __name__ == '__main__':
         save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
     webpage.save()  # save the HTML
 
-    with open('eval_brightest.csv', 'w', newline="") as f:
+    with open(web_dir+'/brighstest_eval.csv', 'w', newline="") as f:
         writer = csv.writer(f)
         writer.writerow(['idx', 'gt', 'ra', 'sh', 'ba', 'bp', 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp'])
         writer.writerows(result)
