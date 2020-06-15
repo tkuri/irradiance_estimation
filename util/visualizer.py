@@ -32,7 +32,7 @@ def calc_brightest_portions(visuals, shading=True, brightest_sigma=5.0):
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
     mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
     brightest_area, _ = util.calc_brightest_area(img_gray, mask)
-    brightest_pixel = util.calc_brightest_pixel(brightest_area, brightest_sigma)
+    brightest_pixel, _ = util.calc_brightest_pixel(brightest_area, brightest_sigma)
 
     brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_area)
     brightest_area = torch.unsqueeze(brightest_area, 0)

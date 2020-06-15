@@ -2,7 +2,7 @@ import torch
 from .base_model import BaseModel
 from . import networks
 from typing import Union
-
+from util import util
 
 class BrightestResnetModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
@@ -103,6 +103,7 @@ class BrightestResnetModel(BaseModel):
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BA = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BP = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
+        self.real_BC = input['G']
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -161,3 +162,28 @@ class BrightestResnetModel(BaseModel):
         self.optimizer_G2.step()             # udpate G's weights
         if not self.opt.joint_enc:
             self.optimizer_G3.step()             # udpate G's weights
+
+    def eval_brightest_pixel(self):
+        with torch.no_grad():
+            self.forward()     
+            self.compute_visuals()
+        fake_S_gray = torch.mean(self.fake_S, 1, keepdim=True)
+        real_I_gray = torch.mean(self.real_I, 1, keepdim=True)        
+        _, fake_BC_BrightestPixel = util.calc_brightest_pixel(torch.squeeze(self.fake_BP,0), apply_blur=False)
+        _, fake_BC_BrightestArea = util.calc_brightest_pixel(torch.squeeze(self.fake_BA,0), apply_blur=False)
+        fake_BA_Shading, _ = util.calc_brightest_area(torch.squeeze(fake_S_gray,0), torch.squeeze(self.mask,0))
+        _, fake_BC_Shading = util.calc_brightest_pixel(fake_BA_Shading, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
+        fake_BA_Radiance, _ = util.calc_brightest_area(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0))
+        _, fake_BC_Radiance = util.calc_brightest_pixel(fake_BA_Radiance, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
+        (gt_x, gt_y) = (self.real_BC[0].item(), self.real_BC[1].item())
+        (ra_x, ra_y) = fake_BC_Radiance
+        (sh_x, sh_y) = fake_BC_Shading
+        (ba_x, ba_y) = fake_BC_BrightestArea
+        (bp_x, bp_y) = fake_BC_BrightestPixel
+        dist_ra = ((gt_x - ra_x)**2 + (gt_y - ra_y)**2)**0.5
+        dist_sh = ((gt_x - sh_x)**2 + (gt_y - sh_y)**2)**0.5
+        dist_ba = ((gt_x - ba_x)**2 + (gt_y - ba_y)**2)**0.5
+        dist_bp = ((gt_x - bp_x)**2 + (gt_y - bp_y)**2)**0.5
+
+        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), dist_ra, dist_sh, dist_ba, dist_bp]
+        return result

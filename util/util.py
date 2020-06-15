@@ -11,6 +11,7 @@ from typing import Union
 import torchvision.transforms as transforms
 import torch.nn.functional as F
 import kornia.filters
+import random
 
 erosion = nn.MaxPool2d(15, stride=1, padding=7)
 
@@ -77,28 +78,48 @@ def calc_brightest_area(src, mask):
 
     return brightest_area, brightest_point
 
-def calc_brightest_pixel(brightest_area, gauss_sigma=5.0):
+# tap original size: 151
+def calc_brightest_pixel(brightest_area, gauss_sigma=5.0, tap=151, apply_blur=True):
     brightest_pixel = torch.zeros_like(brightest_area)
     brightest_pixel[brightest_area>=torch.max(brightest_area)] = 1.0
 
-    brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
+    # size = [brightest_area.size(1)/stride[0], brightest_area.size(2)/stride[1]]
+    # brightest_pixel = transforms.Resize(size, method=Image.BILINEAR)(brightest_pixel)
+
     # Blur (1st)
-    gauss = kornia.filters.GaussianBlur2d((151, 151), (gauss_sigma, gauss_sigma))
-    brightest_pixel = gauss(brightest_pixel)
+    if apply_blur:
+        brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
+        gauss = kornia.filters.GaussianBlur2d((tap, tap), (gauss_sigma, gauss_sigma))
+        brightest_pixel = gauss(brightest_pixel)
 
-    # Eliminate thin area brightest pixel
-    brightest_pixel[brightest_pixel<torch.max(brightest_pixel)] = 0.0
+        # Eliminate thin area brightest pixel
+        brightest_pixel[brightest_pixel<torch.max(brightest_pixel)] = 0.0
 
-    # Blur (2nd)
-    brightest_pixel = gauss(brightest_pixel)
+        # Blur (2nd)
+        brightest_pixel = gauss(brightest_pixel)
+        brightest_pixel = torch.squeeze(brightest_pixel, 0)
+
+    brightest_max = torch.max(brightest_pixel)
+    brightest_pixel_num = torch.sum(brightest_pixel>=brightest_max)
+    if brightest_pixel_num<1:
+        brightest_coord = (0.5, 0.5)
+    elif brightest_pixel_num==1:
+        coord = torch.argmax(brightest_pixel)
+        brightest_coord = (int(coord//brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
+        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
+    elif brightest_pixel_num>1:
+        flat_pixel = torch.reshape(brightest_pixel, (1 , brightest_pixel.size(2)*brightest_pixel.size(3)))
+        sorted_idx = torch.argsort(flat_pixel)
+        pick_idx = int(random.random(1, brightest_pixel_num))
+        coord = sorted_idx[-pick_idx]
+        brightest_coord = (int(coord/brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
+        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
 
     # Normalize
-    brightest_max = torch.max(brightest_pixel)
     if brightest_max > 0:
         brightest_pixel = brightest_pixel / brightest_max
-    brightest_pixel = torch.squeeze(brightest_pixel, 0)
     
-    return brightest_pixel
+    return brightest_pixel, brightest_coord
 
 
 def im2tensor(input_numpy, grayscale=False):

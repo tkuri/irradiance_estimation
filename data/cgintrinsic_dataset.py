@@ -476,7 +476,7 @@ class CGIntrinsicDataset(BaseDataset):
         mask = 1.0 - util.erosion(1.0-mask)
 
         brightest_area, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
-        brightest_pixel = util.calc_brightest_pixel(brightest_area, self.opt.brightest_sigma)
+        brightest_pixel, brightest_coord = util.calc_brightest_pixel(brightest_area, self.opt.brightest_sigma)
         # radiantest, _ = util.calc_brightest_area(rgb_img_gray, mask)
 
         if self.opt.shading_norm:
@@ -507,7 +507,7 @@ class CGIntrinsicDataset(BaseDataset):
         # radiantest = torch.unsqueeze(radiantest, 0)
         
         # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_area, 'G': radiantest, 'A_paths': img_path}
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_pixel, 'A_paths': img_path}
+        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_pixel, 'G':brightest_coord, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
