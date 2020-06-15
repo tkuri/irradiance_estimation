@@ -111,7 +111,7 @@ def calc_brightest_pixel(brightest_area, gauss_sigma=5.0, tap=151, apply_blur=Tr
     elif brightest_pixel_num>1:
         random.seed(101)
         brightest_pixels_coord = torch.nonzero(brightest_pixels)
-        pick_idx = random.randint(0, len(brightest_pixels_coord))
+        pick_idx = random.randrange(0, len(brightest_pixels_coord))
         print('brightest_pixel_num:', brightest_pixel_num)
         print('pick_idx:', pick_idx)
         coord = brightest_pixels_coord[pick_idx]
