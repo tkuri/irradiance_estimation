@@ -100,7 +100,8 @@ def calc_brightest_pixel(brightest_area, gauss_sigma=5.0, tap=151, apply_blur=Tr
         brightest_pixel = torch.squeeze(brightest_pixel, 0)
 
     brightest_max = torch.max(brightest_pixel)
-    brightest_pixel_num = torch.sum(brightest_pixel>=brightest_max)
+    brightest_pixels = brightest_pixel>=brightest_max
+    brightest_pixel_num = torch.sum(brightest_pixels)
     if brightest_pixel_num<1:
         brightest_coord = (0.5, 0.5)
     elif brightest_pixel_num==1:
@@ -108,12 +109,13 @@ def calc_brightest_pixel(brightest_area, gauss_sigma=5.0, tap=151, apply_blur=Tr
         brightest_coord = (int(coord//brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
         brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
     elif brightest_pixel_num>1:
-        flat_pixel = torch.reshape(brightest_pixel, (1 , brightest_pixel.size(2)*brightest_pixel.size(3)))
-        sorted_idx = torch.argsort(flat_pixel)
-        pick_idx = int(random.random(1, brightest_pixel_num))
-        coord = sorted_idx[-pick_idx]
-        brightest_coord = (int(coord/brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
-        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
+        random.seed(101)
+        brightest_pixels_coord = torch.nonzero(brightest_pixels)
+        pick_idx = random.randint(0, len(brightest_pixels_coord))
+        print('brightest_pixel_num:', brightest_pixel_num)
+        print('pick_idx:', pick_idx)
+        coord = brightest_pixels_coord[pick_idx]
+        brightest_coord = (float(coord[1])/float(brightest_pixel.size(1)), float(coord[2])/float(brightest_pixel.size(2)))
 
     # Normalize
     if brightest_max > 0:
