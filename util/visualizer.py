@@ -206,8 +206,8 @@ class Visualizer():
             save_result (bool) - - if save the current results to an HTML file
         """
         if self.opt.disp_brighest_info:
-            visuals = calc_brightest_portions(visuals, False, opt.brightest_tap, opt.brightest_sigma) # GT Radiance
-            visuals = calc_brightest_portions(visuals, True, opt.brightest_tap,  opt.brightest_sigma) # Est irradiance 
+            visuals = calc_brightest_portions(visuals, False, self.opt.brightest_tap, self.opt.brightest_sigma) # GT Radiance
+            visuals = calc_brightest_portions(visuals, True, self.opt.brightest_tap,  self.opt.brightest_sigma) # Est irradiance 
             
         if self.display_id > 0:  # show images in the browser using visdom
             ncols = self.ncols
