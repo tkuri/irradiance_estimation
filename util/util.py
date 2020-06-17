@@ -61,8 +61,12 @@ def calc_brightest_area_and_pixel(img, mask, nr_tap=11, nr_sigma=5, spread_tap=1
     img_blur = torch.squeeze(img_blur, 0) # To 3dim
 
     # Calc Brighest and top 20% values
-    brightest_max = torch.max(img_blur[mask > 0.5]) # Get the brightest value (scalar)
-    brightest_20 = percentile(img_blur[mask > 0.5], 80) # Get top 20% brighest value (scalar)
+    if torch.sum(mask[mask > 0.5]) < 10:
+        brightest_max = torch.max(img_blur)
+        brightest_20 = percentile(img_blur, 80)
+    else:
+        brightest_max = torch.max(img_blur[mask > 0.5]) # Get the brightest value (scalar)
+        brightest_20 = percentile(img_blur[mask > 0.5], 80) # Get top 20% brighest value (scalar)
 
     # Calc 20% brightest area
     brightest_area = torch.zeros_like(mask)
