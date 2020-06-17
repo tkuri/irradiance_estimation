@@ -38,6 +38,7 @@ class BrightestResnetModel(BaseModel):
             parser.add_argument('--lambda_R', type=float, default=1.0, help='weight for Reflection loss')
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
+            parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
 
         return parser
 
@@ -49,7 +50,7 @@ class BrightestResnetModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP']
+        self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP', 'G_BC']
         self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'fake_BP', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -80,6 +81,7 @@ class BrightestResnetModel(BaseModel):
             self.criterionS = torch.nn.MSELoss()
             self.criterionBA = torch.nn.MSELoss()
             self.criterionBP = torch.nn.MSELoss()
+            self.criterionBC = torch.nn.MSELoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G1 = torch.optim.Adam(self.netG1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -103,7 +105,7 @@ class BrightestResnetModel(BaseModel):
         self.mask = torch.squeeze(input['D'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BA = torch.squeeze(input['E'],0).to(self.device) # [bn, 1, 256, 256]
         self.real_BP = torch.squeeze(input['F'],0).to(self.device) # [bn, 1, 256, 256]
-        self.real_BC = input['G']
+        self.real_BC = input['G'].to(self.device) 
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -135,7 +137,7 @@ class BrightestResnetModel(BaseModel):
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.fake_S = fake_S * color
         if self.opt.joint_enc:
-            self.fake_BA, self.fake_BP = self.netG2(self.real_I)
+            self.fake_BC, self.fake_BA, self.fake_BP = self.netG2(self.real_I)
         else:
             self.fake_BA = self.netG2(self.real_I)
             self.fake_BP = self.netG3(self.real_I)
@@ -147,7 +149,10 @@ class BrightestResnetModel(BaseModel):
         self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
         self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP
-        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
+        # print('real_BC:', self.real_BC)
+        # print('fake_BC:', self.fake_BC)
+        self.loss_G_BC = self.criterionBC(self.fake_BC, self.real_BC) * self.opt.lambda_BC
+        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BC
         self.loss_G.backward()
 
     def optimize_parameters(self):
@@ -181,15 +186,17 @@ class BrightestResnetModel(BaseModel):
         # _, fake_BC_Shading = util.calc_brightest_pixel(fake_BA_Shading, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
         # fake_BA_Radiance, _ = util.calc_brightest_area(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0))
         # _, fake_BC_Radiance = util.calc_brightest_pixel(fake_BA_Radiance, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
-        (gt_x, gt_y) = (self.real_BC[0].item(), self.real_BC[1].item())
+        (gt_x, gt_y) = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item())
         (ra_x, ra_y) = fake_BC_Radiance
         (sh_x, sh_y) = fake_BC_Shading
         (ba_x, ba_y) = fake_BC_BrightestArea
         (bp_x, bp_y) = fake_BC_BrightestPixel
+        (bc_x, bc_y) = (self.fake_BC[0].item(), self.fake_BC[1].item())
         dist_ra = ((gt_x - ra_x)**2 + (gt_y - ra_y)**2)**0.5
         dist_sh = ((gt_x - sh_x)**2 + (gt_y - sh_y)**2)**0.5
         dist_ba = ((gt_x - ba_x)**2 + (gt_y - ba_y)**2)**0.5
         dist_bp = ((gt_x - bp_x)**2 + (gt_y - bp_y)**2)**0.5
+        dist_bc = ((gt_x - bc_x)**2 + (gt_y - bc_y)**2)**0.5
 
-        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), dist_ra, dist_sh, dist_ba, dist_bp]
+        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y), dist_ra, dist_sh, dist_ba, dist_bp, dist_bc]
         return result
