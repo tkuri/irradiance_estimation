@@ -9,8 +9,9 @@ import skimage
 from skimage.restoration import denoise_tv_chambolle
 from util import util
 
-def make_dataset(list_dir, max_dataset_size=float("inf")):
-    file_name = list_dir + "img_batch.p"
+def make_dataset(list_dir, max_dataset_size=float("inf"), phase='train'):
+    file_name = list_dir + "img_batch_{}.p".format(phase)
+    print('load image list:', file_name)
     images_list = pickle.load( open( file_name, "rb" ) )
 
     return images_list[:min(max_dataset_size, len(images_list))]
@@ -35,7 +36,7 @@ class CGIntrinsicDataset(BaseDataset):
         BaseDataset.__init__(self, opt)
         self.dataroot = opt.dataroot # ../CGIntrinsics/CGIntrinsics
         list_dir = self.dataroot + '/intrinsics_final/train_list/'
-        self.img_paths = make_dataset(list_dir, opt.max_dataset_size)
+        self.img_paths = make_dataset(list_dir, opt.max_dataset_size, opt.phase)
         if len(self.img_paths) == 0:
             raise(RuntimeError("Found 0 images in: " + list_dir + "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
