@@ -86,7 +86,7 @@ def calc_brightest_area_and_pixel(img, mask, nr_tap=11, nr_sigma=5, spread_tap=1
         brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
     elif brightest_pixel_num > 1:
         random.seed(101)
-        brightest_coord_list = torch.nonzero(brightest_pixels)
+        brightest_coord_list = torch.nonzero(brightest_pixel)
         pick_idx = random.randrange(0, len(brightest_coord_list))
         print('Conditon 2: brightest_pixel_num:', brightest_pixel_num)
         print('pick_idx:', pick_idx)
