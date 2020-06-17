@@ -169,12 +169,18 @@ class BrightestResnetModel(BaseModel):
             self.compute_visuals()
         fake_S_gray = torch.mean(self.fake_S, 1, keepdim=True)
         real_I_gray = torch.mean(self.real_I, 1, keepdim=True)        
-        _, fake_BC_BrightestPixel = util.calc_brightest_pixel(torch.squeeze(self.fake_BP,0), apply_blur=False)
-        _, fake_BC_BrightestArea = util.calc_brightest_pixel(torch.squeeze(self.fake_BA,0), apply_blur=False)
-        fake_BA_Shading, _ = util.calc_brightest_area(torch.squeeze(fake_S_gray,0), torch.squeeze(self.mask,0))
-        _, fake_BC_Shading = util.calc_brightest_pixel(fake_BA_Shading, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
-        fake_BA_Radiance, _ = util.calc_brightest_area(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0))
-        _, fake_BC_Radiance = util.calc_brightest_pixel(fake_BA_Radiance, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
+
+        _, _, _, fake_BC_Radiance = util.calc_brightest_area_and_pixel(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
+        _, _, _, fake_BC_Shading = util.calc_brightest_area_and_pixel(torch.squeeze(fake_S_gray,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
+        _, _, _, fake_BC_BrightestArea = util.calc_brightest_area_and_pixel(torch.squeeze(self.fake_BA,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
+        _, _, _, fake_BC_BrightestPixel = util.calc_brightest_area_and_pixel(torch.squeeze(self.fake_BP,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
+
+        # _, fake_BC_BrightestPixel = util.calc_brightest_pixel(torch.squeeze(self.fake_BP,0), apply_blur=False)
+        # _, fake_BC_BrightestArea = util.calc_brightest_pixel(torch.squeeze(self.fake_BA,0), apply_blur=False)
+        # fake_BA_Shading, _ = util.calc_brightest_area(torch.squeeze(fake_S_gray,0), torch.squeeze(self.mask,0))
+        # _, fake_BC_Shading = util.calc_brightest_pixel(fake_BA_Shading, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
+        # fake_BA_Radiance, _ = util.calc_brightest_area(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0))
+        # _, fake_BC_Radiance = util.calc_brightest_pixel(fake_BA_Radiance, gauss_sigma=self.opt.brightest_sigma, apply_blur=True)
         (gt_x, gt_y) = (self.real_BC[0].item(), self.real_BC[1].item())
         (ra_x, ra_y) = fake_BC_Radiance
         (sh_x, sh_y) = fake_BC_Shading

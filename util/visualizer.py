@@ -16,7 +16,7 @@ else:
     VisdomExceptionBase = ConnectionError
 
 
-def calc_brightest_portions(visuals, shading=True, brightest_sigma=5.0):
+def calc_brightest_portions(visuals, shading=True, brightest_tap=11.0, brightest_sigma=5.0):
     if shading:
         name = 'fake_S'
         disp = 'shading'
@@ -31,8 +31,9 @@ def calc_brightest_portions(visuals, shading=True, brightest_sigma=5.0):
     img_gray = torch.mean(img, 0, keepdim=True)
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
     mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
-    brightest_area, _ = util.calc_brightest_area(img_gray, mask)
-    brightest_pixel, _ = util.calc_brightest_pixel(brightest_area, brightest_sigma)
+    # brightest_area, _ = util.calc_brightest_area(img_gray, mask)
+    # brightest_pixel, _ = util.calc_brightest_pixel(brightest_area, brightest_sigma)
+    brightest_area, _, brightest_pixel, _ = util.calc_brightest_area_and_pixel(img_gray, mask, spread_tap=brightest_tap, spread_sigma=brightest_sigma)
 
     brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_area)
     brightest_area = torch.unsqueeze(brightest_area, 0)
@@ -108,8 +109,8 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
     # webpage.add_images(ims, txts, links, width=width)
 
     if opt.disp_brighest_info:
-        visuals = calc_brightest_portions(visuals, False, opt.brightest_sigma) # GT Radiance
-        visuals = calc_brightest_portions(visuals, True,  opt.brightest_sigma) # Est irradiance 
+        visuals = calc_brightest_portions(visuals, False, opt.brightest_tap, opt.brightest_sigma) # GT Radiance
+        visuals = calc_brightest_portions(visuals, True, opt.brightest_tap,  opt.brightest_sigma) # Est irradiance 
 
     if multi == True:
         for c in range(multi_ch):
@@ -205,8 +206,8 @@ class Visualizer():
             save_result (bool) - - if save the current results to an HTML file
         """
         if self.opt.disp_brighest_info:
-            visuals = calc_brightest_portions(visuals, False, self.opt.brightest_sigma) # GT Radiance
-            visuals = calc_brightest_portions(visuals, True,  self.opt.brightest_sigma) # Est irradiance 
+            visuals = calc_brightest_portions(visuals, False, opt.brightest_tap, opt.brightest_sigma) # GT Radiance
+            visuals = calc_brightest_portions(visuals, True, opt.brightest_tap,  opt.brightest_sigma) # Est irradiance 
             
         if self.display_id > 0:  # show images in the browser using visdom
             ncols = self.ncols
