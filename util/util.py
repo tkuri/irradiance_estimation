@@ -83,7 +83,7 @@ def calc_brightest(img, mask, nr_tap=31, nr_sigma=5.0, spread_tap=31, spread_sig
     brightest_pixel = torch.zeros_like(brightest_area)
     brightest_pixel = img_blur >= brightest_max
     brightest_pixel = brightest_pixel * (mask > 0.5)
-    brightest_pixel_num = torch.sum(brightest_pixel)
+    brightest_pixel_num = torch.sum(brightest_pixel).item()
 
     # Selects pixels to be picked up according to the number of brightest pixels
     if brightest_pixel_num < 1:

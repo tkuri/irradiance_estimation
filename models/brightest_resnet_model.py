@@ -184,33 +184,32 @@ class BrightestResnetModel(BaseModel):
 
         # Evaluation of 20% brightest area
         real_BA = torch.squeeze(self.real_BA, 0)
-        ba_mse_ra = util.mse_with_mask(fake_BA_R, real_BA)
-        ba_mse_sh = util.mse_with_mask(fake_BA_S, real_BA)
-        ba_mse_ba = util.mse_with_mask(fake_BA, real_BA)
+        ba_mse_ra = util.mse_with_mask(fake_BA_R, real_BA, mask).item()
+        ba_mse_sh = util.mse_with_mask(fake_BA_S, real_BA, mask).item()
+        ba_mse_ba = util.mse_with_mask(fake_BA, real_BA, mask).item()
 
         # Evaluation of brightest pixel (Spread)
         real_BP = torch.squeeze(self.real_BP, 0)
-        bp_mse_ra = util.mse_with_mask(fake_BP_R, real_BP)
-        bp_mse_sh = util.mse_with_mask(fake_BP_S, real_BP)
-        bp_mse_ba = util.mse_with_mask(fake_BP_BA, real_BP)
-        bp_mse_bp = util.mse_with_mask(fake_BP, real_BP)
+        bp_mse_ra = util.mse_with_mask(fake_BP_R, real_BP, mask).item()
+        bp_mse_sh = util.mse_with_mask(fake_BP_S, real_BP, mask).item()
+        bp_mse_ba = util.mse_with_mask(fake_BP_BA, real_BP, mask).item()
+        bp_mse_bp = util.mse_with_mask(fake_BP, real_BP, mask).item()
 
         # Evaluation of brightest coordinate
-        (gt_x, gt_y) = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item())
-        (ra_x, ra_y) = fake_BC_R
-        (sh_x, sh_y) = fake_BC_S
-        (ba_x, ba_y) = fake_BC_BA
-        (bp_x, bp_y) = fake_BC_BP
-        (bc_x, bc_y) = (self.fake_BC[0, 0].item(), self.fake_BC[0, 1].item())
-        dist_ra = np.hypot(gt_x - ra_x, gt_y - ra_y)
-        dist_sh = np.hypot(gt_x - sh_x, gt_y - sh_y)
-        dist_ba = np.hypot(gt_x - ba_x, gt_y - ba_y)
-        dist_bp = np.hypot(gt_x - bp_x, gt_y - bp_y)
-        dist_bc = np.hypot(gt_x - bc_x, gt_y - bc_y)
-        dist_05 = np.hypot(gt_x - 0.5, gt_y - 0.5)
- 
-        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y),
-                    (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y),
+        bc_gt = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item(), int(self.real_BC[0, 2].item()), int(self.real_BC[0, 3].item()))
+        bc_ra = fake_BC_R
+        bc_sh = fake_BC_S
+        bc_ba = fake_BC_BA
+        bc_bp = fake_BC_BP
+        bc_bc = (self.fake_BC[0, 0].item(), self.fake_BC[0, 1].item())
+        dist_ra = np.hypot(bc_gt[0] - bc_ra[0], bc_gt[1] - bc_ra[1])
+        dist_sh = np.hypot(bc_gt[0] - bc_sh[0], bc_gt[1] - bc_sh[1])
+        dist_ba = np.hypot(bc_gt[0] - bc_ba[0], bc_gt[1] - bc_ba[1])
+        dist_bp = np.hypot(bc_gt[0] - bc_bp[0], bc_gt[1] - bc_bp[1])
+        dist_bc = np.hypot(bc_gt[0] - bc_bc[0], bc_gt[1] - bc_bc[1])
+        dist_05 = np.hypot(bc_gt[0] - 0.5, bc_gt[1] - 0.5)
+
+        result = [bc_gt, bc_ra, bc_sh, bc_ba, bc_bp, bc_bc,
                      dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05,
                      ba_mse_ra, ba_mse_sh, ba_mse_ba,
                      bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp                     
