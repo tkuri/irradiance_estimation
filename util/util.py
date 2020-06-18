@@ -53,7 +53,7 @@ def percentile(t: torch.tensor, q: float) -> Union[int, float]:
     return result
 
 
-def calc_brightest_area_and_pixel(img, mask, nr_tap=31, nr_sigma=5.0, spread_tap=31, spread_sigma=5.0):
+def calc_brightest(img, mask, nr_tap=31, nr_sigma=5.0, spread_tap=31, spread_sigma=5.0):
     # Blur the image (NR)
     img = torch.unsqueeze(img, 0) # To 4dim
     gauss_nr = kornia.filters.GaussianBlur2d((nr_tap, nr_tap), (nr_sigma, nr_sigma))
