@@ -68,7 +68,7 @@ class BaseOptions():
         parser.add_argument('--shading_norm', action='store_true', help='max 90% normalized shading')
         parser.add_argument('--edge_mask', action='store_true', help='image edge are mask=0')
         parser.add_argument('--disp_brighest_info', action='store_true', help='display brightest area and pixel from shading estimation and radiance.')
-        parser.add_argument('--bp_nr_tap', type=int, default=31, help='tap of gaussian filter to NR brighest point.')
+        parser.add_argument('--bp_nr_tap', type=int, default=11, help='tap of gaussian filter to NR brighest point.')
         parser.add_argument('--bp_nr_sigma', type=float, default=5.0, help='sigma of gaussian filter to NR brighest point.')
         parser.add_argument('--bp_tap', type=int, default=31, help='tap of gaussian filter to calculate brighest point.')
         parser.add_argument('--bp_sigma', type=float, default=5.0, help='sigma of gaussian filter to calculate brighest point.')
