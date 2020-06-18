@@ -15,8 +15,6 @@ if sys.version_info[0] == 2:
 else:
     VisdomExceptionBase = ConnectionError
 
-
-# def calc_brightest_portions(visuals, shading=True, brightest_tap=11.0, brightest_sigma=5.0):
 def calc_brightest_portions(visuals, opt, shading=True):
     if shading:
         name = 'fake_S'
@@ -32,8 +30,6 @@ def calc_brightest_portions(visuals, opt, shading=True):
     img_gray = torch.mean(img, 0, keepdim=True)
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
     mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
-    # brightest_area, _ = util.calc_brightest_area(img_gray, mask)
-    # brightest_pixel, _ = util.calc_brightest_pixel(brightest_area, brightest_sigma)
     brightest_area, _, brightest_pixel, _ = util.calc_brightest(img_gray, mask, nr_tap=opt.bp_nr_tap, nr_sigma=opt.bp_nr_sigma, spread_tap=opt.bp_tap, spread_sigma=opt.bp_sigma)
 
     brightest_area = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_area)

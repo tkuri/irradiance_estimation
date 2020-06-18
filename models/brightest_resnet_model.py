@@ -150,8 +150,6 @@ class BrightestResnetModel(BaseModel):
         self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
         self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP
-        # print('real_BC:', self.real_BC)
-        # print('fake_BC:', self.fake_BC)
         self.loss_G_BC = self.criterionBC(self.fake_BC, self.real_BC) * self.opt.lambda_BC
         self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BC
         self.loss_G.backward()
@@ -190,11 +188,6 @@ class BrightestResnetModel(BaseModel):
         (ba_x, ba_y) = fake_BC_BA
         (bp_x, bp_y) = fake_BC_BP
         (bc_x, bc_y) = (self.fake_BC[0, 0].item(), self.fake_BC[0, 1].item())
-        # dist_ra = ((gt_x - ra_x)**2 + (gt_y - ra_y)**2)**0.5
-        # dist_sh = ((gt_x - sh_x)**2 + (gt_y - sh_y)**2)**0.5
-        # dist_ba = ((gt_x - ba_x)**2 + (gt_y - ba_y)**2)**0.5
-        # dist_bp = ((gt_x - bp_x)**2 + (gt_y - bp_y)**2)**0.5
-        # dist_bc = ((gt_x - bc_x)**2 + (gt_y - bc_y)**2)**0.5
         dist_ra = np.hypot(gt_x - ra_x, gt_y - ra_y)
         dist_sh = np.hypot(gt_x - sh_x, gt_y - sh_y)
         dist_ba = np.hypot(gt_x - ba_x, gt_y - ba_y)
