@@ -106,8 +106,6 @@ class CGIntrinsicDataset(BaseDataset):
 
         mask = 1.0 - util.erosion(1.0-mask)
 
-        # brightest_area, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
-        # brightest_pixel, brightest_coord = util.calc_brightest_pixel(brightest_area, self.opt.brightest_sigma)
         brightest_area, brightest_20, brightest_pixel, brightest_coord\
              = util.calc_brightest(
                  gt_S_gray, mask,
