@@ -109,10 +109,12 @@ class CGIntrinsicDataset(BaseDataset):
         # brightest_area, brightest_point = util.calc_brightest_area(gt_S_gray, mask)
         # brightest_pixel, brightest_coord = util.calc_brightest_pixel(brightest_area, self.opt.brightest_sigma)
         brightest_area, brightest_20, brightest_pixel, brightest_coord\
-             = util.calc_brightest_area_and_pixel(
-                 gt_S_gray, mask, 
-                 spread_tap=self.opt.brightest_tap, 
-                 spread_sigma=self.opt.brightest_sigma
+             = util.calc_brightest(
+                 gt_S_gray, mask,
+                 nr_tap=self.opt.bp_nr_tap, 
+                 nr_sigma=self.opt.bp_nr_sigma,
+                 spread_tap=self.opt.bp_tap, 
+                 spread_sigma=self.opt.bp_sigma
                  )
 
         if self.opt.shading_norm:
