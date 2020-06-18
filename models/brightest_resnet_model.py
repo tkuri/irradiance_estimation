@@ -3,6 +3,7 @@ from .base_model import BaseModel
 from . import networks
 from typing import Union
 from util import util
+import numpy as np
 
 class BrightestResnetModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
@@ -172,25 +173,34 @@ class BrightestResnetModel(BaseModel):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
-        fake_S_gray = torch.mean(self.fake_S, 1, keepdim=True)
-        real_I_gray = torch.mean(self.real_I, 1, keepdim=True)        
+        fake_S_g = torch.squeeze(torch.mean(self.fake_S, 1, keepdim=True), 0)
+        real_I_g = torch.squeeze(torch.mean(self.real_I, 1, keepdim=True), 0)
+        mask = torch.squeeze(self.mask, 0)
+        fake_BA = torch.squeeze(self.fake_BA, 0)
+        fake_BP = torch.squeeze(self.fake_BP, 0)
 
-        _, _, _, fake_BC_Radiance = util.calc_brightest_area_and_pixel(torch.squeeze(real_I_gray,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
-        _, _, _, fake_BC_Shading = util.calc_brightest_area_and_pixel(torch.squeeze(fake_S_gray,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
-        _, _, _, fake_BC_BrightestArea = util.calc_brightest_area_and_pixel(torch.squeeze(self.fake_BA,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
-        _, _, _, fake_BC_BrightestPixel = util.calc_brightest_area_and_pixel(torch.squeeze(self.fake_BP,0), torch.squeeze(self.mask,0), spread_tap=self.opt.brightest_tap, spread_sigma=self.opt.brightest_sigma)
+        _, _, _, fake_BC_R = util.calc_brightest(real_I_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, _, fake_BC_S = util.calc_brightest(fake_S_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, _, fake_BC_BA = util.calc_brightest(fake_BA, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, _, fake_BC_BP = util.calc_brightest(fake_BP, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         (gt_x, gt_y) = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item())
-        (ra_x, ra_y) = fake_BC_Radiance
-        (sh_x, sh_y) = fake_BC_Shading
-        (ba_x, ba_y) = fake_BC_BrightestArea
-        (bp_x, bp_y) = fake_BC_BrightestPixel
+        (ra_x, ra_y) = fake_BC_R
+        (sh_x, sh_y) = fake_BC_S
+        (ba_x, ba_y) = fake_BC_BA
+        (bp_x, bp_y) = fake_BC_BP
         (bc_x, bc_y) = (self.fake_BC[0, 0].item(), self.fake_BC[0, 1].item())
-        dist_ra = ((gt_x - ra_x)**2 + (gt_y - ra_y)**2)**0.5
-        dist_sh = ((gt_x - sh_x)**2 + (gt_y - sh_y)**2)**0.5
-        dist_ba = ((gt_x - ba_x)**2 + (gt_y - ba_y)**2)**0.5
-        dist_bp = ((gt_x - bp_x)**2 + (gt_y - bp_y)**2)**0.5
-        dist_bc = ((gt_x - bc_x)**2 + (gt_y - bc_y)**2)**0.5
-
-        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y), dist_ra, dist_sh, dist_ba, dist_bp, dist_bc]
+        # dist_ra = ((gt_x - ra_x)**2 + (gt_y - ra_y)**2)**0.5
+        # dist_sh = ((gt_x - sh_x)**2 + (gt_y - sh_y)**2)**0.5
+        # dist_ba = ((gt_x - ba_x)**2 + (gt_y - ba_y)**2)**0.5
+        # dist_bp = ((gt_x - bp_x)**2 + (gt_y - bp_y)**2)**0.5
+        # dist_bc = ((gt_x - bc_x)**2 + (gt_y - bc_y)**2)**0.5
+        dist_ra = np.hypot(gt_x - ra_x, gt_y - ra_y)
+        dist_sh = np.hypot(gt_x - sh_x, gt_y - sh_y)
+        dist_ba = np.hypot(gt_x - ba_x, gt_y - ba_y)
+        dist_bp = np.hypot(gt_x - bp_x, gt_y - bp_y)
+        dist_bc = np.hypot(gt_x - bc_x, gt_y - bc_y)
+        dist_05 = np.hypot(gt_x - 0.5, gt_y - 0.5)
+ 
+        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y), dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05]
         return result
