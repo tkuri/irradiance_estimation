@@ -177,11 +177,25 @@ class BrightestResnetModel(BaseModel):
         fake_BA = torch.squeeze(self.fake_BA, 0)
         fake_BP = torch.squeeze(self.fake_BP, 0)
 
-        _, _, _, fake_BC_R = util.calc_brightest(real_I_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, _, fake_BC_S = util.calc_brightest(fake_S_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, _, fake_BC_BA = util.calc_brightest(fake_BA, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        fake_BA_R, _, fake_BP_R, fake_BC_R = util.calc_brightest(real_I_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        fake_BA_S, _, fake_BP_S, fake_BC_S = util.calc_brightest(fake_S_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, fake_BP_BA, fake_BC_BA = util.calc_brightest(fake_BA, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         _, _, _, fake_BC_BP = util.calc_brightest(fake_BP, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
+        # Evaluation of 20% brightest area
+        real_BA = torch.squeeze(self.real_BA, 0)
+        ba_mse_ra = util.mse_with_mask(fake_BA_R, real_BA)
+        ba_mse_sh = util.mse_with_mask(fake_BA_S, real_BA)
+        ba_mse_ba = util.mse_with_mask(fake_BA, real_BA)
+
+        # Evaluation of brightest pixel (Spread)
+        real_BP = torch.squeeze(self.real_BP, 0)
+        bp_mse_ra = util.mse_with_mask(fake_BP_R, real_BP)
+        bp_mse_sh = util.mse_with_mask(fake_BP_S, real_BP)
+        bp_mse_ba = util.mse_with_mask(fake_BP_BA, real_BP)
+        bp_mse_bp = util.mse_with_mask(fake_BP, real_BP)
+
+        # Evaluation of brightest coordinate
         (gt_x, gt_y) = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item())
         (ra_x, ra_y) = fake_BC_R
         (sh_x, sh_y) = fake_BC_S
@@ -195,5 +209,10 @@ class BrightestResnetModel(BaseModel):
         dist_bc = np.hypot(gt_x - bc_x, gt_y - bc_y)
         dist_05 = np.hypot(gt_x - 0.5, gt_y - 0.5)
  
-        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y), (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y), dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05]
+        result = [(gt_x, gt_y), (ra_x, ra_y), (sh_x, sh_y),
+                    (ba_x, ba_y), (bp_x, bp_y), (bc_x, bc_y),
+                     dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05,
+                     ba_mse_ra, ba_mse_sh, ba_mse_ba,
+                     bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp                     
+                     ]
         return result
