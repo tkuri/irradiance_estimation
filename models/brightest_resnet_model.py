@@ -146,12 +146,20 @@ class BrightestResnetModel(BaseModel):
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
+        real_BC = self.real_BC[:, :2]
+        condition = self.real_BC[:, 2]
         self.loss_G_R = self.criterionR(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
         self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
         self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
-        self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP
-        self.loss_G_BC = self.criterionBC(self.fake_BC, self.real_BC) * self.opt.lambda_BC
-        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BC
+        self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP  
+        self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
+
+        if condition==1:
+            self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BC
+        else:
+            print('Pass loss_G_BC because condition is {}'.format(condition))
+            self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
+
         self.loss_G.backward()
 
     def optimize_parameters(self):
