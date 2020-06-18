@@ -83,11 +83,11 @@ def calc_brightest(img, mask, nr_tap=31, nr_sigma=5.0, spread_tap=31, spread_sig
     # Selects pixels to be picked up according to the number of brightest pixels
     if brightest_pixel_num < 1:
         print('Conditon 0: brightest_pixel_num:', brightest_pixel_num)
-        brightest_coord = (0.5, 0.5)
+        brightest_coord = (0.5, 0.5, 0, brightest_pixel_num)
     elif brightest_pixel_num == 1:
         coord = torch.argmax(brightest_pixel.int())
         brightest_coord = (int(coord//brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
-        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)))
+        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)), 1, brightest_pixel_num)
     elif brightest_pixel_num > 1:
         random.seed(101)
         brightest_coord_list = torch.nonzero(brightest_pixel)
@@ -95,9 +95,9 @@ def calc_brightest(img, mask, nr_tap=31, nr_sigma=5.0, spread_tap=31, spread_sig
         print('Conditon 2: brightest_pixel_num:', brightest_pixel_num)
         print('pick_idx:', pick_idx)
         coord = brightest_coord_list[pick_idx]
-        brightest_coord = (float(coord[1])/float(brightest_pixel.size(1)), float(coord[2])/float(brightest_pixel.size(2)))
+        brightest_coord = (float(coord[1])/float(brightest_pixel.size(1)), float(coord[2])/float(brightest_pixel.size(2)), 2, brightest_pixel_num)
     else:
-        brightest_coord = (0.5, 0.5)
+        brightest_coord = (0.5, 0.5, -1, brightest_pixel_num)
         print('Conditon -1: Detected an exception.')
 
     # Spread the points in concentric circles
