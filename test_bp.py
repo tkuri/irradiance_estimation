@@ -79,5 +79,5 @@ if __name__ == '__main__':
 
     with open(web_dir+'/brighstest_eval.csv', 'w', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(['idx', 'gt', 'ra', 'sh', 'ba', 'bp', 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp'])
+        writer.writerow(['idx', 'gt', 'ra', 'sh', 'ba', 'bp', 'bc', 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc', 'dist_05'])
         writer.writerows(result)
