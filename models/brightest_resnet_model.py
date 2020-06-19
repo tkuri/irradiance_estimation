@@ -182,11 +182,12 @@ class BrightestResnetModel(BaseModel):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
-        fake_S_g = torch.squeeze(torch.mean(self.fake_S, 1, keepdim=True), 0)
-        real_I_g = torch.squeeze(torch.mean(self.real_I, 1, keepdim=True), 0)
-        mask = torch.squeeze(self.mask, 0)
-        fake_BA = torch.squeeze(self.fake_BA, 0)
-        fake_BP = torch.squeeze(self.fake_BP, 0)
+        fake_S_g = torch.squeeze(torch.mean(self.fake_S, 1, keepdim=True), 0)*0.5+0.5
+        real_I_g = torch.squeeze(torch.mean(self.real_I, 1, keepdim=True), 0)*0.5+0.5
+        mask = torch.squeeze(self.mask, 0)*0.5+0.5
+
+        fake_BA = torch.squeeze(self.fake_BA, 0)*0.5+0.5
+        fake_BP = torch.squeeze(self.fake_BP, 0)*0.5+0.5
 
         fake_BA_R, _, fake_BP_R, fake_BC_R = util.calc_brightest(real_I_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         fake_BA_S, _, fake_BP_S, fake_BC_S = util.calc_brightest(fake_S_g, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
@@ -194,13 +195,13 @@ class BrightestResnetModel(BaseModel):
         _, _, _, fake_BC_BP = util.calc_brightest(fake_BP, mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         # Evaluation of 20% brightest area
-        real_BA = torch.squeeze(self.real_BA, 0)
+        real_BA = torch.squeeze(self.real_BA, 0)*0.5+0.5
         ba_mse_ra = util.mse_with_mask(fake_BA_R, real_BA, mask).item()
         ba_mse_sh = util.mse_with_mask(fake_BA_S, real_BA, mask).item()
         ba_mse_ba = util.mse_with_mask(fake_BA, real_BA, mask).item()
 
         # Evaluation of brightest pixel (Spread)
-        real_BP = torch.squeeze(self.real_BP, 0)
+        real_BP = torch.squeeze(self.real_BP, 0)*0.5+0.5
         bp_mse_ra = util.mse_with_mask(fake_BP_R, real_BP, mask).item()
         bp_mse_sh = util.mse_with_mask(fake_BP_S, real_BP, mask).item()
         bp_mse_ba = util.mse_with_mask(fake_BP_BA, real_BP, mask).item()
