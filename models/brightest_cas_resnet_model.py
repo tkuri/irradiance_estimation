@@ -9,7 +9,7 @@ from skimage.transform import resize
 from scipy.ndimage.filters import maximum_filter
 import cv2
 
-class BrightestResnetModel(BaseModel):
+class BrightestCasResnetModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
@@ -36,7 +36,6 @@ class BrightestResnetModel(BaseModel):
         """
         # changing the default values to match the pix2pix paper (https://phillipi.github.io/pix2pix/)
         parser.set_defaults(norm='batch', netG='unet_256', dataset_mode='aligned')
-        parser.add_argument('--joint_enc', action='store_true', help='joint encoder')
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
@@ -57,13 +56,10 @@ class BrightestResnetModel(BaseModel):
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP', 'G_BC']
-        self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'fake_BP', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
+        self.visual_names = ['real_I', 'fake_BA', 'fake_BA2', 'real_BA', 'fake_BP', 'fake_BP2', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
-        if opt.joint_enc:
-            self.model_names = ['G1', 'G2']
-        else:  # during test time, only load G
-            self.model_names = ['G1', 'G2', 'G3']
+        self.model_names = ['G1', 'G2']
         # define networks (both generator and discriminator)
 
         # print('generator output:', output)
@@ -72,15 +68,10 @@ class BrightestResnetModel(BaseModel):
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG1 = networks.define_G(opt.input_nc, 3, opt.ngf, 'unet_256_multi', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        if opt.joint_enc:
-            self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
+        self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        else:
-            self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
+        self.netG3 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-            self.netG3 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks', opt.norm,
-                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-
         if self.isTrain:
             # define loss functions
             self.criterionR = torch.nn.MSELoss()
@@ -91,11 +82,10 @@ class BrightestResnetModel(BaseModel):
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G1 = torch.optim.Adam(self.netG1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_G3 = torch.optim.Adam(self.netG3.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G1)
             self.optimizers.append(self.optimizer_G2)
-            if not opt.joint_enc:
-                self.optimizer_G3 = torch.optim.Adam(self.netG3.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-                self.optimizers.append(self.optimizer_G3)
+            self.optimizers.append(self.optimizer_G3)
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -141,11 +131,8 @@ class BrightestResnetModel(BaseModel):
         fake_S = fake_S.repeat(1, 3, 1, 1)
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.fake_S = fake_S * color
-        if self.opt.joint_enc:
-            self.fake_BC, self.fake_BA, self.fake_BP = self.netG2(self.real_I)
-        else:
-            self.fake_BA = self.netG2(self.real_I)
-            self.fake_BP = self.netG3(self.real_I)
+        self.fake_BC, self.fake_BA, self.fake_BP = self.netG2(self.real_I)
+        self.fake_BC2, self.fake_BA2, self.fake_BP2 = self.netG2(self.fake_S)
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
@@ -157,10 +144,13 @@ class BrightestResnetModel(BaseModel):
         self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP  
         self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
+        self.loss_G_BA2 = self.criterionBA(self.fake_BA2*mask, self.real_BA*mask) * self.opt.lambda_BA
+        self.loss_G_BP2 = self.criterionBP(self.fake_BP2*mask, self.real_BP*mask) * self.opt.lambda_BP  
+        self.loss_G_BC2 = self.criterionBC(self.fake_BC2, real_BC) * self.opt.lambda_BC
 
-        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
+        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
         if condition==1:
-            self.loss_G += self.loss_G_BC
+            self.loss_G += self.loss_G_BC + self.loss_G_BC2
         else:
             print('Pass loss_G_BC because condition is {}'.format(condition))
 
@@ -171,13 +161,11 @@ class BrightestResnetModel(BaseModel):
         self.forward()                   # compute fake images: G(A)
         self.optimizer_G1.zero_grad()        # set G's gradients to zero
         self.optimizer_G2.zero_grad()        # set G's gradients to zero
-        if not self.opt.joint_enc:
-            self.optimizer_G3.zero_grad()        # set G's gradients to zero
+        self.optimizer_G3.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
+        self.optimizer_G3.step()             # udpate G's weights
         self.optimizer_G1.step()             # udpate G's weights
         self.optimizer_G2.step()             # udpate G's weights
-        if not self.opt.joint_enc:
-            self.optimizer_G3.step()             # udpate G's weights
 
     def eval_brightest_pixel(self):
         with torch.no_grad():
