@@ -220,7 +220,7 @@ class BrightestResnetModel(BaseModel):
         dist_bc = np.hypot(bc_gt[0] - bc_bc[0], bc_gt[1] - bc_bc[1])
         dist_05 = np.hypot(bc_gt[0] - 0.5, bc_gt[1] - 0.5)
 
-        result = [bc_gt, bc_ra, bc_sh, bc_ba, bc_bp, bc_bc,
+        result = [bc_gt[2], bc_gt, bc_ra, bc_sh, bc_ba, bc_bp, bc_bc,
                      dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05,
                      ba_mse_ra, ba_mse_sh, ba_mse_ba,
                      bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp                     
