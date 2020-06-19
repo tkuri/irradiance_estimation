@@ -56,7 +56,12 @@ class BrightestResnetModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP', 'G_BC']
+
+        if opt.joint_enc:
+            self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP', 'G_BC']
+        else:
+            self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP']
+
         self.visual_names = ['real_I', 'fake_BA', 'real_BA', 'fake_BP', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -158,12 +163,12 @@ class BrightestResnetModel(BaseModel):
         self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP  
 
         self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
-        if condition==1:
-            if self.opt.joint_enc:
+        if self.opt.joint_enc:
+            if condition==1:
                 self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
                 self.loss_G += self.loss_G_BC
-        else:
-            print('Pass loss_G_BC because condition is {}'.format(condition))
+            else:
+                print('Pass loss_G_BC because condition is {}'.format(condition))
 
         self.loss_G.backward()
 
