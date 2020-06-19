@@ -132,7 +132,7 @@ class BrightestCasResnetModel(BaseModel):
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.fake_S = fake_S * color
         self.fake_BC, self.fake_BA, self.fake_BP = self.netG2(self.real_I)
-        self.fake_BC2, self.fake_BA2, self.fake_BP2 = self.netG2(self.fake_S)
+        self.fake_BC2, self.fake_BA2, self.fake_BP2 = self.netG3(self.fake_S)
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
