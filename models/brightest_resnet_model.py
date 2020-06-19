@@ -156,11 +156,12 @@ class BrightestResnetModel(BaseModel):
         self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
         self.loss_G_BA = self.criterionBA(self.fake_BA*mask, self.real_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.fake_BP*mask, self.real_BP*mask) * self.opt.lambda_BP  
-        self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
 
         self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP
         if condition==1:
-            self.loss_G += self.loss_G_BC
+            if self.opt.joint_enc:
+                self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
+                self.loss_G += self.loss_G_BC
         else:
             print('Pass loss_G_BC because condition is {}'.format(condition))
 
