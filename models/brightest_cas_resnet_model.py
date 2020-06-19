@@ -59,7 +59,7 @@ class BrightestCasResnetModel(BaseModel):
         self.visual_names = ['real_I', 'fake_BA', 'fake_BA2', 'real_BA', 'fake_BP', 'fake_BP2', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
-        self.model_names = ['G1', 'G2']
+        self.model_names = ['G1', 'G2', 'G3']
         # define networks (both generator and discriminator)
 
         # print('generator output:', output)
