@@ -137,7 +137,6 @@ class BrightestResnetModel(BaseModel):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         fake_S, fake_R, color = self.netG1(self.real_I)  # G(A)
         self.fake_R = fake_R
-        # fake_S = fake_S.repeat(fake_S.size(0), 3, fake_S.size(2), fake_S.size(3))
         fake_S = fake_S.repeat(1, 3, 1, 1)
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.fake_S = fake_S * color
