@@ -31,10 +31,6 @@ def calc_brightest_portions(visuals, name, disp, opt):
     visuals['pr_BA_{}'.format(disp)] = brightest_area
     visuals['pr_BP_{}'.format(disp)] = brightest_pixel
 
-    # tmp = list(visuals.items())
-    # tmp.insert(insert_idx[0], ('pr_BA_{}'.format(disp), brightest_area))
-    # tmp.insert(insert_idx[1], ('pr_BP_{}'.format(disp), brightest_pixel))
-    # added_vis = OrderedDict(tmp)
     return visuals
 
 def mask_on_image(src, visuals):
