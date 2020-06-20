@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     if opt.eval:
         model.eval()
-    result = []
+    result = [model.eval_label()]
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
             break
@@ -79,8 +79,4 @@ if __name__ == '__main__':
 
     with open(web_dir+'/brighstest_eval.csv', 'w', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
-        'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc', 'dist_05',
-        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 
-        'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp'])
         writer.writerows(result)

@@ -105,18 +105,19 @@ class CGIntrinsicDataset(BaseDataset):
         gt_S[gt_S_gray.expand(gt_S.size()) < 1e-4] = 1e-4
 
         mask = 1.0 - util.erosion(1.0-mask)
+        mask_edge = mask.clone()
 
         if self.opt.edge_mask:
-            edge_w = int(mask.size(-1)*0.05)
-            edge_h = int(mask.size(-2)*0.05)
-            mask[:, :edge_h, :] = 0
-            mask[:, -edge_h:, :] = 0
-            mask[:, :, :edge_w] = 0
-            mask[:, :, -edge_w:] = 0
+            edge_w = int(mask_edge.size(-1)*0.05)
+            edge_h = int(mask_edge.size(-2)*0.05)
+            mask_edge[:, :edge_h, :] = 0
+            mask_edge[:, -edge_h:, :] = 0
+            mask_edge[:, :, :edge_w] = 0
+            mask_edge[:, :, -edge_w:] = 0
 
         brightest_area, brightest_20, brightest_pixel, brightest_coord\
              = util.calc_brightest(
-                 gt_S_gray, mask,
+                 gt_S_gray, mask_edge,
                  nr_tap=self.opt.bp_nr_tap, 
                  nr_sigma=self.opt.bp_nr_sigma,
                  spread_tap=self.opt.bp_tap, 
@@ -138,6 +139,7 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R = normalize()(gt_R)
         gt_S = normalize()(gt_S)
         mask = normalize(grayscale=True)(mask)
+        mask_edge = normalize(grayscale=True)(mask_edge)
         brightest_area = normalize(grayscale=True)(brightest_area)
         brightest_pixel = normalize(grayscale=True)(brightest_pixel)
         brightest_coord = torch.Tensor(list(brightest_coord))
@@ -146,12 +148,13 @@ class CGIntrinsicDataset(BaseDataset):
         gt_R = torch.unsqueeze(gt_R, 0)
         gt_S = torch.unsqueeze(gt_S, 0)
         mask = torch.unsqueeze(mask, 0)
+        mask_edge = torch.unsqueeze(mask_edge, 0)
         brightest_area = torch.unsqueeze(brightest_area, 0)
         brightest_pixel = torch.unsqueeze(brightest_pixel, 0)        
         # radiantest = torch.unsqueeze(radiantest, 0)
         
         # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_area, 'G': radiantest, 'A_paths': img_path}
-        return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_pixel, 'G':brightest_coord, 'A_paths': img_path}
+        return {'A': srgb_img, 'gt_R': gt_R, 'gt_S': gt_S, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': brightest_area, 'gt_BP': brightest_pixel, 'gt_BC':brightest_coord, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
