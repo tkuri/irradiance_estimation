@@ -1,4 +1,5 @@
 import torch
+from collections import OrderedDict
 from .base_model import BaseModel
 from . import networks
 from typing import Union
@@ -186,6 +187,21 @@ class BrightestResnetModel(BaseModel):
         self.optimizer_G2.step()             # udpate G's weights
         if not self.opt.joint_enc:
             self.optimizer_G3.step()             # udpate G's weights
+
+    def get_current_BC(self):
+        pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.mask, self.opt.bp_tap, self.opt.bp_tap)
+        pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
+        return pr_BP_BC
+
+    def get_current_visuals(self):
+        """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""
+        visual_ret = OrderedDict()
+        for name in self.visual_names:
+            if isinstance(name, str):
+                visual_ret[name] = getattr(self, name)
+        visual_ret['pr_BP_BC'] = self.get_current_BC()
+        return visual_ret
+
 
     def eval_label(self):
         label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 

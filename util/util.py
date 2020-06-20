@@ -120,6 +120,22 @@ def calc_brightest(img, mask, nr_tap=11, nr_sigma=5.0, spread_tap=31, spread_sig
     return brightest_area, brightest_20, brightest_pixel, brightest_coord
 
 
+def disp_brightest_coord(coord, mask, spread_tap=31, spread_sigma=5.0):
+    brightest_pixel = torch.zeros_like(mask).float()
+    h, w = brightest_pixel.size(-1), brightest_pixel.size(-2)
+    coord_int = int(h*coord[0,0].item()) , int(w*coord[0,1].item())
+    brightest_pixel[:, :, coord_int[0], coord_int[1]] = 1.0
+
+    # Spread the points in concentric circles
+    # brightest_pixel = torch.unsqueeze(brightest_pixel, 0) # To 4dim
+    gauss_spread = kornia.filters.GaussianBlur2d((spread_tap, spread_tap), (spread_sigma, spread_sigma))
+    brightest_pixel = gauss_spread(brightest_pixel.float())
+    # brightest_pixel = torch.squeeze(brightest_pixel, 0) # To 3dim
+    brightest_max_blur = torch.max(brightest_pixel)
+    if brightest_max_blur > 0:
+        brightest_pixel = brightest_pixel / brightest_max_blur
+    return brightest_pixel
+
 
 def calc_brightest_area(src, mask):
     # blur the image
