@@ -15,17 +15,9 @@ if sys.version_info[0] == 2:
 else:
     VisdomExceptionBase = ConnectionError
 
-def calc_brightest_portions(visuals, opt, shading=True):
-    if shading:
-        name = 'pr_SH'
-        disp = 'SH'
-        insert_idx = (2, 6)
-    else:
-        name = 'input'
-        disp = 'RA'
-        insert_idx = (1, 4)        
+def calc_brightest_portions(visuals, name, disp, opt):
     img = torch.squeeze(visuals[name], 0)
-    mask = torch.squeeze(visuals['mask'], 0)
+    mask = torch.squeeze(visuals['mask_edge'], 0)
 
     img_gray = torch.mean(img, 0, keepdim=True)
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
@@ -36,12 +28,14 @@ def calc_brightest_portions(visuals, opt, shading=True):
     brightest_area = torch.unsqueeze(brightest_area, 0)
     brightest_pixel = util.normalize_0p1_to_n1p1(grayscale=True)(brightest_pixel)
     brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
+    visuals['pr_BA_{}'.format(disp)] = brightest_area
+    visuals['pr_BP_{}'.format(disp)] = brightest_pixel
 
-    tmp = list(visuals.items())
-    tmp.insert(insert_idx[0], ('pr_BA_{}'.format(disp), brightest_area))
-    tmp.insert(insert_idx[1], ('pr_BP_{}'.format(disp), brightest_pixel))
-    added_vis = OrderedDict(tmp)
-    return added_vis
+    # tmp = list(visuals.items())
+    # tmp.insert(insert_idx[0], ('pr_BA_{}'.format(disp), brightest_area))
+    # tmp.insert(insert_idx[1], ('pr_BP_{}'.format(disp), brightest_pixel))
+    # added_vis = OrderedDict(tmp)
+    return visuals
 
 def mask_on_image(src, visuals):
     mask = util.tensor2im(visuals['mask'])
@@ -96,8 +90,8 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
     ims, txts, links = [], [], []
 
     if opt.disp_brighest_info:
-        visuals = calc_brightest_portions(visuals, opt, False) # GT Radiance
-        visuals = calc_brightest_portions(visuals, opt, True) # Est irradiance 
+        visuals = calc_brightest_portions(visuals, 'input', 'RA',  opt) # GT Radiance
+        visuals = calc_brightest_portions(visuals, 'pr_SH', 'SH',  opt) # GT Radiance
 
     if multi == True:
         for c in range(multi_ch):
@@ -187,8 +181,8 @@ class Visualizer():
             save_result (bool) - - if save the current results to an HTML file
         """
         if self.opt.disp_brighest_info:
-            visuals = calc_brightest_portions(visuals, self.opt, False) # GT Radiance
-            visuals = calc_brightest_portions(visuals, self.opt, True) # Est irradiance 
+            visuals = calc_brightest_portions(visuals, 'input', 'RA',  self.opt) # GT Radiance
+            visuals = calc_brightest_portions(visuals, 'pr_SH', 'SH',  self.opt) # GT Radiance
             
         if self.display_id > 0:  # show images in the browser using visdom
             ncols = self.ncols

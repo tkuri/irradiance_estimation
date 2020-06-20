@@ -13,6 +13,7 @@ import torch.nn.functional as F
 import kornia.filters
 import random
 
+random.seed(101)
 erosion = nn.MaxPool2d(15, stride=1, padding=7)
 
 def normalize_0p1_to_n1p1(grayscale=False):
@@ -94,7 +95,6 @@ def calc_brightest(img, mask, nr_tap=11, nr_sigma=5.0, spread_tap=31, spread_sig
         brightest_coord = (int(coord//brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
         brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)), 1, brightest_pixel_num)
     elif brightest_pixel_num > 1:
-        random.seed(101)
         brightest_coord_list = torch.nonzero(brightest_pixel, as_tuple=False)
         pick_idx = random.randrange(0, len(brightest_coord_list))
         print('Conditon 2: brightest_pixel_num:', brightest_pixel_num)
