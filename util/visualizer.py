@@ -17,12 +17,12 @@ else:
 
 def calc_brightest_portions(visuals, opt, shading=True):
     if shading:
-        name = 'fake_S'
-        disp = 'shading'
+        name = 'pr_SH'
+        disp = 'SH'
         insert_idx = (2, 6)
     else:
-        name = 'real_I'
-        disp = 'radiance'
+        name = 'input'
+        disp = 'RA'
         insert_idx = (1, 4)        
     img = torch.squeeze(visuals[name], 0)
     mask = torch.squeeze(visuals['mask'], 0)
@@ -38,8 +38,8 @@ def calc_brightest_portions(visuals, opt, shading=True):
     brightest_pixel = torch.unsqueeze(brightest_pixel, 0)
 
     tmp = list(visuals.items())
-    tmp.insert(insert_idx[0], ('BA_{}'.format(disp), brightest_area))
-    tmp.insert(insert_idx[1], ('BP_{}'.format(disp), brightest_pixel))
+    tmp.insert(insert_idx[0], ('pr_BA_{}'.format(disp), brightest_area))
+    tmp.insert(insert_idx[1], ('pr_BP_{}'.format(disp), brightest_pixel))
     added_vis = OrderedDict(tmp)
     return added_vis
 
@@ -53,7 +53,7 @@ def jet_on_image(src, visuals, mode='alpha'):
     # jet = cv2.applyColorMap(src, cv2.COLORMAP_JET)
     jet = cv2.applyColorMap(src, cv2.COLORMAP_TURBO)
     jet = cv2.cvtColor(jet, cv2.COLOR_BGR2RGB)                
-    image = util.tensor2im(visuals['real_I'])
+    image = util.tensor2im(visuals['input'])
     
     if mode=='alpha':
         alpha = 0.8
@@ -64,6 +64,18 @@ def jet_on_image(src, visuals, mode='alpha'):
         invmask = 1 - mask
         out = jet*mask + image*invmask
     return out
+
+def postprocess(img, visuals, label):
+    mask_label = ['pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2']
+    jet_label = ['gt_BA', 'pr_BA_RA', 'pr_BA_SH', 'pr_BA', 'pr_BA2', 'gt_BP', 'pr_BP_RA', 'pr_BP_SH', 'pr_BP', 'pr_BP2']
+
+    # if label == 'fake_BA' or label == 'fake_BA2', 'real_BA', 'fake_BP', 'fake_BP2':
+    if label in mask_label:
+        img = mask_on_image(img, visuals)
+    # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+    if label in jet_label:
+        img = jet_on_image(img, visuals, mode='alpha')
+    return img
 
 
 def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
@@ -114,10 +126,11 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
             ims, txts, links = [], [], []
             for label, im_data in visuals.items():
                 im = util.tensor2im(im_data, gain=gain, ch=c)
-                if label == 'fake_BA' or label == 'fake_BA2':
-                    im = mask_on_image(im, visuals)
-                if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
-                    im = jet_on_image(im, visuals, mode='alpha')
+                im = postprocess(im, visuals, label)
+                # if label == 'fake_BA' or label == 'fake_BA2':
+                #     im = mask_on_image(im, visuals)
+                # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+                #     im = jet_on_image(im, visuals, mode='alpha')
                 image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
                 save_path = os.path.join(image_dir, image_name)
                 util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -128,10 +141,11 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
     else:
         for label, im_data in visuals.items():
             im = util.tensor2im(im_data, gain=gain)
-            if label == 'fake_BA' or label == 'fake_BA2':
-                im = mask_on_image(im, visuals)
-            if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
-                im = jet_on_image(im, visuals, mode='alpha')
+            im = postprocess(im, visuals, label)
+            # if label == 'fake_BA' or label == 'fake_BA2':
+            #     im = mask_on_image(im, visuals)
+            # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+            #     im = jet_on_image(im, visuals, mode='alpha')
             image_name = '%s_%s.png' % (name, label)
             save_path = os.path.join(image_dir, image_name)
             util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -223,10 +237,11 @@ class Visualizer():
                 idx = 0
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
-                    if label == 'fake_BA' or label == 'fake_BA2':
-                        image_numpy = mask_on_image(image_numpy, visuals)
-                    if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
-                        image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
+                    image_numpy = postprocess(image_numpy, visuals, label)
+                    # if label == 'fake_BA' or label == 'fake_BA2':
+                    #     image_numpy = mask_on_image(image_numpy, visuals)
+                    # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+                    #     image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
@@ -254,10 +269,11 @@ class Visualizer():
                 try:
                     for label, image in visuals.items():
                         image_numpy = util.tensor2im(image)
-                        if label == 'fake_BA' or label == 'fake_BA2':
-                            image_numpy = mask_on_image(image_numpy, visuals)
-                        if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
-                            image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
+                        image_numpy = postprocess(image_numpy, visuals, label)
+                        # if label == 'fake_BA' or label == 'fake_BA2':
+                        #     image_numpy = mask_on_image(image_numpy, visuals)
+                        # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+                        #     image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                         self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                        win=self.display_id + idx)
                         idx += 1
@@ -269,10 +285,11 @@ class Visualizer():
             # save images to the disk
             for label, image in visuals.items():
                 image_numpy = util.tensor2im(image)
-                if label == 'fake_BA' or label == 'fake_BA2':
-                    image_numpy = mask_on_image(image_numpy, visuals)
-                if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
-                    image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
+                image_numpy = postprocess(image_numpy, visuals, label)
+                # if label == 'fake_BA' or label == 'fake_BA2':
+                #     image_numpy = mask_on_image(image_numpy, visuals)
+                # if label == 'fake_BA' or label == 'fake_BA2' or label == 'real_BA' or label == 'fake_BP' or label == 'fake_BP2' or label == 'real_BP' or label=='BA_radiance' or label=='BA_shading' or label=='BP_radiance' or label=='BP_shading':
+                #     image_numpy = jet_on_image(image_numpy, visuals, mode='alpha')
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)
 

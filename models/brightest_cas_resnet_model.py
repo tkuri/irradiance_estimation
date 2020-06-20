@@ -39,7 +39,7 @@ class BrightestCasResnetModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
-            parser.add_argument('--lambda_R', type=float, default=1.0, help='weight for Reflection loss')
+            parser.add_argument('--lambda_AL', type=float, default=1.0, help='weight for Reflection loss')
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
@@ -55,8 +55,8 @@ class BrightestCasResnetModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_R', 'G_S', 'G_BA', 'G_BP', 'G_BC']
-        self.visual_names = ['real_I', 'fake_BA', 'fake_BA2', 'real_BA', 'fake_BP', 'fake_BP2', 'real_BP', 'fake_R', 'real_R', 'fake_S', 'real_S', 'mask']
+        self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP', 'G_BC']
+        self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         self.model_names = ['G1', 'G2', 'G3']
@@ -95,14 +95,14 @@ class BrightestCasResnetModel(BaseModel):
 
         The option 'direction' can be used to swap images in domain A and domain B.
         """
-        self.real_I = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
-        self.real_R = torch.squeeze(input['gt_R'],0).to(self.device) # [bn, 3, 256, 256]
-        self.real_S = torch.squeeze(input['gt_S'],0).to(self.device) # [bn, 3, 256, 256]
+        self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
+        self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
+        self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
         self.mask_edge = torch.squeeze(input['mask_edge'],0).to(self.device) # [bn, 1, 256, 256]
-        self.real_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
-        self.real_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.real_BC = input['gt_BC'].to(self.device) 
+        self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BC = input['gt_BC'].to(self.device) 
         self.image_paths = input['A_paths']
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
@@ -127,30 +127,30 @@ class BrightestCasResnetModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        fake_S, fake_R, color = self.netG1(self.real_I)  # G(A)
-        self.fake_R = fake_R
-        fake_S = fake_S.repeat(1, 3, 1, 1)
+        pr_SH, pr_AL, color = self.netG1(self.input)  # G(A)
+        self.pr_AL = pr_AL
+        pr_SH = pr_SH.repeat(1, 3, 1, 1)
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        self.fake_S = fake_S * color
-        self.fake_BC, self.fake_BA, self.fake_BP = self.netG2(self.real_I)
-        self.fake_BC2, self.fake_BA2, self.fake_BP2 = self.netG3(self.fake_S)
+        self.pr_SH = pr_SH * color
+        self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
+        self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(self.pr_SH)
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         mask_edge = self.mask_edge*0.5 + 0.5
-        real_BC = self.real_BC[:, :2]
-        condition = self.real_BC[:, 2]
-        self.loss_G_R = self.criterionR(self.fake_R*mask, self.real_R*mask) * self.opt.lambda_R
-        self.loss_G_S = self.criterionS(self.fake_S*mask, self.real_S*mask) * self.opt.lambda_S
-        self.loss_G_BA = self.criterionBA(self.fake_BA*mask_edge, self.real_BA*mask_edge) * self.opt.lambda_BA
-        self.loss_G_BP = self.criterionBP(self.fake_BP*mask_edge, self.real_BP*mask_edge) * self.opt.lambda_BP  
-        self.loss_G_BC = self.criterionBC(self.fake_BC, real_BC) * self.opt.lambda_BC
-        self.loss_G_BA2 = self.criterionBA(self.fake_BA2*mask_edge, self.real_BA*mask_edge) * self.opt.lambda_BA
-        self.loss_G_BP2 = self.criterionBP(self.fake_BP2*mask_edge, self.real_BP*mask_edge) * self.opt.lambda_BP  
-        self.loss_G_BC2 = self.criterionBC(self.fake_BC2, real_BC) * self.opt.lambda_BC
+        gt_BC = self.gt_BC[:, :2]
+        condition = self.gt_BC[:, 2]
+        self.loss_G_AL = self.criterionR(self.pr_AL*mask, self.gt_AL*mask) * self.opt.lambda_AL
+        self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
+        self.loss_G_BA = self.criterionBA(self.pr_BA*mask_edge, self.gt_BA*mask_edge) * self.opt.lambda_BA
+        self.loss_G_BP = self.criterionBP(self.pr_BP*mask_edge, self.gt_BP*mask_edge) * self.opt.lambda_BP  
+        self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC) * self.opt.lambda_BC
+        self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask_edge, self.gt_BA*mask_edge) * self.opt.lambda_BA
+        self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask_edge, self.gt_BP*mask_edge) * self.opt.lambda_BP  
+        self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC) * self.opt.lambda_BC
 
-        self.loss_G = self.loss_G_R + self.loss_G_S + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
+        self.loss_G = self.loss_G_AL + self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
         if condition==1:
             self.loss_G += self.loss_G_BC + self.loss_G_BC2
         else:
@@ -183,48 +183,48 @@ class BrightestCasResnetModel(BaseModel):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
-        fake_S_g = torch.squeeze(torch.mean(self.fake_S, 1, keepdim=True), 0)*0.5+0.5
-        real_I_g = torch.squeeze(torch.mean(self.real_I, 1, keepdim=True), 0)*0.5+0.5
+        pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
+        input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
         mask_edge = torch.squeeze(self.mask_edge, 0)*0.5+0.5
 
-        fake_BA = torch.squeeze(self.fake_BA, 0)*0.5+0.5
-        fake_BP = torch.squeeze(self.fake_BP, 0)*0.5+0.5
-        fake_BA2 = torch.squeeze(self.fake_BA2, 0)*0.5+0.5
-        fake_BP2 = torch.squeeze(self.fake_BP2, 0)*0.5+0.5
+        pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
+        pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
+        pr_BA2 = torch.squeeze(self.pr_BA2, 0)*0.5+0.5
+        pr_BP2 = torch.squeeze(self.pr_BP2, 0)*0.5+0.5
 
-        fake_BA_R, _, fake_BP_R, fake_BC_R = util.calc_brightest(real_I_g, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        fake_BA_S, _, fake_BP_S, fake_BC_S = util.calc_brightest(fake_S_g, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, fake_BP_BA, fake_BC_BA = util.calc_brightest(fake_BA, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, _, fake_BC_BP = util.calc_brightest(fake_BP, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, fake_BP_BA2, fake_BC_BA2 = util.calc_brightest(fake_BA2, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, _, fake_BC_BP2 = util.calc_brightest(fake_BP2, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        pr_BA_AL, _, pr_BP_AL, pr_BC_AL = util.calc_brightest(input_g, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, _, pr_BC_BP = util.calc_brightest(pr_BP, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BA2, pr_BC_BA2 = util.calc_brightest(pr_BA2, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, _, pr_BC_BP2 = util.calc_brightest(pr_BP2, mask_edge, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         # Evaluation of 20% brightest area
-        real_BA = torch.squeeze(self.real_BA, 0)*0.5+0.5
-        ba_mse_ra = util.mse_with_mask(fake_BA_R, real_BA, mask_edge).item()
-        ba_mse_sh = util.mse_with_mask(fake_BA_S, real_BA, mask_edge).item()
-        ba_mse_ba = util.mse_with_mask(fake_BA, real_BA, mask_edge).item()
-        ba_mse_ba2 = util.mse_with_mask(fake_BA2, real_BA, mask_edge).item()
+        gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
+        ba_mse_ra = util.mse_with_mask(pr_BA_AL, gt_BA, mask_edge).item()
+        ba_mse_sh = util.mse_with_mask(pr_BA_SH, gt_BA, mask_edge).item()
+        ba_mse_ba = util.mse_with_mask(pr_BA, gt_BA, mask_edge).item()
+        ba_mse_ba2 = util.mse_with_mask(pr_BA2, gt_BA, mask_edge).item()
 
         # Evaluation of brightest pixel (Spread)
-        real_BP = torch.squeeze(self.real_BP, 0)*0.5+0.5
-        bp_mse_ra = util.mse_with_mask(fake_BP_R, real_BP, mask_edge).item()
-        bp_mse_sh = util.mse_with_mask(fake_BP_S, real_BP, mask_edge).item()
-        bp_mse_ba = util.mse_with_mask(fake_BP_BA, real_BP, mask_edge).item()
-        bp_mse_bp = util.mse_with_mask(fake_BP, real_BP, mask_edge).item()
-        bp_mse_ba2 = util.mse_with_mask(fake_BP_BA2, real_BP, mask_edge).item()
-        bp_mse_bp2 = util.mse_with_mask(fake_BP2, real_BP, mask_edge).item()
+        gt_BP = torch.squeeze(self.gt_BP, 0)*0.5+0.5
+        bp_mse_ra = util.mse_with_mask(pr_BP_AL, gt_BP, mask_edge).item()
+        bp_mse_sh = util.mse_with_mask(pr_BP_SH, gt_BP, mask_edge).item()
+        bp_mse_ba = util.mse_with_mask(pr_BP_BA, gt_BP, mask_edge).item()
+        bp_mse_bp = util.mse_with_mask(pr_BP, gt_BP, mask_edge).item()
+        bp_mse_ba2 = util.mse_with_mask(pr_BP_BA2, gt_BP, mask_edge).item()
+        bp_mse_bp2 = util.mse_with_mask(pr_BP2, gt_BP, mask_edge).item()
 
         # Evaluation of brightest coordinate
-        bc_gt = (self.real_BC[0, 0].item(), self.real_BC[0, 1].item(), int(self.real_BC[0, 2].item()), int(self.real_BC[0, 3].item()))
-        bc_ra = fake_BC_R
-        bc_sh = fake_BC_S
-        bc_ba = fake_BC_BA
-        bc_bp = fake_BC_BP
-        bc_ba2 = fake_BC_BA2
-        bc_bp2 = fake_BC_BP2
-        bc_bc = (self.fake_BC[0, 0].item(), self.fake_BC[0, 1].item())
-        bc_bc2 = (self.fake_BC2[0, 0].item(), self.fake_BC2[0, 1].item())
+        bc_gt = (self.gt_BC[0, 0].item(), self.gt_BC[0, 1].item(), int(self.gt_BC[0, 2].item()), int(self.gt_BC[0, 3].item()))
+        bc_ra = pr_BC_AL
+        bc_sh = pr_BC_SH
+        bc_ba = pr_BC_BA
+        bc_bp = pr_BC_BP
+        bc_ba2 = pr_BC_BA2
+        bc_bp2 = pr_BC_BP2
+        bc_bc = (self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item())
+        bc_bc2 = (self.pr_BC2[0, 0].item(), self.pr_BC2[0, 1].item())
         dist_ra = np.hypot(bc_gt[0] - bc_ra[0], bc_gt[1] - bc_ra[1])
         dist_sh = np.hypot(bc_gt[0] - bc_sh[0], bc_gt[1] - bc_sh[1])
         dist_ba = np.hypot(bc_gt[0] - bc_ba[0], bc_gt[1] - bc_ba[1])

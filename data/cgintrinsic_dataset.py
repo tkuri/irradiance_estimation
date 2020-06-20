@@ -70,7 +70,7 @@ class CGIntrinsicDataset(BaseDataset):
         file_name = self.img_paths[index].split('/')
 
         R_path = self.dataroot + "/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_albedo.png"
-        gt_R = Image.open(R_path).convert('RGB')
+        gt_AL = Image.open(R_path).convert('RGB')
 
         mask_path = self.dataroot + "/intrinsics_final/images/"  + file_name[0] + "/" + file_name[1][:-4] + "_mask.png"
         mask = Image.open(mask_path).convert('RGB')
@@ -80,29 +80,29 @@ class CGIntrinsicDataset(BaseDataset):
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img.size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
-        gt_R_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+        gt_AL_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         mask_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
 
         srgb_img = srgb_img_transform(srgb_img)
-        gt_R = gt_R_transform(gt_R)
+        gt_AL = gt_AL_transform(gt_AL)
         mask = mask_transform(mask)
 
         rgb_img = srgb_img**2.2
-        gt_S = rgb_img / torch.clamp(gt_R, min=1e-6)
+        gt_SH = rgb_img / torch.clamp(gt_AL, min=1e-6)
 
         srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
         rgb_img_gray = torch.mean(rgb_img, 0, keepdim=True)
-        gt_R_gray = torch.mean(gt_R, 0, keepdim=True)
-        gt_S_gray = torch.mean(gt_S, 0, keepdim=True)
+        gt_AL_gray = torch.mean(gt_AL, 0, keepdim=True)
+        gt_SH_gray = torch.mean(gt_SH, 0, keepdim=True)
 
-        gt_R[gt_R < 1e-6] = 1e-6
-        mask[gt_R_gray < 1e-6] = 0 
+        gt_AL[gt_AL < 1e-6] = 1e-6
+        mask[gt_AL_gray < 1e-6] = 0 
         mask[srgb_img_gray < 1e-6] = 0 
-        mask[gt_S_gray > 10] = 0
-        # gt_S[gt_S_gray.expand(gt_S.size()) > 20] = 20
-        gt_S[gt_S_gray.expand(gt_S.size()) > 1] = 1
-        mask[gt_S_gray < 1e-4] = 0
-        gt_S[gt_S_gray.expand(gt_S.size()) < 1e-4] = 1e-4
+        mask[gt_SH_gray > 10] = 0
+        # gt_SH[gt_SH_gray.expand(gt_SH.size()) > 20] = 20
+        gt_SH[gt_SH_gray.expand(gt_SH.size()) > 1] = 1
+        mask[gt_SH_gray < 1e-4] = 0
+        gt_SH[gt_SH_gray.expand(gt_SH.size()) < 1e-4] = 1e-4
 
         mask = 1.0 - util.erosion(1.0-mask)
         mask_edge = mask.clone()
@@ -115,9 +115,9 @@ class CGIntrinsicDataset(BaseDataset):
             mask_edge[:, :, :edge_w] = 0
             mask_edge[:, :, -edge_w:] = 0
 
-        brightest_area, brightest_20, brightest_pixel, brightest_coord\
+        gt_BA, brightest_20, gt_BP, gt_BC\
              = util.calc_brightest(
-                 gt_S_gray, mask_edge,
+                 gt_SH_gray, mask_edge,
                  nr_tap=self.opt.bp_nr_tap, 
                  nr_sigma=self.opt.bp_nr_sigma,
                  spread_tap=self.opt.bp_tap, 
@@ -125,36 +125,36 @@ class CGIntrinsicDataset(BaseDataset):
                  )
 
         if self.opt.shading_norm:
-            gt_S = gt_S/brightest_20
+            gt_SH = gt_SH/brightest_20
 
         if irradiance < 0.25:
             srgb_img = srgb_img.cpu().numpy()
-            gt_S = gt_S.cpu().numpy()
+            gt_SH = gt_SH.cpu().numpy()
             srgb_img = denoise_tv_chambolle(srgb_img, weight=0.05, multichannel=True)            
-            gt_S = denoise_tv_chambolle(gt_S, weight=0.1, multichannel=True)
+            gt_SH = denoise_tv_chambolle(gt_SH, weight=0.1, multichannel=True)
             srgb_img = torch.from_numpy(srgb_img)
-            gt_S = torch.from_numpy(gt_S)
+            gt_SH = torch.from_numpy(gt_SH)
 
         srgb_img = normalize()(srgb_img)
-        gt_R = normalize()(gt_R)
-        gt_S = normalize()(gt_S)
+        gt_AL = normalize()(gt_AL)
+        gt_SH = normalize()(gt_SH)
         mask = normalize(grayscale=True)(mask)
         mask_edge = normalize(grayscale=True)(mask_edge)
-        brightest_area = normalize(grayscale=True)(brightest_area)
-        brightest_pixel = normalize(grayscale=True)(brightest_pixel)
-        brightest_coord = torch.Tensor(list(brightest_coord))
+        gt_BA = normalize(grayscale=True)(gt_BA)
+        gt_BP = normalize(grayscale=True)(gt_BP)
+        gt_BC = torch.Tensor(list(gt_BC))
 
         srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
-        gt_R = torch.unsqueeze(gt_R, 0)
-        gt_S = torch.unsqueeze(gt_S, 0)
+        gt_AL = torch.unsqueeze(gt_AL, 0)
+        gt_SH = torch.unsqueeze(gt_SH, 0)
         mask = torch.unsqueeze(mask, 0)
         mask_edge = torch.unsqueeze(mask_edge, 0)
-        brightest_area = torch.unsqueeze(brightest_area, 0)
-        brightest_pixel = torch.unsqueeze(brightest_pixel, 0)        
+        gt_BA = torch.unsqueeze(gt_BA, 0)
+        gt_BP = torch.unsqueeze(gt_BP, 0)        
         # radiantest = torch.unsqueeze(radiantest, 0)
         
-        # return {'A': srgb_img, 'B': gt_R, 'C': gt_S, 'D': mask, 'E': brightest_area, 'F': brightest_area, 'G': radiantest, 'A_paths': img_path}
-        return {'A': srgb_img, 'gt_R': gt_R, 'gt_S': gt_S, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': brightest_area, 'gt_BP': brightest_pixel, 'gt_BC':brightest_coord, 'A_paths': img_path}
+        # return {'A': srgb_img, 'B': gt_AL, 'C': gt_SH, 'D': mask, 'E': gt_BA, 'F': gt_BA, 'G': radiantest, 'A_paths': img_path}
+        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
