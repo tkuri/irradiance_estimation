@@ -71,6 +71,8 @@ if __name__ == '__main__':
             break
         model.set_input(data)  # unpack data from data loader
         # model.test()           # run inference
+        if i % 5 == 0:  # save images to an HTML file
+            print('processing (%04d)-th image...' % (i))
         res_row = model.eval_brightest_pixel()
         res_row = [i] + res_row
         result.append(res_row)
@@ -81,8 +83,6 @@ if __name__ == '__main__':
                 img_path = [str(i).zfill(5)]
             else:
                 img_path = model.get_image_paths()     # get image paths
-            if i % 5 == 0:  # save images to an HTML file
-                print('processing (%04d)-th image... %s' % (i, img_path))
             save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
     webpage.save()  # save the HTML
 
