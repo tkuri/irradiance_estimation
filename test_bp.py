@@ -66,17 +66,18 @@ if __name__ == '__main__':
         res_row = model.eval_brightest_pixel()
         res_row = [i] + res_row
         result.append(res_row)
-        
-        visuals = model.get_current_visuals()  # get image results
-        if opt.re_index:
-            img_path = [str(i).zfill(5)]
-        else:
-            img_path = model.get_image_paths()     # get image paths
-        if i % 5 == 0:  # save images to an HTML file
-            print('processing (%04d)-th image... %s' % (i, img_path))
-        save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
+
+        if not opt.no_save_image:        
+            visuals = model.get_current_visuals()  # get image results
+            if opt.re_index:
+                img_path = [str(i).zfill(5)]
+            else:
+                img_path = model.get_image_paths()     # get image paths
+            if i % 5 == 0:  # save images to an HTML file
+                print('processing (%04d)-th image... %s' % (i, img_path))
+            save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
     webpage.save()  # save the HTML
 
-    with open(web_dir+'/brighstest_eval.csv', 'w', newline="") as f:
+    with open(web_dir+'/{}.csv'.format(opt.csv_name), 'w', newline="") as f:
         writer = csv.writer(f)
         writer.writerows(result)
