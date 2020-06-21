@@ -23,7 +23,7 @@ from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
-import subprocess
+import subprocess, os
 
 def make_command_test(opt):
     if not opt.gpu_ids:
@@ -101,6 +101,6 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
-        test_command_each = test_command + ' --csv_name bp_eval_epoch{}'.format(epoch)
+        test_command_each = test_command + ' --csv_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
         print(test_command_each)
         subprocess.run(test_command_each)
