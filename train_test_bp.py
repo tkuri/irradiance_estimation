@@ -25,7 +25,7 @@ from models import create_model
 from util.visualizer import Visualizer
 import subprocess
 
-def make_command(opt):
+def make_command_test(opt):
     if not opt.gpu_ids:
         gpu_ids = -1
     else:
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     total_iters = 0                # the total number of training iterations
 
-    test_command = make_command(opt)
+    test_command = make_command_test(opt)
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch

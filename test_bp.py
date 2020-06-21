@@ -33,6 +33,13 @@ from models import create_model
 from util.visualizer import save_images
 from util import html
 import csv
+import subprocess
+
+
+def make_command_eval():
+    command = 'python eval_bp.py'
+    return command
+
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
@@ -55,6 +62,7 @@ if __name__ == '__main__':
     # test with eval mode. This only affects layers like batchnorm and dropout.
     # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
+    eval_command = make_command_eval()
     if opt.eval:
         model.eval()
     result = [model.eval_label()]
@@ -81,3 +89,6 @@ if __name__ == '__main__':
     with open(web_dir+'/{}.csv'.format(opt.csv_name), 'w', newline="") as f:
         writer = csv.writer(f)
         writer.writerows(result)
+
+    eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.csv_name), web_dir+'/{}_summary'.format(opt.csv_name))
+    subprocess.run(eval_command_each)
