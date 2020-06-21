@@ -39,8 +39,11 @@ def make_command_test(opt):
                            gpu_ids, opt.bp_tap, opt.bp_sigma)
     if opt.shading_norm:
         command += ' --shading_norm'
-    if opt.joint_enc:
-        command += ' --joint_enc'
+    try:
+        if opt.joint_enc:
+            command += ' --joint_enc'
+    except:
+        pass
     return command
 
 
