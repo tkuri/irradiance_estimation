@@ -189,7 +189,7 @@ class BrightestResnetModel(BaseModel):
             self.optimizer_G3.step()             # udpate G's weights
 
     def get_current_BC(self):
-        pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.mask, self.opt.bp_tap, self.opt.bp_tap)
+        pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.mask, self.opt.bp_tap, self.opt.bp_sigma)
         pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
         return pr_BP_BC
 
