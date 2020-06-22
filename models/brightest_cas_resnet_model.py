@@ -44,6 +44,9 @@ class BrightestCasResnetModel(BaseModel):
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
+            parser.add_argument('--in_gt_AL', action='store_true', help='GT albedo is also used as input')
+            parser.add_argument('--in_gt_SH', action='store_true', help='GT shading is also used as input')
+            parser.add_argument('--in_pr_AL', action='store_true', help='Predicted albedo is also used as input')
             parser.add_argument('--reg', action='store_true', help='regularization')
 
         return parser
@@ -135,6 +138,34 @@ class BrightestCasResnetModel(BaseModel):
         self.pr_SH = pr_SH * color
         self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
         self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(self.pr_SH)
+
+        # Multi input shared network
+        if self.isTrain:
+            if opt.in_gt_AL:
+                pr_BC, pr_BA, pr_BP = self.netG2(self.gt_AL)
+                self.pr_BC = (self.pr_BC + pr_BC)*0.5
+                self.pr_BA = (self.pr_BA + pr_BA)*0.5
+                self.pr_BP = (self.pr_BP + pr_BP)*0.5
+            if opt.in_gt_SH:
+                pr_BC, pr_BA, pr_BP = self.netG2(self.gt_SH)
+                self.pr_BC = (self.pr_BC + pr_BC)*0.5
+                self.pr_BA = (self.pr_BA + pr_BA)*0.5
+                self.pr_BP = (self.pr_BP + pr_BP)*0.5
+            if opt.in_gt_AL:
+                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_AL)
+                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
+            if opt.in_gt_SH:
+                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_SH)
+                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
+            if opt.in_pr_AL:
+                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.pr_AL)
+                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
@@ -323,8 +354,11 @@ class BrightestCasResnetModel(BaseModel):
             saw_img = saw_utils.resize_img_arr(saw_img_ori)
 
             saw_img = np.transpose(saw_img, (2,0,1))
-            input_ = torch.from_numpy(saw_img).unsqueeze(0).contiguous().float()
-            input_images = input_
+            # input_ = torch.from_numpy(saw_img).unsqueeze(0).contiguous().float()
+            input_ = torch.from_numpy(saw_img).contiguous().float()
+            input_images = util.normalize_0p1_to_n1p1(grayscale=False)(input_)
+            input_images = input_images.unsqueeze(0)
+            # input_images = input_
             # input_images = Variable(input_.cuda() , requires_grad = False)
 
             # prediction_S, prediction_R, rgb_s = self.netG.forward(input_images) 
