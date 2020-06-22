@@ -141,27 +141,27 @@ class BrightestCasResnetModel(BaseModel):
 
         # Multi input shared network
         if self.isTrain:
-            if opt.in_gt_AL:
+            if self.opt.in_gt_AL:
                 pr_BC, pr_BA, pr_BP = self.netG2(self.gt_AL)
                 self.pr_BC = (self.pr_BC + pr_BC)*0.5
                 self.pr_BA = (self.pr_BA + pr_BA)*0.5
                 self.pr_BP = (self.pr_BP + pr_BP)*0.5
-            if opt.in_gt_SH:
+            if self.opt.in_gt_SH:
                 pr_BC, pr_BA, pr_BP = self.netG2(self.gt_SH)
                 self.pr_BC = (self.pr_BC + pr_BC)*0.5
                 self.pr_BA = (self.pr_BA + pr_BA)*0.5
                 self.pr_BP = (self.pr_BP + pr_BP)*0.5
-            if opt.in_gt_AL:
+            if self.opt.in_gt_AL:
                 pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_AL)
                 self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
                 self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
                 self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-            if opt.in_gt_SH:
+            if self.opt.in_gt_SH:
                 pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_SH)
                 self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
                 self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
                 self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-            if opt.in_pr_AL:
+            if self.opt.in_pr_AL:
                 pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.pr_AL)
                 self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
                 self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
