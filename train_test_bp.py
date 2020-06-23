@@ -58,7 +58,6 @@ if __name__ == '__main__':
     total_iters = 0                # the total number of training iterations
 
     test_command = make_command_test(opt)
-    iiw_command = make_command_iiw(opt)
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -104,6 +103,3 @@ if __name__ == '__main__':
         test_command_each = test_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
         print(test_command_each)
         subprocess.run(test_command_each)
-        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
-        # print(iiw_command_each)
-        # subprocess.run(iiw_command_each)
