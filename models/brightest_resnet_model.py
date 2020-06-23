@@ -426,9 +426,9 @@ class BrightestResnetModel(BaseModel):
             prediction_A_np = prediction_A.data[:,:,:].cpu().numpy()
             prediction_A_np = np.transpose(prediction_A_np, (1, 2, 0))
             prediction_A_np = resize(prediction_A_np, (original_h, original_w), order=1, preserve_range=True)
-            cv2.imwrite('test_shading.png', prediction_S_np*255)
-            cv2.imwrite('test_albedo.png', cv2.cvtColor((prediction_A_np*255).astype(np.uint8), cv2.COLOR_BGR2RGB))
-            cv2.imwrite('test_original.png', cv2.cvtColor((saw_img_ori*255).astype(np.uint8), cv2.COLOR_BGR2RGB))
+            # cv2.imwrite('test_shading.png', prediction_S_np*255)
+            # cv2.imwrite('test_albedo.png', cv2.cvtColor((prediction_A_np*255).astype(np.uint8), cv2.COLOR_BGR2RGB))
+            # cv2.imwrite('test_original.png', cv2.cvtColor((saw_img_ori*255).astype(np.uint8), cv2.COLOR_BGR2RGB))
             
 
             # compute confusion matrix
