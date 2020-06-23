@@ -92,8 +92,8 @@ if __name__ == '__main__':
     # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     eval_command = make_command_eval()
-    iiw_command = make_command_iiw()
-    saw_command = make_command_saw()
+    iiw_command = make_command_iiw(opt)
+    saw_command = make_command_saw(opt)
     if opt.eval:
         model.eval()
     result = [model.eval_label()]
