@@ -397,8 +397,8 @@ class BrightestResnetModel(BaseModel):
         ]
 
         count = 0 
-        eval_num = 1
-        # total_num_img = len(photo_ids)
+        # eval_num = 1
+        eval_num = len(photo_ids)
         total_num_img = eval_num
 
         # for photo_id in (photo_ids):
