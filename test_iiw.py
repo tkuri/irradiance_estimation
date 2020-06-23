@@ -29,8 +29,14 @@ def test_iiw(model):
             total_loss  += total_whdr
             total_count += count
             print('i, whdr, count', i, total_whdr, count)
+            # if i==1:
+            #     break
 
-    print("IIW TEST WHDR %f"%(total_loss/(total_count)))
+    whdr = total_loss/(total_count)
+
+    print("IIW TEST WHDR %f"%(whdr))
+    return whdr
+
 
 if __name__ == '__main__':
     # root = "/"    
@@ -41,7 +47,10 @@ if __name__ == '__main__':
     test_list_dir = '//JPC00160593/Users/kurita/dataset/CGIntrinsics/IIW/test_list/'
 
     opt = TestOptions().parse()
+    
     model = create_model(opt)
 
     print("WE ARE IN TESTING IIW!!!!")
-    test_iiw(model)
+    whdr = test_iiw(model)
+    with open(opt.result_name + '_iiw_{:.4f}.txt'.format(whdr), mode='w') as f:
+        f.write(str(whdr))

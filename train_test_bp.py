@@ -46,6 +46,34 @@ def make_command_test(opt):
         pass
     return command
 
+def make_command_iiw(opt):
+    if not opt.gpu_ids:
+        gpu_ids = -1
+    else:
+        gpu_ids = opt.gpu_ids[0]
+    command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
+                  '.format(opt.name, opt.model, gpu_ids)
+    try:
+        if opt.joint_enc:
+            command += ' --joint_enc'
+    except:
+        pass
+    return command
+
+def make_command_saw(opt):
+    if not opt.gpu_ids:
+        gpu_ids = -1
+    else:
+        gpu_ids = opt.gpu_ids[0]
+    command = 'python test_saw.py --name {} --model {} --gpu_ids {}\
+                  '.format(opt.name, opt.model, gpu_ids)
+    try:
+        if opt.joint_enc:
+            command += ' --joint_enc'
+    except:
+        pass
+    return command
+
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
@@ -59,6 +87,7 @@ if __name__ == '__main__':
     total_iters = 0                # the total number of training iterations
 
     test_command = make_command_test(opt)
+    iiw_command = make_command_iiw(opt)
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -101,6 +130,9 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
-        test_command_each = test_command + ' --csv_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        test_command_each = test_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
         print(test_command_each)
         subprocess.run(test_command_each)
+        iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        print(iiw_command_each)
+        subprocess.run(iiw_command_each)

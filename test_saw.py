@@ -39,4 +39,6 @@ if __name__ == '__main__':
     best_epoch = 0
 
     print("WE ARE IN TESTING SAW")
-    test_SAW(model)
+    AP = test_SAW(model)
+    with open(opt.result_name + '_saw_{:.4f}.txt'.format(AP), mode='w') as f:
+        f.write(str(AP))

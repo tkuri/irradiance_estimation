@@ -86,9 +86,9 @@ if __name__ == '__main__':
             save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
     webpage.save()  # save the HTML
 
-    with open(web_dir+'/{}.csv'.format(opt.csv_name), 'w', newline="") as f:
+    with open(web_dir+'/{}.csv'.format(opt.result_name), 'w', newline="") as f:
         writer = csv.writer(f)
         writer.writerows(result)
 
-    eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.csv_name), web_dir+'/{}_summary'.format(opt.csv_name))
+    eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
     subprocess.run(eval_command_each)
