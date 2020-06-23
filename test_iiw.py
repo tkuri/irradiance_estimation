@@ -52,5 +52,5 @@ if __name__ == '__main__':
 
     print("WE ARE IN TESTING IIW!!!!")
     whdr = test_iiw(model)
-    with open(opt.result_name + '_iiw_{:.4f}.txt'.format(whdr), mode='w') as f:
+    with open(opt.result_name + '_WHDR_{:.4f}.txt'.format(whdr), mode='w') as f:
         f.write(str(whdr))

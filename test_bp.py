@@ -41,6 +41,35 @@ def make_command_eval():
     return command
 
 
+def make_command_iiw(opt):
+    if not opt.gpu_ids:
+        gpu_ids = -1
+    else:
+        gpu_ids = opt.gpu_ids[0]
+    command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
+                  '.format(opt.name, opt.model, gpu_ids)
+    try:
+        if opt.joint_enc:
+            command += ' --joint_enc'
+    except:
+        pass
+    return command
+
+def make_command_saw(opt):
+    if not opt.gpu_ids:
+        gpu_ids = -1
+    else:
+        gpu_ids = opt.gpu_ids[0]
+    command = 'python test_saw.py --name {} --model {} --gpu_ids {}\
+                  '.format(opt.name, opt.model, gpu_ids)
+    try:
+        if opt.joint_enc:
+            command += ' --joint_enc'
+    except:
+        pass
+    return command
+
+
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
     # hard-code some parameters for test
@@ -63,6 +92,8 @@ if __name__ == '__main__':
     # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     eval_command = make_command_eval()
+    iiw_command = make_command_iiw()
+    saw_command = make_command_saw()
     if opt.eval:
         model.eval()
     result = [model.eval_label()]
@@ -92,3 +123,13 @@ if __name__ == '__main__':
 
     eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
     subprocess.run(eval_command_each)
+
+    iiw_command_each = iiw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+    # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+    print(iiw_command_each)
+    subprocess.run(iiw_command_each)
+
+    saw_command_each = saw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+    # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+    print(saw_command_each)
+    subprocess.run(saw_command_each)

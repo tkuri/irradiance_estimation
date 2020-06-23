@@ -46,35 +46,6 @@ def make_command_test(opt):
         pass
     return command
 
-def make_command_iiw(opt):
-    if not opt.gpu_ids:
-        gpu_ids = -1
-    else:
-        gpu_ids = opt.gpu_ids[0]
-    command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
-                  '.format(opt.name, opt.model, gpu_ids)
-    try:
-        if opt.joint_enc:
-            command += ' --joint_enc'
-    except:
-        pass
-    return command
-
-def make_command_saw(opt):
-    if not opt.gpu_ids:
-        gpu_ids = -1
-    else:
-        gpu_ids = opt.gpu_ids[0]
-    command = 'python test_saw.py --name {} --model {} --gpu_ids {}\
-                  '.format(opt.name, opt.model, gpu_ids)
-    try:
-        if opt.joint_enc:
-            command += ' --joint_enc'
-    except:
-        pass
-    return command
-
-
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
@@ -133,6 +104,6 @@ if __name__ == '__main__':
         test_command_each = test_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
         print(test_command_each)
         subprocess.run(test_command_each)
-        iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
-        print(iiw_command_each)
-        subprocess.run(iiw_command_each)
+        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        # print(iiw_command_each)
+        # subprocess.run(iiw_command_each)
