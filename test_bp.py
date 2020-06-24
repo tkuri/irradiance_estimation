@@ -94,42 +94,45 @@ if __name__ == '__main__':
     eval_command = make_command_eval()
     iiw_command = make_command_iiw(opt)
     saw_command = make_command_saw(opt)
-    if opt.eval:
-        model.eval()
-    result = [model.eval_label()]
-    for i, data in enumerate(dataset):
-        if i >= opt.num_test:  # only apply our model to opt.num_test images.
-            break
-        model.set_input(data)  # unpack data from data loader
-        # model.test()           # run inference
-        if i % 5 == 0:  # save images to an HTML file
-            print('processing (%04d)-th image...' % (i))
-        res_row = model.eval_brightest_pixel()
-        res_row = [i] + res_row
-        result.append(res_row)
+    if opt.test_mode <= 1: 
+        if opt.eval:
+            model.eval()
+        result = [model.eval_label()]
+        for i, data in enumerate(dataset):
+            if i >= opt.num_test:  # only apply our model to opt.num_test images.
+                break
+            model.set_input(data)  # unpack data from data loader
+            # model.test()           # run inference
+            if i % 5 == 0:  # save images to an HTML file
+                print('processing (%04d)-th image...' % (i))
+            res_row = model.eval_brightest_pixel()
+            res_row = [i] + res_row
+            result.append(res_row)
 
-        if not opt.no_save_image:        
-            visuals = model.get_current_visuals()  # get image results
-            if opt.re_index:
-                img_path = [str(i).zfill(5)]
-            else:
-                img_path = model.get_image_paths()     # get image paths
-            save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
-    webpage.save()  # save the HTML
+            if not opt.no_save_image:        
+                visuals = model.get_current_visuals()  # get image results
+                if opt.re_index:
+                    img_path = [str(i).zfill(5)]
+                else:
+                    img_path = model.get_image_paths()     # get image paths
+                save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
+        webpage.save()  # save the HTML
 
-    with open(web_dir+'/{}.csv'.format(opt.result_name), 'w', newline="") as f:
-        writer = csv.writer(f)
-        writer.writerows(result)
+        with open(web_dir+'/{}.csv'.format(opt.result_name), 'w', newline="") as f:
+            writer = csv.writer(f)
+            writer.writerows(result)
 
-    eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
-    subprocess.run(eval_command_each)
+        eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
+        subprocess.run(eval_command_each)
 
-    iiw_command_each = iiw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
-    # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
-    print(iiw_command_each)
-    subprocess.run(iiw_command_each)
+    if opt.test_mode == 0 or opt.test_mode == 2: 
+        iiw_command_each = iiw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        print(iiw_command_each)
+        subprocess.run(iiw_command_each)
 
-    saw_command_each = saw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
-    # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
-    print(saw_command_each)
-    subprocess.run(saw_command_each)
+    if opt.test_mode == 0 or opt.test_mode == 3: 
+        saw_command_each = saw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        print(saw_command_each)
+        subprocess.run(saw_command_each)
