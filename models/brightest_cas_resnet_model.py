@@ -384,42 +384,44 @@ class BrightestCasResnetModel(BaseModel):
         photo_ids = saw_utils.load_photo_ids_for_split(
             splits_dir=splits_dir, dataset_split=dataset_split)
 
-        plot_arrs = []
-        line_names = []
+        AP = []
+        for m in mode:
+            plot_arrs = []
+            line_names = []
 
-        fn = 'pr-%s' % {'R': 'train', 'V': 'val', 'E': 'test'}[dataset_split]
-        title = '%s Precision-Recall' % (
-            {'R': 'Training', 'V': 'Validation', 'E': 'Test'}[dataset_split],
-        )
+            fn = 'pr-%s' % {'R': 'train', 'V': 'val', 'E': 'test'}[dataset_split]
+            title = '%s Precision-Recall' % (
+                {'R': 'Training', 'V': 'Validation', 'E': 'Test'}[dataset_split],
+            )
 
-        print("FN ", fn)
-        print("title ", title)
+            print("FN ", fn)
+            print("title ", title)
 
-        # compute PR 
-        rdic_list = self.get_precision_recall_list_new(pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-            photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size)
+            # compute PR 
+            rdic_list = self.get_precision_recall_list_new(pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
+                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, mode=m)
 
-        plot_arr = np.empty((len(rdic_list) + 2, 2))
+            plot_arr = np.empty((len(rdic_list) + 2, 2))
 
-        # extrapolate starting point 
-        plot_arr[0, 0] = 0.0
-        plot_arr[0, 1] = rdic_list[0]['overall_prec']
+            # extrapolate starting point 
+            plot_arr[0, 0] = 0.0
+            plot_arr[0, 1] = rdic_list[0]['overall_prec']
 
-        for i, rdic in enumerate(rdic_list):
-            plot_arr[i+1, 0] = rdic['overall_recall']
-            plot_arr[i+1, 1] = rdic['overall_prec']
+            for i, rdic in enumerate(rdic_list):
+                plot_arr[i+1, 0] = rdic['overall_recall']
+                plot_arr[i+1, 1] = rdic['overall_prec']
 
-        # extrapolate end point
-        plot_arr[-1, 0] = 1
-        plot_arr[-1, 1] = 0.5
+            # extrapolate end point
+            plot_arr[-1, 0] = 1
+            plot_arr[-1, 1] = 0.5
 
-        AP = np.trapz(plot_arr[:,1], plot_arr[:,0])
+            AP.append(np.trapz(plot_arr[:,1], plot_arr[:,0]))
 
         return AP
 
 
     def get_precision_recall_list_new(self, pixel_labels_dir, thres_list, photo_ids,
-                                  class_weights, bl_filter_size):
+                                  class_weights, bl_filter_size, mode):
 
         output_count = len(thres_list)
         overall_conf_mx_list = [
@@ -441,11 +443,8 @@ class BrightestCasResnetModel(BaseModel):
             saw_img = saw_utils.resize_img_arr(saw_img_ori)
 
             saw_img = np.transpose(saw_img, (2,0,1))
-            # input_ = torch.from_numpy(saw_img).unsqueeze(0).contiguous().float()
-            input_ = torch.from_numpy(saw_img).contiguous().float()
-            input_images = util.normalize_0p1_to_n1p1(grayscale=False)(input_)
-            input_images = input_images.unsqueeze(0)
-            # input_images = input_
+            input_ = torch.from_numpy(saw_img).unsqueeze(0).contiguous().float()
+            input_images = input_
             # input_images = Variable(input_.cuda() , requires_grad = False)
 
             # prediction_S, prediction_R, rgb_s = self.netG.forward(input_images) 
@@ -466,7 +465,7 @@ class BrightestCasResnetModel(BaseModel):
             # compute confusion matrix
             conf_mx_list = self.eval_on_images( shading_image_arr = prediction_S_np,
                 pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_id=photo_id, bl_filter_size = bl_filter_size
+                photo_id=photo_id, bl_filter_size = bl_filter_size, mode = mode
             )
 
 
@@ -498,7 +497,7 @@ class BrightestCasResnetModel(BaseModel):
         return ret
 
 
-    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size):
+    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, mode):
         """
         This method generates a list of precision-recall pairs and confusion
         matrices for each threshold provided in ``thres_list`` for a specific
@@ -552,8 +551,12 @@ class BrightestCasResnetModel(BaseModel):
             # Note: y_pred should have the same image resolution as y_true
             assert y_pred.shape == y_true.shape
 
-            confusion_matrix = saw_utils.grouped_confusion_matrix(y_true[~ignored_mask], y_pred[~ignored_mask], y_pred_max[~ignored_mask])
+            # confusion_matrix = saw_utils.grouped_confusion_matrix(y_true[~ignored_mask], y_pred[~ignored_mask], y_pred_max[~ignored_mask])
+            if mode < 0.1:
+                confusion_matrix = saw_utils.grouped_confusion_matrix(y_true[~ignored_mask], y_pred[~ignored_mask], y_pred_max[~ignored_mask])
+            else:
+                confusion_matrix = saw_utils.grouped_weighted_confusion_matrix(y_true[~ignored_mask], y_pred[~ignored_mask], y_pred_max[~ignored_mask], average_gradient[~ignored_mask])
+
             ret.append(confusion_matrix)
 
         return ret
-

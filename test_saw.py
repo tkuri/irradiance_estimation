@@ -40,5 +40,5 @@ if __name__ == '__main__':
 
     print("WE ARE IN TESTING SAW")
     AP = test_SAW(model)
-    with open(opt.result_name + '_saw_{:.4f}.txt'.format(AP), mode='w') as f:
+    with open(opt.result_name + '_saw_{:.4f}_{:.4f}.txt'.format(AP[0],AP[1]), mode='w') as f:
         f.write(str(AP))
