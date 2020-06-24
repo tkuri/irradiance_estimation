@@ -207,8 +207,8 @@ class BrightestResnetModel(BaseModel):
     def eval_label(self):
         label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
         'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc', 'dist_05',
-        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 
-        'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp']
+        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_0',
+        'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_0']
 
         return label
 
@@ -229,11 +229,13 @@ class BrightestResnetModel(BaseModel):
         _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         _, _, _, pr_BC_BP = util.calc_brightest(pr_BP, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
+        all_zero = torch.zeros_like(mask_edge)
         # Evaluation of 20% brightest area
         gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
         ba_mse_ra = util.mse_with_mask(pr_BA_RA, gt_BA, mask_edge).item()
         ba_mse_sh = util.mse_with_mask(pr_BA_SH, gt_BA, mask_edge).item()
         ba_mse_ba = util.mse_with_mask(pr_BA, gt_BA, mask_edge).item()
+        ba_mse_0 = util.mse_with_mask(all_zero, gt_BA, mask_edge).item()
 
         # Evaluation of brightest pixel (Spread)
         gt_BP = torch.squeeze(self.gt_BP, 0)*0.5+0.5
@@ -241,6 +243,7 @@ class BrightestResnetModel(BaseModel):
         bp_mse_sh = util.mse_with_mask(pr_BP_SH, gt_BP, mask_edge).item()
         bp_mse_ba = util.mse_with_mask(pr_BP_BA, gt_BP, mask_edge).item()
         bp_mse_bp = util.mse_with_mask(pr_BP, gt_BP, mask_edge).item()
+        bp_mse_0 = util.mse_with_mask(all_zero, gt_BP, mask_edge).item()
 
         # Evaluation of brightest coordinate
         bc_gt = (self.gt_BC[0, 0].item(), self.gt_BC[0, 1].item(), int(self.gt_BC[0, 2].item()), int(self.gt_BC[0, 3].item()))
@@ -258,8 +261,8 @@ class BrightestResnetModel(BaseModel):
 
         result = [bc_gt[2], bc_gt, bc_ra, bc_sh, bc_ba, bc_bp, bc_bc,
                      dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05,
-                     ba_mse_ra, ba_mse_sh, ba_mse_ba,
-                     bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp                     
+                     ba_mse_ra, ba_mse_sh, ba_mse_ba, ba_mse_0,
+                     bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp, bp_mse_0                     
                      ]
         return result
 
