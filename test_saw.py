@@ -10,6 +10,7 @@ def test_SAW(model):
     # parameters for SAW 
     pixel_labels_dir = saw_root + 'saw/saw_pixel_labels/saw_data-filter_size_0-ignore_border_0.05-normal_gradmag_thres_1.5-depth_gradmag_thres_2.0'
     splits_dir = saw_root + 'saw/saw_splits'
+    img_dir = saw_root + 'saw/saw_images_512"
     class_weights = [1, 1, 2]
     bl_filter_size = 10
 
@@ -17,7 +18,7 @@ def test_SAW(model):
     # model.switch_to_eval()
     model.eval()
     AP = model.compute_pr(pixel_labels_dir, splits_dir,
-                dataset_split, class_weights, bl_filter_size)
+                dataset_split, class_weights, bl_filter_size, img_dir)
 
     print("SAW test AP: %f"%AP)
     return AP

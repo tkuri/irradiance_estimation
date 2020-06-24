@@ -378,7 +378,7 @@ class BrightestCasResnetModel(BaseModel):
 
         return self.evaluate_WHDR(prediction_R, targets)
 
-    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, thres_count=400):
+    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, img_dir, thres_count=400):
 
         thres_list = saw_utils.gen_pr_thres_list(thres_count)
         photo_ids = saw_utils.load_photo_ids_for_split(
@@ -400,7 +400,7 @@ class BrightestCasResnetModel(BaseModel):
 
             # compute PR 
             rdic_list = self.get_precision_recall_list_new(pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, mode=m)
+                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, img_dir=img_dir, mode=m)
 
             plot_arr = np.empty((len(rdic_list) + 2, 2))
 
@@ -422,7 +422,7 @@ class BrightestCasResnetModel(BaseModel):
 
 
     def get_precision_recall_list_new(self, pixel_labels_dir, thres_list, photo_ids,
-                                  class_weights, bl_filter_size, mode):
+                                  class_weights, bl_filter_size, img_dir, mode):
 
         output_count = len(thres_list)
         overall_conf_mx_list = [
@@ -466,7 +466,7 @@ class BrightestCasResnetModel(BaseModel):
             # compute confusion matrix
             conf_mx_list = self.eval_on_images( shading_image_arr = prediction_S_np,
                 pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_id=photo_id, bl_filter_size = bl_filter_size, mode = mode
+                photo_id=photo_id, bl_filter_size=bl_filter_size, img_dir=img_dir, mode=mode
             )
 
 
@@ -498,7 +498,7 @@ class BrightestCasResnetModel(BaseModel):
         return ret
 
 
-    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, mode):
+    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, img_dir, mode):
         """
         This method generates a list of precision-recall pairs and confusion
         matrices for each threshold provided in ``thres_list`` for a specific
@@ -526,6 +526,27 @@ class BrightestCasResnetModel(BaseModel):
 
         if bl_filter_size:
             shading_gradmag_max = maximum_filter(shading_gradmag, size=bl_filter_size)
+
+
+        # Add-------------------------------------
+        img_path = img_dir+ str(photo_id) + ".png"
+
+        # diffuclut and harder dataset
+        srgb_img = saw_utils.load_img_arr(img_path)
+        srgb_img = np.mean(srgb_img, axis = 2)
+        img_gradmag = saw_utils.compute_gradmag(srgb_img)
+
+        smooth_mask = (y_true == 2)
+        average_gradient = np.zeros_like(img_gradmag)
+        # find every connected component
+        labeled_array, num_features = label(smooth_mask)
+        for j in range(1, num_features+1):
+            # for each connected component, compute the average image graident for the region
+            avg = np.mean(img_gradmag[labeled_array == j])
+            average_gradient[labeled_array == j]  = avg
+
+        average_gradient = np.ravel(average_gradient)
+        # Add-------------------------------------
 
         # We have the following ground truth labels:
         # (0) normal/depth discontinuity non-smooth shading (NS-ND)
@@ -561,3 +582,4 @@ class BrightestCasResnetModel(BaseModel):
             ret.append(confusion_matrix)
 
         return ret
+
