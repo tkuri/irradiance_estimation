@@ -8,6 +8,7 @@ import numpy as np
 from . import saw_utils
 from skimage.transform import resize
 from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage.measurements import label
 import cv2
 import json
 
