@@ -350,7 +350,7 @@ class BrightestResnetModel(BaseModel):
         return self.evaluate_WHDR(prediction_R, targets)
 
 
-    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, img_dir, thres_count=400):
+    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, thres_count=400):
 
         thres_list = saw_utils.gen_pr_thres_list(thres_count)
         photo_ids = saw_utils.load_photo_ids_for_split(
@@ -372,7 +372,7 @@ class BrightestResnetModel(BaseModel):
 
             # compute PR 
             rdic_list = self.get_precision_recall_list_new(pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, img_dir=img_dir, mode=m)
+                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, mode=m)
 
             plot_arr = np.empty((len(rdic_list) + 2, 2))
 
@@ -394,7 +394,7 @@ class BrightestResnetModel(BaseModel):
 
 
     def get_precision_recall_list_new(self, pixel_labels_dir, thres_list, photo_ids,
-                                  class_weights, bl_filter_size, img_dir, mode):
+                                  class_weights, bl_filter_size, mode):
 
         output_count = len(thres_list)
         overall_conf_mx_list = [
@@ -403,7 +403,7 @@ class BrightestResnetModel(BaseModel):
         ]
 
         count = 0 
-        # eval_num = 1
+        # eval_num = 20
         eval_num = len(photo_ids)
         total_num_img = eval_num
 
@@ -438,7 +438,7 @@ class BrightestResnetModel(BaseModel):
             # compute confusion matrix
             conf_mx_list = self.eval_on_images( shading_image_arr = prediction_S_np,
                 pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_id=photo_id, bl_filter_size=bl_filter_size, img_dir=img_dir, mode=mode
+                photo_id=photo_id, bl_filter_size=bl_filter_size, mode=mode
             )
 
 
@@ -470,7 +470,7 @@ class BrightestResnetModel(BaseModel):
         return ret
 
 
-    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, img_dir, mode):
+    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, mode):
         """
         This method generates a list of precision-recall pairs and confusion
         matrices for each threshold provided in ``thres_list`` for a specific
@@ -500,11 +500,17 @@ class BrightestResnetModel(BaseModel):
             shading_gradmag_max = maximum_filter(shading_gradmag, size=bl_filter_size)
 
 
+        # We have the following ground truth labels:
+        # (0) normal/depth discontinuity non-smooth shading (NS-ND)
+        # (1) shadow boundary non-smooth shading (NS-SB)
+        # (2) smooth shading (S)
+        # (100) no data, ignored
+        y_true = saw_utils.load_pixel_labels(pixel_labels_dir=pixel_labels_dir, photo_id=photo_id)
+
         # Add-------------------------------------
-        img_path = img_dir+ str(photo_id) + ".png"
 
         # diffuclut and harder dataset
-        srgb_img = saw_utils.load_img_arr(img_path)
+        srgb_img = saw_utils.load_img_arr(photo_id)
         srgb_img = np.mean(srgb_img, axis = 2)
         img_gradmag = saw_utils.compute_gradmag(srgb_img)
 
@@ -519,13 +525,6 @@ class BrightestResnetModel(BaseModel):
 
         average_gradient = np.ravel(average_gradient)
         # Add-------------------------------------
-
-        # We have the following ground truth labels:
-        # (0) normal/depth discontinuity non-smooth shading (NS-ND)
-        # (1) shadow boundary non-smooth shading (NS-SB)
-        # (2) smooth shading (S)
-        # (100) no data, ignored
-        y_true = saw_utils.load_pixel_labels(pixel_labels_dir=pixel_labels_dir, photo_id=photo_id)
         
         y_true = np.ravel(y_true)
         ignored_mask = y_true == 100
@@ -554,4 +553,3 @@ class BrightestResnetModel(BaseModel):
             ret.append(confusion_matrix)
 
         return ret
-

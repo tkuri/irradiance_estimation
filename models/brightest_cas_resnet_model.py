@@ -379,7 +379,7 @@ class BrightestCasResnetModel(BaseModel):
 
         return self.evaluate_WHDR(prediction_R, targets)
 
-    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, img_dir, thres_count=400):
+    def compute_pr(self, pixel_labels_dir, splits_dir, dataset_split, class_weights, bl_filter_size, thres_count=400):
 
         thres_list = saw_utils.gen_pr_thres_list(thres_count)
         photo_ids = saw_utils.load_photo_ids_for_split(
@@ -401,7 +401,7 @@ class BrightestCasResnetModel(BaseModel):
 
             # compute PR 
             rdic_list = self.get_precision_recall_list_new(pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, img_dir=img_dir, mode=m)
+                photo_ids=photo_ids, class_weights=class_weights, bl_filter_size = bl_filter_size, mode=m)
 
             plot_arr = np.empty((len(rdic_list) + 2, 2))
 
@@ -423,7 +423,7 @@ class BrightestCasResnetModel(BaseModel):
 
 
     def get_precision_recall_list_new(self, pixel_labels_dir, thres_list, photo_ids,
-                                  class_weights, bl_filter_size, img_dir, mode):
+                                  class_weights, bl_filter_size, mode):
 
         output_count = len(thres_list)
         overall_conf_mx_list = [
@@ -467,7 +467,7 @@ class BrightestCasResnetModel(BaseModel):
             # compute confusion matrix
             conf_mx_list = self.eval_on_images( shading_image_arr = prediction_S_np,
                 pixel_labels_dir=pixel_labels_dir, thres_list=thres_list,
-                photo_id=photo_id, bl_filter_size=bl_filter_size, img_dir=img_dir, mode=mode
+                photo_id=photo_id, bl_filter_size=bl_filter_size, mode=mode
             )
 
 
@@ -499,7 +499,7 @@ class BrightestCasResnetModel(BaseModel):
         return ret
 
 
-    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, img_dir, mode):
+    def eval_on_images(self, shading_image_arr, pixel_labels_dir, thres_list, photo_id, bl_filter_size, mode):
         """
         This method generates a list of precision-recall pairs and confusion
         matrices for each threshold provided in ``thres_list`` for a specific
@@ -537,7 +537,6 @@ class BrightestCasResnetModel(BaseModel):
         y_true = saw_utils.load_pixel_labels(pixel_labels_dir=pixel_labels_dir, photo_id=photo_id)
 
         # Add-------------------------------------
-        img_path = img_dir+ str(photo_id) + ".png"
 
         # diffuclut and harder dataset
         srgb_img = saw_utils.load_img_arr(photo_id)
