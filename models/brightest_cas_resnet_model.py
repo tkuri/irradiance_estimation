@@ -8,6 +8,7 @@ import numpy as np
 from . import saw_utils
 from skimage.transform import resize
 from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage.measurements import label
 import cv2
 import json
 
@@ -431,7 +432,7 @@ class BrightestCasResnetModel(BaseModel):
         ]
 
         count = 0 
-        # eval_num = 1
+        # eval_num = 20
         eval_num = len(photo_ids)
         total_num_img = eval_num
 
@@ -528,11 +529,18 @@ class BrightestCasResnetModel(BaseModel):
             shading_gradmag_max = maximum_filter(shading_gradmag, size=bl_filter_size)
 
 
+        # We have the following ground truth labels:
+        # (0) normal/depth discontinuity non-smooth shading (NS-ND)
+        # (1) shadow boundary non-smooth shading (NS-SB)
+        # (2) smooth shading (S)
+        # (100) no data, ignored
+        y_true = saw_utils.load_pixel_labels(pixel_labels_dir=pixel_labels_dir, photo_id=photo_id)
+
         # Add-------------------------------------
         img_path = img_dir+ str(photo_id) + ".png"
 
         # diffuclut and harder dataset
-        srgb_img = saw_utils.load_img_arr(img_path)
+        srgb_img = saw_utils.load_img_arr(photo_id)
         srgb_img = np.mean(srgb_img, axis = 2)
         img_gradmag = saw_utils.compute_gradmag(srgb_img)
 
@@ -547,13 +555,6 @@ class BrightestCasResnetModel(BaseModel):
 
         average_gradient = np.ravel(average_gradient)
         # Add-------------------------------------
-
-        # We have the following ground truth labels:
-        # (0) normal/depth discontinuity non-smooth shading (NS-ND)
-        # (1) shadow boundary non-smooth shading (NS-SB)
-        # (2) smooth shading (S)
-        # (100) no data, ignored
-        y_true = saw_utils.load_pixel_labels(pixel_labels_dir=pixel_labels_dir, photo_id=photo_id)
         
         y_true = np.ravel(y_true)
         ignored_mask = y_true == 100
