@@ -49,6 +49,7 @@ if __name__ == '__main__':
     opt = TestOptions().parse()
     
     model = create_model(opt)
+    model.setup(opt)
 
     print("WE ARE IN TESTING IIW!!!!")
     whdr = test_iiw(model)

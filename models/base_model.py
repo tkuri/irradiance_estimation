@@ -293,8 +293,12 @@ class BaseModel(ABC):
 
         for i in range(0, prediction_R.size(0)):
             print(targets['path'][i])
-            prediction_R_np = prediction_R.data[i,:,:,:].cpu().numpy()
+            prediction_R_tmp = util.normalize_n1p1_to_0p1(grayscale=False)(prediction_R.data[i,:,:,:])
+            prediction_R_np = prediction_R_tmp.cpu().numpy()
+
+            # prediction_R_np = prediction_R.data[i,:,:,:].cpu().numpy()
             prediction_R_np = np.transpose(prediction_R_np, (1,2,0))
+            # cv2.imwrite('ref{}.png'.format(i), (prediction_R_np[:,:,::-1]*255.0).astype(np.uint8))
 
             o_h = targets['oringinal_shape'][0].numpy()
             o_w = targets['oringinal_shape'][1].numpy()
@@ -311,9 +315,12 @@ class BaseModel(ABC):
 
     def evlaute_iiw(self, input_, targets):
         # switch to evaluation mode
+        input_ = input_.contiguous().float()
         input_images = input_
+
         # input_images = Variable(input_.cuda() , requires_grad = False)
         prediction_S, prediction_R , rgb_s = self.netG1.forward(input_images)
+        prediction_R = torch.clamp(prediction_R, min=-1, max=1)
 
         # prediction_R = torch.exp(prediction_R)
 
@@ -372,7 +379,7 @@ class BaseModel(ABC):
         ]
 
         count = 0 
-        # eval_num = 20
+        # eval_num = 1
         eval_num = len(photo_ids)
         total_num_img = eval_num
 
@@ -386,16 +393,18 @@ class BaseModel(ABC):
 
             saw_img = np.transpose(saw_img, (2,0,1))
             input_ = torch.from_numpy(saw_img).unsqueeze(0).contiguous().float()
-            input_images = input_
+            input_images = (input_ - 0.5) * 2.0
             # input_images = Variable(input_.cuda() , requires_grad = False)
 
             # prediction_S, prediction_R, rgb_s = self.netG.forward(input_images) 
             prediction_S, prediction_A, _ = self.netG1(input_images)
+            # prediction_A = torch.clamp(prediction_A, min=-1, max=1)
+            prediction_S = torch.clamp(prediction_S, min=-1, max=1)
             prediction_S = util.normalize_n1p1_to_0p1(grayscale=True)(prediction_S.data[0,:,:,:])
             # prediction_A = util.normalize_n1p1_to_0p1(grayscale=False)(prediction_A.data[0,:,:,:])
             
-            prediction_S_np = prediction_S.data[0,:,:].cpu().numpy()
-            prediction_S_np = resize(prediction_S_np, (original_h, original_w), order=1, preserve_range=True)
+            # prediction_S_np = prediction_S.data[0,:,:].cpu().numpy()
+            # prediction_S_np = resize(prediction_S_np, (original_h, original_w), order=1, preserve_range=True)
             # prediction_A_np = prediction_A.data[:,:,:].cpu().numpy()
             # prediction_A_np = np.transpose(prediction_A_np, (1, 2, 0))
             # prediction_A_np = resize(prediction_A_np, (original_h, original_w), order=1, preserve_range=True)

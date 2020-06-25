@@ -279,6 +279,8 @@ class IIW_ImageFolder(data.Dataset):
         elif self.current_o_idx == 4:
             sparse_path_1s = self.root + "/CGIntrinsics/IIW/sparse_hdf5_S/" + sparse_shading_name + "/R0.h5"
 
+        final_img = (final_img - 0.5) * 2.0
+
         return final_img, targets_1, sparse_path_1s
 
 
