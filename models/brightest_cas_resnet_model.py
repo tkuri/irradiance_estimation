@@ -50,6 +50,8 @@ class BrightestCasResnetModel(BaseModel):
             parser.add_argument('--in_gt_SH', action='store_true', help='GT shading is also used as input')
             parser.add_argument('--in_pr_AL', action='store_true', help='Predicted albedo is also used as input')
             parser.add_argument('--reg', action='store_true', help='regularization')
+        parser.add_argument('--cat_AL', action='store_true', help='Concat AL')
+        parser.add_argument('--cat_In_AL', action='store_true', help='Concat Input and AL')
 
         return parser
 
@@ -76,7 +78,13 @@ class BrightestCasResnetModel(BaseModel):
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG3 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
+
+        g3_input_nc = opt.input_nc
+        if opt.cat_AL:
+            g3_input_nc = g3_input_nc + 3
+        if opt.cat_In_AL:
+            g3_input_nc = g3_input_nc + 6
+        self.netG3 = networks.define_G(g3_input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         if self.isTrain:
             # define loss functions
@@ -139,35 +147,44 @@ class BrightestCasResnetModel(BaseModel):
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.pr_SH = pr_SH * color
         self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
-        self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(self.pr_SH)
 
-        # Multi input shared network
-        if self.isTrain:
-            if self.opt.in_gt_AL:
-                pr_BC, pr_BA, pr_BP = self.netG2(self.gt_AL)
-                self.pr_BC = (self.pr_BC + pr_BC)*0.5
-                self.pr_BA = (self.pr_BA + pr_BA)*0.5
-                self.pr_BP = (self.pr_BP + pr_BP)*0.5
-            if self.opt.in_gt_SH:
-                pr_BC, pr_BA, pr_BP = self.netG2(self.gt_SH)
-                self.pr_BC = (self.pr_BC + pr_BC)*0.5
-                self.pr_BA = (self.pr_BA + pr_BA)*0.5
-                self.pr_BP = (self.pr_BP + pr_BP)*0.5
-            if self.opt.in_gt_AL:
-                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_AL)
-                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-            if self.opt.in_gt_SH:
-                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_SH)
-                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-            if self.opt.in_pr_AL:
-                pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.pr_AL)
-                self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-                self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-                self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
+        if self.opt.cat_AL:
+            g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
+        elif self.opt.cat_In_AL:
+            g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
+            g3_input = torch.cat((g3_input, self.input), 1)
+        elif:
+            g3_input = self.pr_SH
+
+        self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(g3_input)
+
+        # # Multi input shared network
+        # if self.isTrain:
+        #     if self.opt.in_gt_AL:
+        #         pr_BC, pr_BA, pr_BP = self.netG2(self.gt_AL)
+        #         self.pr_BC = (self.pr_BC + pr_BC)*0.5
+        #         self.pr_BA = (self.pr_BA + pr_BA)*0.5
+        #         self.pr_BP = (self.pr_BP + pr_BP)*0.5
+        #     if self.opt.in_gt_SH:
+        #         pr_BC, pr_BA, pr_BP = self.netG2(self.gt_SH)
+        #         self.pr_BC = (self.pr_BC + pr_BC)*0.5
+        #         self.pr_BA = (self.pr_BA + pr_BA)*0.5
+        #         self.pr_BP = (self.pr_BP + pr_BP)*0.5
+        #     if self.opt.in_gt_AL:
+        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_AL)
+        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
+        #     if self.opt.in_gt_SH:
+        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_SH)
+        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
+        #     if self.opt.in_pr_AL:
+        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.pr_AL)
+        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
+        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
+        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
