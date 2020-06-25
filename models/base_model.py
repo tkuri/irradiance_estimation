@@ -3,6 +3,7 @@ import torch
 from collections import OrderedDict
 from abc import ABC, abstractmethod
 from . import networks
+import numpy as np
 from . import saw_utils
 from skimage.transform import resize
 from scipy.ndimage.filters import maximum_filter
