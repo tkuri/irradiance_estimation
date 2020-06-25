@@ -403,8 +403,8 @@ class BaseModel(ABC):
             prediction_S = util.normalize_n1p1_to_0p1(grayscale=True)(prediction_S.data[0,:,:,:])
             # prediction_A = util.normalize_n1p1_to_0p1(grayscale=False)(prediction_A.data[0,:,:,:])
             
-            # prediction_S_np = prediction_S.data[0,:,:].cpu().numpy()
-            # prediction_S_np = resize(prediction_S_np, (original_h, original_w), order=1, preserve_range=True)
+            prediction_S_np = prediction_S.data[0,:,:].cpu().numpy()
+            prediction_S_np = resize(prediction_S_np, (original_h, original_w), order=1, preserve_range=True)
             # prediction_A_np = prediction_A.data[:,:,:].cpu().numpy()
             # prediction_A_np = np.transpose(prediction_A_np, (1, 2, 0))
             # prediction_A_np = resize(prediction_A_np, (original_h, original_w), order=1, preserve_range=True)
