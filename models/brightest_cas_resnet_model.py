@@ -153,7 +153,7 @@ class BrightestCasResnetModel(BaseModel):
         elif self.opt.cat_In_AL:
             g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
             g3_input = torch.cat((g3_input, self.input), 1)
-        elif:
+        else:
             g3_input = self.pr_SH
 
         self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(g3_input)
