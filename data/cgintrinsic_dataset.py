@@ -96,15 +96,17 @@ class CGIntrinsicDataset(BaseDataset):
         gt_SH_gray = torch.mean(gt_SH, 0, keepdim=True)
 
         gt_AL[gt_AL < 1e-6] = 1e-6
-        mask[gt_AL_gray < 1e-6] = 0 
-        mask[srgb_img_gray < 1e-6] = 0 
-        mask[gt_SH_gray > 10] = 0
         # gt_SH[gt_SH_gray.expand(gt_SH.size()) > 20] = 20
         gt_SH[gt_SH_gray.expand(gt_SH.size()) > 1] = 1
-        mask[gt_SH_gray < 1e-4] = 0
         gt_SH[gt_SH_gray.expand(gt_SH.size()) < 1e-4] = 1e-4
 
-        mask = 1.0 - util.erosion(1.0-mask)
+        if not opt.no_mask:
+            mask[srgb_img_gray < 1e-6] = 0 
+            mask[gt_AL_gray < 1e-6] = 0 
+            mask[gt_SH_gray < 1e-4] = 0
+            mask[gt_SH_gray > 10] = 0
+            mask = 1.0 - util.erosion(1.0-mask)
+
         mask_edge = mask.clone()
 
         if self.opt.edge_mask:
