@@ -66,7 +66,7 @@ def postprocess(img, visuals, label):
     if label in jet_label:
         img = jet_on_image(img, visuals)
     if label in point_label:
-        img = jet_on_image(img, visuals, alpha=0.2)
+        img = jet_on_image(img, visuals, alpha=0.5)
     return img
 
 
