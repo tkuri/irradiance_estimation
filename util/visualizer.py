@@ -39,18 +39,17 @@ def mask_on_image(src, visuals):
     return src.astype(np.uint8)
 
 
-def jet_on_image(src, visuals, mode='alpha'):
+def jet_on_image(src, visuals, mode='alpha', alpha=0.8):
     # jet = cv2.applyColorMap(src, cv2.COLORMAP_JET)
     jet = cv2.applyColorMap(src, cv2.COLORMAP_TURBO)
     jet = cv2.cvtColor(jet, cv2.COLOR_BGR2RGB)                
     image = util.tensor2im(visuals['input'])
     
     if mode=='alpha':
-        alpha = 0.8
+        alpha = alpha
         out = cv2.addWeighted(jet, alpha, image, 1 - alpha, 0)
     else:
-        # thr = 25
-        thr = 0
+        thr = 25
         mask = np.zeros_like(src)
         mask[src>thr] = 1
         invmask = 1 - mask
@@ -65,9 +64,9 @@ def postprocess(img, visuals, label):
     if label in mask_label:
         img = mask_on_image(img, visuals)
     if label in jet_label:
-        img = jet_on_image(img, visuals, mode='alpha')
+        img = jet_on_image(img, visuals)
     if label in point_label:
-        img = jet_on_image(img, visuals, mode='img')
+        img = jet_on_image(img, visuals, alpha=0.2)
     return img
 
 
