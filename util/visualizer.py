@@ -57,12 +57,15 @@ def jet_on_image(src, visuals, mode='alpha'):
 
 def postprocess(img, visuals, label):
     mask_label = ['pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2']
-    jet_label = ['gt_BA', 'pr_BA_RA', 'pr_BA_SH', 'pr_BA', 'pr_BA2', 'gt_BP', 'pr_BP_RA', 'pr_BP_SH', 'pr_BP_BC', 'pr_BP_BC2', 'pr_BP', 'pr_BP2']
+    jet_label = ['gt_BA', 'pr_BA_RA', 'pr_BA_SH', 'pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2']
+    point_label = ['gt_BP', 'pr_BP_RA', 'pr_BP_SH', 'pr_BP_BC', 'pr_BP_BC2']
 
     if label in mask_label:
         img = mask_on_image(img, visuals)
     if label in jet_label:
         img = jet_on_image(img, visuals, mode='alpha')
+    if label in point_label:
+        img = jet_on_image(img, visuals, mode='img')
     return img
 
 
