@@ -34,9 +34,15 @@ def make_command_test(opt):
               --name {} --model {}\
               --dataset_mode {} --num_test 3000 --re_index\
               --gpu_ids {} --disp_brighest_info\
-              --bp_tap {} --bp_sigma {} --edge_mask --no_save_image\
+              --bp_tap {} --bp_sigma {} --no_save_image\
                   '.format(opt.dataroot, opt.name, opt.model, opt.dataset_mode, 
                            gpu_ids, opt.bp_tap, opt.bp_sigma)
+    if opt.no_mask:
+        command += ' --no_mask'
+
+    if opt.edge_mask:
+        command += ' --edge_mask'
+
     if opt.shading_norm:
         command += ' --shading_norm'
     try:
