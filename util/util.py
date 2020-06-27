@@ -77,7 +77,7 @@ def calc_brightest(img, mask, nr_tap=11, nr_sigma=5.0, spread_tap=31, spread_sig
     # Calc 20% brightest area
     brightest_area = torch.zeros_like(mask)
     brightest_area = img_blur >= brightest_20
-    brightest_area = brightest_area * (mask > 0.5)
+    # brightest_area = brightest_area * (mask > 0.5)
     brightest_area = img_blur * brightest_area
     
     # Calc brightest pixel
