@@ -100,7 +100,7 @@ class CGIntrinsicDataset(BaseDataset):
         gt_SH[gt_SH_gray.expand(gt_SH.size()) > 1] = 1
         gt_SH[gt_SH_gray.expand(gt_SH.size()) < 1e-4] = 1e-4
 
-        if not opt.no_mask:
+        if not self.opt.no_mask:
             mask[srgb_img_gray < 1e-6] = 0 
             mask[gt_AL_gray < 1e-6] = 0 
             mask[gt_SH_gray < 1e-4] = 0
