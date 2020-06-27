@@ -19,7 +19,8 @@ def test_SAW(model):
     AP = model.compute_pr(pixel_labels_dir, splits_dir,
                 dataset_split, class_weights, bl_filter_size)
 
-    print("SAW test AP: {:.4f}, {:.4f}".format(AP[0], AP[1]))
+    # print("SAW test AP: {:.4f}, {:.4f}".format(AP[0], AP[1]))
+    print("SAW test AP: {:.4f}".format(AP[0]))
     return AP
 
 if __name__ == '__main__':
@@ -40,5 +41,6 @@ if __name__ == '__main__':
 
     print("WE ARE IN TESTING SAW")
     AP = test_SAW(model)
-    with open(opt.result_name + '_saw_{:.4f}_{:.4f}.txt'.format(AP[0], AP[1]), mode='w') as f:
+    # with open(opt.result_name + '_saw_{:.4f}_{:.4f}.txt'.format(AP[0], AP[1]), mode='w') as f:
+    with open(opt.result_name + '_saw_{:.4f}.txt'.format(AP[0]), mode='w') as f:
         f.write(str(AP))

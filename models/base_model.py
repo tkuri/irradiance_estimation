@@ -333,7 +333,8 @@ class BaseModel(ABC):
             splits_dir=splits_dir, dataset_split=dataset_split)
 
         AP = []
-        mode = [0, 1]
+        # mode = [0, 1]
+        mode = [0]
         for m in mode:
             plot_arrs = []
             line_names = []
