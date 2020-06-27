@@ -49,8 +49,10 @@ def jet_on_image(src, visuals, mode='alpha'):
         alpha = 0.8
         out = cv2.addWeighted(jet, alpha, image, 1 - alpha, 0)
     else:
+        # thr = 25
+        thr = 0
         mask = np.zeros_like(src)
-        mask[src>25] = 1
+        mask[src>thr] = 1
         invmask = 1 - mask
         out = jet*mask + image*invmask
     return out
