@@ -90,6 +90,12 @@ class CGIntrinsicDataset(BaseDataset):
         rgb_img = srgb_img**2.2
         gt_SH = rgb_img / torch.clamp(gt_AL, min=1e-6)
 
+        # if albedo is too low, replace shading as radiance
+        sh_mask = torch.zeros_like(gt_SH)
+        sh_mask[gt_AL < 1e-6] = 1
+        sh_mask_inv = 1 - sh_mask
+        gt_SH = gt_SH*sh_mask_inv + rgb_img*sh_mask
+        
         srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
         rgb_img_gray = torch.mean(rgb_img, 0, keepdim=True)
         gt_AL_gray = torch.mean(gt_AL, 0, keepdim=True)
