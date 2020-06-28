@@ -14,7 +14,8 @@ import kornia.filters
 import random
 
 random.seed(101)
-erosion = nn.MaxPool2d(15, stride=1, padding=7)
+# erosion = nn.MaxPool2d(15, stride=1, padding=7)
+erosion = nn.MaxPool2d(11, stride=1, padding=5)
 
 def normalize_0p1_to_n1p1(grayscale=False):
     transform_list = []
@@ -62,47 +63,61 @@ def percentile(t: torch.tensor, q: float) -> Union[int, float]:
 def calc_brightest(img, mask, nr_tap=11, nr_sigma=5.0, spread_tap=31, spread_sigma=5.0):
     # Blur the image (NR)
     img = torch.unsqueeze(img, 0) # To 4dim
-    gauss_nr = kornia.filters.GaussianBlur2d((nr_tap, nr_tap), (nr_sigma, nr_sigma))
-    img_blur = gauss_nr(img)
+#     gauss_nr = kornia.filters.GaussianBlur2d((nr_tap, nr_tap), (nr_sigma, nr_sigma))
+#     img_blur = gauss_nr(img)
+    median_nr = kornia.filters.MedianBlur((nr_tap, nr_tap))
+    img_blur = median_nr(img)
     img_blur = torch.squeeze(img_blur, 0) # To 3dim
+#     img_blur = img.clone()
 
     # Calc Brighest and top 20% values
     if torch.sum(mask[mask > 0.5]) < 10:
         brightest_max = torch.max(img_blur)
         brightest_20 = percentile(img_blur, 80)
     else:
-        brightest_max = torch.max(img_blur[mask > 0.5]) # Get the brightest value (scalar)
+        brightest_max = torch.max(img_blur[mask > 0.5]).item() # Get the brightest value (scalar)
+#         brightest_max = torch.max(img_blur).item() # Get the brightest value (scalar)
         brightest_20 = percentile(img_blur[mask > 0.5], 80) # Get top 20% brighest value (scalar)
+#         brightest_20 = percentile(img_blur, 80) # Get top 20% brighest value (scalar)
+    
+#     print('brightest_max:', brightest_max)
+#     print('brightest_20:', brightest_20)
 
     # Calc 20% brightest area
-    brightest_area = torch.zeros_like(mask)
-    brightest_area = img_blur >= brightest_20
-    # brightest_area = brightest_area * (mask > 0.5)
-    brightest_area = img_blur * brightest_area
+#     brightest_area = torch.zeros_like(mask)
+#     brightest_area = img_blur >= brightest_20
+#     # brightest_area = brightest_area * (mask > 0.5)
+#     brightest_area = img_blur * brightest_area
+#     brightest_area = img.squeeze(0).clone()
+    brightest_area = img_blur.clone()
     
     # Calc brightest pixel
     brightest_pixel = torch.zeros_like(brightest_area)
     brightest_pixel = img_blur >= brightest_max
-    brightest_pixel = brightest_pixel * (mask > 0.5)
+#     brightest_pixel = brightest_pixel * (mask > 0.5)
     brightest_pixel_num = torch.sum(brightest_pixel).item()
 
     # Selects pixels to be picked up according to the number of brightest pixels
     if brightest_pixel_num < 1:
         print('Conditon 0: brightest_pixel_num:', brightest_pixel_num)
-        brightest_coord = (0.5, 0.5, 0, brightest_pixel_num)
+        brightest_coord = [(0.5, 0.5, 0, brightest_pixel_num)]
     elif brightest_pixel_num == 1:
         coord = torch.argmax(brightest_pixel.int())
         brightest_coord = (int(coord//brightest_pixel.size(2)), int(coord%brightest_pixel.size(2)))
-        brightest_coord = (float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)), 1, brightest_pixel_num)
+        brightest_coord = [(float(brightest_coord[0])/float(brightest_pixel.size(1)), float(brightest_coord[1])/float(brightest_pixel.size(2)), 1, brightest_pixel_num)]
     elif brightest_pixel_num > 1:
         brightest_coord_list = torch.nonzero(brightest_pixel, as_tuple=False)
-        pick_idx = random.randrange(0, len(brightest_coord_list))
-        print('Conditon 2: brightest_pixel_num:', brightest_pixel_num)
-        print('pick_idx:', pick_idx)
-        coord = brightest_coord_list[pick_idx]
-        brightest_coord = (float(coord[1])/float(brightest_pixel.size(1)), float(coord[2])/float(brightest_pixel.size(2)), 2, brightest_pixel_num)
+        brightest_coord = []
+        for i in brightest_coord_list:
+            coord = (float(i[1])/float(brightest_pixel.size(1)), float(i[2])/float(brightest_pixel.size(2)), 2, brightest_pixel_num)
+            brightest_coord.append(coord)
+#         pick_idx = random.randrange(0, len(brightest_coord_list))
+#         print('Conditon 2: brightest_pixel_num:', brightest_pixel_num)
+#         print('pick_idx:', pick_idx)
+#         coord = brightest_coord_list[pick_idx]
+#         brightest_coord = (float(coord[1])/float(brightest_pixel.size(1)), float(coord[2])/float(brightest_pixel.size(2)), 2, brightest_pixel_num)
     else:
-        brightest_coord = (0.5, 0.5, -1, brightest_pixel_num)
+        brightest_coord = [(0.5, 0.5, -1, brightest_pixel_num)]
         print('Conditon -1: Detected an exception.')
 
     # Spread the points in concentric circles
@@ -110,9 +125,12 @@ def calc_brightest(img, mask, nr_tap=11, nr_sigma=5.0, spread_tap=31, spread_sig
     gauss_spread = kornia.filters.GaussianBlur2d((spread_tap, spread_tap), (spread_sigma, spread_sigma))
     brightest_pixel = gauss_spread(brightest_pixel.float())
     brightest_pixel = torch.squeeze(brightest_pixel, 0) # To 3dim
+    
 
     # Normalize
-    brightest_area = torch.clamp((brightest_area - brightest_20) / torch.clamp(brightest_max - brightest_20, min=1e-6), min=0)
+#     brightest_area = torch.clamp((brightest_area - brightest_20) / torch.clamp(brightest_max - brightest_20, min=1e-6), min=0)
+    clamp = lambda x: min(1.0, max(x, 1e-6))
+    brightest_area = torch.clamp((brightest_area - brightest_20) / clamp(brightest_max - brightest_20), min=0, max=1)
     brightest_max_blur = torch.max(brightest_pixel)
     if brightest_max_blur > 0:
         brightest_pixel = brightest_pixel / brightest_max_blur
