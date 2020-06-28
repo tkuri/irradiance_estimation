@@ -33,8 +33,9 @@ def main():
         values = df[label].values
         result += [[label, '{:.5f}'.format(np.mean(values)), '{:.5f}'.format(np.median(values))]]
 
-    df = df[df['condition'] == 1]
-    result += [['Modified data length for coordinate evaluation.:', len(df)]]
+    # df = df[df['condition'] != 0]
+    # df = df[df['condition'] == 1]
+    # result += [['Modified data length for coordinate evaluation.:', len(df)]]
     result += [['BC Coodinate Distance Evaluation', 'mean', 'median', '<10%', '<20%', '<30%']]
     for label in dist_labels:
         values = df[label].values
