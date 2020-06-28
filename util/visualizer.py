@@ -67,6 +67,11 @@ def postprocess(img, visuals, label):
         img = jet_on_image(img, visuals)
     if label in point_label:
         img = jet_on_image(img, visuals, alpha=0.5)
+        
+    if img.shape[2] == 1:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)    
+    img = cv2.resize(img, (320, 240))
+    
     return img
 
 
