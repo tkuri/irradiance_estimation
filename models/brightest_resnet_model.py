@@ -176,12 +176,12 @@ class BrightestResnetModel(BaseModel):
 #             else:
 #                 print('Pass loss_G_BC because condition is {}'.format(condition))
             if condition==1:
-                self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC) * self.opt.lambda_BC
+                self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
                 self.loss_G += self.loss_G_BC
             elif condition==2:
                 loss_G_BC = self.criterionBC(self.pr_BC, gt_BC[:, 0])
                 for i in range(1, bc_num):
-                    loss_G_BC_cmp = self.criterionBC(self.pr_BC, gt_BC[:, 1])
+                    loss_G_BC_cmp = self.criterionBC(self.pr_BC, gt_BC[:, i].squeeze(1))
                     loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
                 self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
                 self.loss_G += self.loss_G_BC
