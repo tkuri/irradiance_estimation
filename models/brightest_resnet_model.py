@@ -214,7 +214,6 @@ class BrightestResnetModel(BaseModel):
         _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP, mask_edge, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
         pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
         pr_BP_BP = pr_BP_BP.unsqueeze(0)
-        print(pr_BP_BP.shape)
         return pr_BP_BP
 
     def get_current_visuals(self):
