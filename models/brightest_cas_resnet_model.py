@@ -304,7 +304,7 @@ class BrightestCasResnetModel(BaseModel):
         pr_BP2 = torch.squeeze(self.pr_BP2, 0)*0.5+0.5
 
         no_mask = torch.ones_like(mask_edge)
-        pr_BA_AL, _, pr_BP_AL, pr_BC_AL = util.calc_brightest(input_g, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        pr_BA_RA, _, pr_BP_RA, pr_BC_RA = util.calc_brightest(input_g, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
         _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, no_mask, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
@@ -314,7 +314,7 @@ class BrightestCasResnetModel(BaseModel):
         all_zero = torch.zeros_like(mask_edge)
         # Evaluation of 20% brightest area
         gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
-        ba_mse_ra = util.mse_with_mask(pr_BA_AL, gt_BA, mask_edge).item()
+        ba_mse_ra = util.mse_with_mask(pr_BA_RA, gt_BA, mask_edge).item()
         ba_mse_sh = util.mse_with_mask(pr_BA_SH, gt_BA, mask_edge).item()
         ba_mse_ba = util.mse_with_mask(pr_BA, gt_BA, mask_edge).item()
         ba_mse_ba2 = util.mse_with_mask(pr_BA2, gt_BA, mask_edge).item()
@@ -322,7 +322,7 @@ class BrightestCasResnetModel(BaseModel):
 
         # Evaluation of brightest pixel (Spread)
         gt_BP = torch.squeeze(self.gt_BP, 0)*0.5+0.5
-        bp_mse_ra = util.mse_with_mask(pr_BP_AL, gt_BP, mask_edge).item()
+        bp_mse_ra = util.mse_with_mask(pr_BP_RA, gt_BP, mask_edge).item()
         bp_mse_sh = util.mse_with_mask(pr_BP_SH, gt_BP, mask_edge).item()
         bp_mse_ba = util.mse_with_mask(pr_BP_BA, gt_BP, mask_edge).item()
         bp_mse_bp = util.mse_with_mask(pr_BP_BP, gt_BP, mask_edge).item()
