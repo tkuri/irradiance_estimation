@@ -210,7 +210,7 @@ class BrightestCasResnetModel(BaseModel):
         #     print('Pass loss_G_BC because condition is {}'.format(condition))
         if condition==1:
             self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
-            self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC2
+            self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G += self.loss_G_BC + self.loss_G_BC2
         # else:
         elif condition==2:
