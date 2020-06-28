@@ -160,17 +160,30 @@ class BrightestResnetModel(BaseModel):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         mask_edge = self.mask_edge*0.5 + 0.5
-        gt_BC = self.gt_BC[:, :2]
-        condition = self.gt_BC[:, 2]
+        gt_BC = self.gt_BC[:,:,:2]
+        condition = int(self.gt_BC[:, 0, 2].item())
+        bc_num = int(self.gt_BC[:, 0, 3].item())
         self.loss_G_AL = self.criterionAL(self.pr_AL*mask, self.gt_AL*mask) * self.opt.lambda_AL
         self.loss_G_SH = self.criterionSH(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_SH
         self.loss_G_BA = self.criterionBA(self.pr_BA*mask_edge, self.gt_BA*mask_edge) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.pr_BP*mask_edge, self.gt_BP*mask_edge) * self.opt.lambda_BP  
 
         self.loss_G = self.loss_G_AL + self.loss_G_SH + self.loss_G_BA + self.loss_G_BP
-        if self.opt.joint_enc:
+        if self.opt.joint_enc:            
+#             if condition==1:
+#                 self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC) * self.opt.lambda_BC
+#                 self.loss_G += self.loss_G_BC
+#             else:
+#                 print('Pass loss_G_BC because condition is {}'.format(condition))
             if condition==1:
                 self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC) * self.opt.lambda_BC
+                self.loss_G += self.loss_G_BC
+            elif condition==2:
+                loss_G_BC = self.criterionBC(self.pr_BC, gt_BC[:, 0])
+                for i in range(1, bc_num):
+                    loss_G_BC_cmp = self.criterionBC(self.pr_BC, gt_BC[:, 1])
+                    loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
+                self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
                 self.loss_G += self.loss_G_BC
             else:
                 print('Pass loss_G_BC because condition is {}'.format(condition))
