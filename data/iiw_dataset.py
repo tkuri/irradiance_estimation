@@ -63,7 +63,7 @@ class IIWDataset(BaseDataset):
         BaseDataset.__init__(self, opt)
         self.dataroot = opt.dataroot # ../CGIntrinsics/CGIntrinsics/
         self.img_paths_iiw = make_dataset(self.dataroot + '/IIW/train_list/', opt.max_dataset_size, iiw=True)
-        if llen(self.img_paths_iiw) == 0:
+        if len(self.img_paths_iiw) == 0:
             raise(RuntimeError("Found 0 images in: " + self.dataroot + '/IIW/train_list/'+ "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
 
