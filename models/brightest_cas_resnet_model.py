@@ -250,8 +250,8 @@ class BrightestCasResnetModel(BaseModel):
 
     def get_current_BP(self, pr_BP):
         pr_BP_norm = torch.squeeze(pr_BP, 0)*0.5+0.5
-        mask_zero = torch.zeros_like(pr_BP)
-        _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP_norm, mask_zero, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
+        mask_one = torch.ones_like(pr_BP)
+        _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP_norm, mask_one, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
         pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
         pr_BP_BP = pr_BP_BP.unsqueeze(0)
         return pr_BP_BP
