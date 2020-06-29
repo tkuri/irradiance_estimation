@@ -98,8 +98,7 @@ class IIWDataset(BaseDataset):
         # apply the same transform to both A and B
         img_iiw = self.transform(img_iiw)
 
-        # img_cg = torch.unsqueeze(img_cg, 0) # [1, 3, 256, 256]
-        # img_cg = torch.unsqueeze(img_cg, 0) # [1, 3, 256, 256]
+        img_iiw = torch.unsqueeze(img_iiw, 0) # [1, 3, 256, 256]
         
         return {'A': img_iiw, 'A_paths': img_path_iiw}
 
