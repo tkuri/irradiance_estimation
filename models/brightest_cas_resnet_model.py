@@ -114,7 +114,7 @@ class BrightestCasResnetModel(BaseModel):
         """
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
-        if not opt.no_gt:
+        if not self.opt.no_gt:
             self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
             self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
             self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]

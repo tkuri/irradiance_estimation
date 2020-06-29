@@ -40,7 +40,7 @@ class BrightestResnetModel(BaseModel):
         # changing the default values to match the pix2pix paper (https://phillipi.github.io/pix2pix/)
         parser.set_defaults(norm='batch', netG='unet_256', dataset_mode='aligned')
         parser.add_argument('--joint_enc', action='store_true', help='joint encoder')
-        if not opt.no_gt:
+        if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_SH', type=float, default=1.0, help='weight for Shading loss')
             parser.add_argument('--lambda_AL', type=float, default=1.0, help='weight for Reflection loss')
@@ -118,7 +118,7 @@ class BrightestResnetModel(BaseModel):
         """
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
-        if self.isTrain:
+        if not self.opt.no_gt:
             self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
             self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
             self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
