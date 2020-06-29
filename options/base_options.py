@@ -74,6 +74,7 @@ class BaseOptions():
         parser.add_argument('--bp_nr_sigma', type=float, default=5.0, help='sigma of gaussian filter to NR brighest point.')
         parser.add_argument('--bp_tap', type=int, default=31, help='tap of gaussian filter to calculate brighest point.')
         parser.add_argument('--bp_sigma', type=float, default=5.0, help='sigma of gaussian filter to calculate brighest point.')
+        parser.add_argument('--no_gt', action='store_true', help='dont have ground truth')
 
         self.initialized = True
         return parser

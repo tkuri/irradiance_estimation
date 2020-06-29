@@ -22,7 +22,6 @@ class TestOptions(BaseOptions):
         parser.add_argument('--no_save_image', action='store_true', help='Not to save result image.')
         parser.add_argument('--test_mode', type=int, default=0, help='0:All, 1:Eval, 2:IIW, 3:Saw')
         parser.add_argument('--test_start', type=int, default=0, help='test start index')
-        parser.add_argument('--no_gt', action='store_true', help='dont have ground truth')
         # rewrite devalue values
         parser.set_defaults(model='test')
         # To avoid cropping, the load_size should be the same as crop_size
