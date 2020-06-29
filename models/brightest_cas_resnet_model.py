@@ -244,14 +244,14 @@ class BrightestCasResnetModel(BaseModel):
         self.optimizer_G2.step()             # udpate G's weights
 
     def get_current_BC(self, pr_BC):
-        pr_BP_BC = util.disp_brightest_coord(pr_BC, self.mask, self.opt.bp_tap, self.opt.bp_sigma)
+        pr_BP_BC = util.disp_brightest_coord(pr_BC, self.pr_BP, self.opt.bp_tap, self.opt.bp_sigma)
         pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
         return pr_BP_BC
 
     def get_current_BP(self, pr_BP):
         pr_BP_norm = torch.squeeze(pr_BP, 0)*0.5+0.5
-        mask_edge = torch.squeeze(self.mask_edge, 0)*0.5+0.5
-        _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP_norm, mask_edge, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
+        mask_zero = torch.zeros_like(pr_BP)
+        _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP_norm, mask_zero, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
         pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
         pr_BP_BP = pr_BP_BP.unsqueeze(0)
         return pr_BP_BP
