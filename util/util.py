@@ -35,7 +35,10 @@ def normalize_n1p1_to_0p1(grayscale=False):
 
 def mse_with_mask(src, tar, mask):
     diff2 = (torch.flatten(src) - torch.flatten(tar)) ** 2.0 * torch.flatten(mask > 0.5)
-    result = torch.sum(diff2) / torch.sum(mask > 0.5)
+    if torch.sum(mask > 0.5) > 0:
+        result = torch.sum(diff2) / torch.sum(mask > 0.5)
+    else:
+        result = 0
     return result
 
 

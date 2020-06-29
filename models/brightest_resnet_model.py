@@ -311,7 +311,11 @@ class BrightestResnetModel(BaseModel):
         # dist_bc = np.hypot(bc_gt[0] - bc_bc[0], bc_gt[1] - bc_bc[1])
         # dist_05 = np.hypot(bc_gt[0] - 0.5, bc_gt[1] - 0.5)
 
-        result = [bc_gt[0][2], bc_gt[0], bc_ra[0], bc_sh[0], bc_ba[0], bc_bp[0], bc_bc[0],
+        condition = bc_gt[0][2]
+        if torch.sum(mask_edge > 0.5) < 1:
+            condition = 3
+
+        result = [condition, bc_gt[0], bc_ra[0], bc_sh[0], bc_ba[0], bc_bp[0], bc_bc[0],
                      dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, dist_05,
                      ba_mse_ra, ba_mse_sh, ba_mse_ba, ba_mse_0,
                      bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp, bp_mse_bp_direct, bp_mse_0                     
