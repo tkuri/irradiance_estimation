@@ -65,7 +65,10 @@ class BrightestResnetModel(BaseModel):
         else:
             self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP']
 
-        self.visual_names = ['input', 'pr_BA', 'gt_BA', 'pr_BP', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask', 'mask_edge']
+        if self.isTrain:
+            self.visual_names = ['input', 'pr_BA', 'gt_BA', 'pr_BP', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask', 'mask_edge']
+        else:
+            self.visual_names = ['input', 'pr_BA', 'pr_BP', 'pr_AL', 'pr_SH']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         if opt.joint_enc:
@@ -114,14 +117,15 @@ class BrightestResnetModel(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
-        self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
-        self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
-        self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
-        self.mask_edge = torch.squeeze(input['mask_edge'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BC = input['gt_BC'].to(self.device) 
         self.image_paths = input['A_paths']
+        if self.isTrain:
+            self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
+            self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
+            self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
+            self.mask_edge = torch.squeeze(input['mask_edge'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BC = input['gt_BC'].to(self.device) 
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
         k = 1 + round(.01 * float(q) * (t.numel() - 1))
@@ -321,3 +325,25 @@ class BrightestResnetModel(BaseModel):
                      bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp, bp_mse_bp_direct, bp_mse_0                     
                      ]
         return result
+
+    def test_iiw_data(self, input_):
+        # switch to evaluation mode
+        input_images = input_.contiguous().float()
+
+        pr_SH, pr_AL, color = self.netG1(input_images)  # G(A)
+        self.pr_AL = pr_AL
+        pr_SH = pr_SH.repeat(1, 3, 1, 1)
+        color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
+        self.pr_SH = pr_SH * color
+        if self.opt.joint_enc:
+            self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(input_images)
+        else:
+            self.pr_BA = self.netG2(input_images)
+            self.pr_BP = self.netG3(input_images)
+
+        # prediction_R = torch.exp(prediction_R)
+
+        pr_BC_hmap = util.disp_brightest_coord(pr_BC, pr_BP)
+
+
+        return pr_SH, pr_AL, pr_BP, pr_BA, pr_BC_hmap
