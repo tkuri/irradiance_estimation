@@ -40,7 +40,7 @@ class BrightestResnetModel(BaseModel):
         # changing the default values to match the pix2pix paper (https://phillipi.github.io/pix2pix/)
         parser.set_defaults(norm='batch', netG='unet_256', dataset_mode='aligned')
         parser.add_argument('--joint_enc', action='store_true', help='joint encoder')
-        if is_train:
+        if not opt.no_gt:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_SH', type=float, default=1.0, help='weight for Shading loss')
             parser.add_argument('--lambda_AL', type=float, default=1.0, help='weight for Reflection loss')
@@ -65,7 +65,7 @@ class BrightestResnetModel(BaseModel):
         else:
             self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP']
 
-        if self.isTrain:
+        if not opt.no_gt:
             self.visual_names = ['input', 'pr_BA', 'gt_BA', 'pr_BP', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask', 'mask_edge']
         else:
             self.visual_names = ['input', 'pr_BA', 'pr_BP', 'pr_AL', 'pr_SH']

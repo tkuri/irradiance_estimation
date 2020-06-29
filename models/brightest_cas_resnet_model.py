@@ -64,7 +64,10 @@ class BrightestCasResnetModel(BaseModel):
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP', 'G_BC']
-        self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask', 'mask_edge']
+        if not opt.no_gt:
+            self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask', 'mask_edge']
+        else:
+            self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2', 'pr_AL', 'pr_SH']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         self.model_names = ['G1', 'G2', 'G3']
@@ -110,14 +113,15 @@ class BrightestCasResnetModel(BaseModel):
         The option 'direction' can be used to swap images in domain A and domain B.
         """
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
-        self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
-        self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
-        self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
-        self.mask_edge = torch.squeeze(input['mask_edge'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BC = input['gt_BC'].to(self.device) 
         self.image_paths = input['A_paths']
+        if not opt.no_gt:
+            self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
+            self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
+            self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
+            self.mask_edge = torch.squeeze(input['mask_edge'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
+            self.gt_BC = input['gt_BC'].to(self.device) 
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
         k = 1 + round(.01 * float(q) * (t.numel() - 1))
