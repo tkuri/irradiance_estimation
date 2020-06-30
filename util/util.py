@@ -38,7 +38,7 @@ def mse_with_mask(src, tar, mask):
     if torch.sum(mask > 0.5) > 0:
         result = torch.sum(diff2) / torch.sum(mask > 0.5)
     else:
-        result = 0
+        result = torch.sum(mask > 0.5) # 0
     return result
 
 
