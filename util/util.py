@@ -41,7 +41,7 @@ def mse_with_mask(src, tar, mask):
         result = torch.sum(mask > 0.5) # 0
     return result
 
-def calc_dist(self, bc_gt, bc_tar):
+def calc_dist(bc_gt, bc_tar):
     # dist = 10
     # for i in range(int(bc_gt[0][3])):
     #     for j in range(int(bc_tar[0][3])):
