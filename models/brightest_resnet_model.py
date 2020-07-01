@@ -240,14 +240,14 @@ class BrightestResnetModel(BaseModel):
         return label
 
 
-    def calc_dist(self, bc_gt, bc_tar):
-        dist = 10
-        for i in range(int(bc_gt[0][3])):
-            for j in range(int(bc_tar[0][3])):
-                dist_tmp = np.hypot(bc_gt[i][0] - bc_tar[j][0], bc_gt[i][1] - bc_tar[j][1])
-                if dist_tmp < dist:
-                    dist = dist_tmp
-        return dist
+    # def calc_dist(self, bc_gt, bc_tar):
+    #     dist = 10
+    #     for i in range(int(bc_gt[0][3])):
+    #         for j in range(int(bc_tar[0][3])):
+    #             dist_tmp = np.hypot(bc_gt[i][0] - bc_tar[j][0], bc_gt[i][1] - bc_tar[j][1])
+    #             if dist_tmp < dist:
+    #                 dist = dist_tmp
+    #     return dist
 
     def eval_brightest_pixel(self):
         with torch.no_grad():
@@ -295,25 +295,12 @@ class BrightestResnetModel(BaseModel):
         bc_bc = [(self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item(), 1, 1)]
         bc_05 = [(0.5, 0.5, 1, 1)]
 
-        dist_ra = self.calc_dist(bc_gt, bc_ra)
-        dist_sh = self.calc_dist(bc_gt, bc_sh)
-        dist_ba = self.calc_dist(bc_gt, bc_ba)
-        dist_bp = self.calc_dist(bc_gt, bc_bp)
-        dist_bc = self.calc_dist(bc_gt, bc_bc)
-        dist_05 = self.calc_dist(bc_gt, bc_05)
-
-        # bc_gt = (self.gt_BC[0, 0].item(), self.gt_BC[0, 1].item(), int(self.gt_BC[0, 2].item()), int(self.gt_BC[0, 3].item()))
-        # bc_ra = pr_BC_AL
-        # bc_sh = pr_BC_SH
-        # bc_ba = pr_BC_BA
-        # bc_bp = pr_BC_BP
-        # bc_bc = (self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item())
-        # dist_ra = np.hypot(bc_gt[0] - bc_ra[0], bc_gt[1] - bc_ra[1])
-        # dist_sh = np.hypot(bc_gt[0] - bc_sh[0], bc_gt[1] - bc_sh[1])
-        # dist_ba = np.hypot(bc_gt[0] - bc_ba[0], bc_gt[1] - bc_ba[1])
-        # dist_bp = np.hypot(bc_gt[0] - bc_bp[0], bc_gt[1] - bc_bp[1])
-        # dist_bc = np.hypot(bc_gt[0] - bc_bc[0], bc_gt[1] - bc_bc[1])
-        # dist_05 = np.hypot(bc_gt[0] - 0.5, bc_gt[1] - 0.5)
+        dist_ra = util.calc_dist(bc_gt, bc_ra)
+        dist_sh = util.calc_dist(bc_gt, bc_sh)
+        dist_ba = util.calc_dist(bc_gt, bc_ba)
+        dist_bp = util.calc_dist(bc_gt, bc_bp)
+        dist_bc = util.calc_dist(bc_gt, bc_bc)
+        dist_05 = util.calc_dist(bc_gt, bc_05)
 
         condition = bc_gt[0][2]
         if torch.sum(mask_edge > 0.5) < 1:

@@ -284,14 +284,14 @@ class BrightestCasResnetModel(BaseModel):
 
         return label
 
-    def calc_dist(self, bc_gt, bc_tar):
-        dist = 10
-        for i in range(int(bc_gt[0][3])):
-            for j in range(int(bc_tar[0][3])):
-                dist_tmp = np.hypot(bc_gt[i][0] - bc_tar[j][0], bc_gt[i][1] - bc_tar[j][1])
-                if dist_tmp < dist:
-                    dist = dist_tmp
-        return dist
+    # def calc_dist(self, bc_gt, bc_tar):
+    #     dist = 10
+    #     for i in range(int(bc_gt[0][3])):
+    #         for j in range(int(bc_tar[0][3])):
+    #             dist_tmp = np.hypot(bc_gt[i][0] - bc_tar[j][0], bc_gt[i][1] - bc_tar[j][1])
+    #             if dist_tmp < dist:
+    #                 dist = dist_tmp
+    #     return dist
 
     def eval_brightest_pixel(self):
         with torch.no_grad():
@@ -350,15 +350,15 @@ class BrightestCasResnetModel(BaseModel):
         bc_bc2 = [(self.pr_BC2[0, 0].item(), self.pr_BC2[0, 1].item(), 1, 1)]
         bc_05 = [(0.5, 0.5, 1, 1)]
 
-        dist_ra = self.calc_dist(bc_gt, bc_ra)
-        dist_sh = self.calc_dist(bc_gt, bc_sh)
-        dist_ba = self.calc_dist(bc_gt, bc_ba)
-        dist_bp = self.calc_dist(bc_gt, bc_bp)
-        dist_bc = self.calc_dist(bc_gt, bc_bc)
-        dist_ba2 = self.calc_dist(bc_gt, bc_ba2)
-        dist_bp2 = self.calc_dist(bc_gt, bc_bp2)
-        dist_bc2 = self.calc_dist(bc_gt, bc_bc2)
-        dist_05 = self.calc_dist(bc_gt, bc_05)
+        dist_ra = util.calc_dist(bc_gt, bc_ra)
+        dist_sh = util.calc_dist(bc_gt, bc_sh)
+        dist_ba = util.calc_dist(bc_gt, bc_ba)
+        dist_bp = util.calc_dist(bc_gt, bc_bp)
+        dist_bc = util.calc_dist(bc_gt, bc_bc)
+        dist_ba2 = util.calc_dist(bc_gt, bc_ba2)
+        dist_bp2 = util.calc_dist(bc_gt, bc_bp2)
+        dist_bc2 = util.calc_dist(bc_gt, bc_bc2)
+        dist_05 = util.calc_dist(bc_gt, bc_05)
 
         condition = bc_gt[0][2]
         if torch.sum(mask_edge > 0.5) < 1:
