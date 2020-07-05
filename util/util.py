@@ -33,6 +33,11 @@ def normalize_n1p1_to_0p1(grayscale=False):
         transform_list += [transforms.Normalize((-1.0, -1.0, -1.0), (2.0, 2.0, 2.0))]
     return transforms.Compose(transform_list)
 
+def mse(src, tar):
+    diff2 = (torch.flatten(src) - torch.flatten(tar)) ** 2.0
+    result = torch.sum(diff2) / (src.size(-2)*src.size(-1))
+    return result
+
 def mse_with_mask(src, tar, mask):
     diff2 = (torch.flatten(src) - torch.flatten(tar)) ** 2.0 * torch.flatten(mask > 0.5)
     if torch.sum(mask > 0.5) > 0:
