@@ -3,6 +3,7 @@ from data.base_dataset import BaseDataset, get_params, get_transform
 from data.image_folder import make_dataset
 from PIL import Image, ImageOps
 import torch
+from util import util
 
 class Aligned3BPDataset(BaseDataset):
     """A dataset class for paired image dataset.
