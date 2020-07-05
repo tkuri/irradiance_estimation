@@ -101,7 +101,7 @@ class Aligned3BPDataset(BaseDataset):
 
         light = torch.unsqueeze(light, 0)
 
-        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'light': light, 'A_paths': img_path}
+        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'light': light, 'A_paths': ABC_path}
 
     def __len__(self):
         """Return the total number of images in the dataset."""
