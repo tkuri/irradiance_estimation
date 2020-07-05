@@ -57,7 +57,7 @@ def jet_on_image(src, visuals, mode='alpha', alpha=0.8):
         out = jet*mask + image*invmask
     return out
 
-def postprocess(img, visuals, label):
+def postprocess(img, visuals, label, resize=False):
     # mask_label = ['pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2']
     jet_label = ['gt_BA', 'pr_BA_RA', 'pr_BA_SH', 'pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2']
     point_label = ['gt_BP', 'pr_BP_RA', 'pr_BP_SH',  'pr_BP_BP', 'pr_BP_BP2', 'pr_BP_BC', 'pr_BP_BC2']
@@ -70,13 +70,15 @@ def postprocess(img, visuals, label):
         img = jet_on_image(img, visuals, alpha=0.5)
         
     if img.shape[2] == 1:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)    
-    img = cv2.resize(img, (320, 240))
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+    if resize:
+        img = cv2.resize(img, (320, 240))
     
     return img
 
 
-def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25):
+def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, gain=1.0, multi=True, multi_ch=25, resize=False):
     """Save images to the disk.
 
     Parameters:
@@ -104,7 +106,7 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
             ims, txts, links = [], [], []
             for label, im_data in visuals.items():
                 im = util.tensor2im(im_data, gain=gain, ch=c)
-                im = postprocess(im, visuals, label)
+                im = postprocess(im, visuals, label, resize)
                 image_name = '%s_%s_%s.png' % (name, label, str(c).zfill(2))
                 save_path = os.path.join(image_dir, image_name)
                 util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -115,7 +117,7 @@ def save_images(webpage, visuals, image_path, opt, aspect_ratio=1.0, width=256, 
     else:
         for label, im_data in visuals.items():
             im = util.tensor2im(im_data, gain=gain)
-            im = postprocess(im, visuals, label)
+            im = postprocess(im, visuals, label, resize)
             image_name = '%s_%s.png' % (name, label)
             save_path = os.path.join(image_dir, image_name)
             util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -178,7 +180,7 @@ class Visualizer():
         print('Command: %s' % cmd)
         Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 
-    def display_current_results(self, visuals, epoch, save_result):
+    def display_current_results(self, visuals, epoch, save_result, resize=False):
         """Display current results on visdom; save current results to an HTML file.
 
         Parameters:
@@ -207,7 +209,7 @@ class Visualizer():
                 idx = 0
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
-                    image_numpy = postprocess(image_numpy, visuals, label)
+                    image_numpy = postprocess(image_numpy, visuals, label, resize)
                     label_html_row += '<td>%s</td>' % label
                     images.append(image_numpy.transpose([2, 0, 1]))
                     idx += 1
@@ -235,7 +237,7 @@ class Visualizer():
                 try:
                     for label, image in visuals.items():
                         image_numpy = util.tensor2im(image)
-                        image_numpy = postprocess(image_numpy, visuals, label)
+                        image_numpy = postprocess(image_numpy, visuals, label, resize)
                         self.vis.image(image_numpy.transpose([2, 0, 1]), opts=dict(title=label),
                                        win=self.display_id + idx)
                         idx += 1
@@ -247,7 +249,7 @@ class Visualizer():
             # save images to the disk
             for label, image in visuals.items():
                 image_numpy = util.tensor2im(image)
-                image_numpy = postprocess(image_numpy, visuals, label)
+                image_numpy = postprocess(image_numpy, visuals, label, resize)
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)
 

@@ -117,7 +117,7 @@ if __name__ == '__main__':
                     img_path = [str(i).zfill(5)]
                 else:
                     img_path = model.get_image_paths()     # get image paths
-                save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi)
+                save_images(webpage, visuals, img_path, opt, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, gain=opt.result_gain, multi=opt.show_multi, resize=True)
         webpage.save()  # save the HTML
 
         with open(web_dir+'/{}.csv'.format(opt.result_name), 'w', newline="") as f:
