@@ -62,7 +62,7 @@ class Aligned3BPDataset(BaseDataset):
         light = C_transform(C)
 
         rgb_img = srgb_img**2.2
-        gt_AL = rgb_img / torch.clamp(gt_SH, min=1e-6)
+        gt_AL = torch.clamp(rgb_img / torch.clamp(gt_SH, min=1e-6), max=1.0, min=0.0)
 
         mask = torch.ones_like(light)
         mask_edge = mask.clone()
