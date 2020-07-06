@@ -59,6 +59,16 @@ def make_command_test(opt):
             command += ['--joint_enc']
     except:
         pass
+    try:
+        if opt.cat_AL:
+            command += ['--cat_AL']
+    except:
+        pass
+    try:
+        if opt.cat_In_AL:
+            command += ['--cat_In_AL']
+    except:
+        pass
     return command
 
 if __name__ == '__main__':

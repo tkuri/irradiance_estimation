@@ -56,6 +56,16 @@ def make_command_iiw(opt):
             command += ['--joint_enc']
     except:
         pass
+    try:
+        if opt.cat_AL:
+            command += ['--cat_AL']
+    except:
+        pass
+    try:
+        if opt.cat_In_AL:
+            command += ['--cat_In_AL']
+    except:
+        pass
     return command
 
 def make_command_saw(opt):
@@ -70,6 +80,16 @@ def make_command_saw(opt):
         if opt.joint_enc:
             # command += ' --joint_enc'
             command += ['--joint_enc']
+    except:
+        pass
+    try:
+        if opt.cat_AL:
+            command += ['--cat_AL']
+    except:
+        pass
+    try:
+        if opt.cat_In_AL:
+            command += ['--cat_In_AL']
     except:
         pass
     return command
