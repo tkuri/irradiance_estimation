@@ -36,7 +36,8 @@ import csv
 import subprocess
 
 def make_command_eval():
-    command = 'python eval_bp.py'
+    # command = 'python eval_bp.py'
+    command = ['python', 'eval_bp.py']
     return command
 
 if __name__ == '__main__':
@@ -92,5 +93,6 @@ if __name__ == '__main__':
             writer = csv.writer(f)
             writer.writerows(result)
 
-        eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
+        # eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
+        eval_command_each = eval_command + [web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name)]
         subprocess.run(eval_command_each)

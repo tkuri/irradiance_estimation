@@ -37,7 +37,8 @@ import subprocess
 
 
 def make_command_eval():
-    command = 'python eval_bp.py'
+    # command = 'python eval_bp.py'
+    command = ['python', 'eval_bp.py']
     return command
 
 
@@ -46,11 +47,13 @@ def make_command_iiw(opt):
         gpu_ids = -1
     else:
         gpu_ids = opt.gpu_ids[0]
-    command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
-                  '.format(opt.name, opt.model, gpu_ids)
+    command = ['python', 'test_iiw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', gpu_ids]
+    # command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
+    #               '.format(opt.name, opt.model, gpu_ids)
     try:
         if opt.joint_enc:
-            command += ' --joint_enc'
+            # command += ' --joint_enc'
+            command += ['--joint_enc']
     except:
         pass
     return command
@@ -60,11 +63,13 @@ def make_command_saw(opt):
         gpu_ids = -1
     else:
         gpu_ids = opt.gpu_ids[0]
-    command = 'python test_saw.py --name {} --model {} --gpu_ids {}\
-                  '.format(opt.name, opt.model, gpu_ids)
+    command = ['python', 'test_saw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', gpu_ids]
+    # command = ['python test_saw.py --name {} --model {} --gpu_ids {}\
+    #               '.format(opt.name, opt.model, gpu_ids)
     try:
         if opt.joint_enc:
-            command += ' --joint_enc'
+            # command += ' --joint_enc'
+            command += ['--joint_enc']
     except:
         pass
     return command
@@ -124,17 +129,18 @@ if __name__ == '__main__':
             writer = csv.writer(f)
             writer.writerows(result)
 
-        eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
+        # eval_command_each = eval_command + ' {} {}'.format(web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name))
+        eval_command_each = eval_command + [web_dir+'/{}.csv'.format(opt.result_name), web_dir+'/{}_summary'.format(opt.result_name)]
         subprocess.run(eval_command_each)
 
     if opt.test_mode == 0 or opt.test_mode == 2: 
-        iiw_command_each = iiw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
-        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        # iiw_command_each = iiw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+        iiw_command_each = iiw_command + ['--result_name', web_dir+'/{}'.format(opt.result_name)]
         print(iiw_command_each)
         subprocess.run(iiw_command_each)
 
     if opt.test_mode == 0 or opt.test_mode == 3: 
-        saw_command_each = saw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
-        # iiw_command_each = iiw_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        # saw_command_each = saw_command + ' --result_name {}'.format(web_dir+'/{}'.format(opt.result_name))
+        saw_command_each = saw_command + ['--result_name', web_dir+'/{}'.format(opt.result_name)]
         print(saw_command_each)
         subprocess.run(saw_command_each)

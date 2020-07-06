@@ -30,24 +30,33 @@ def make_command_test(opt):
         gpu_ids = -1
     else:
         gpu_ids = opt.gpu_ids[0]
-    command = 'python test_bp.py --dataroot {}\
-              --name {} --model {}\
-              --dataset_mode {} --num_test 3000 --re_index\
-              --gpu_ids {} --disp_brighest_info\
-              --bp_tap {} --bp_sigma {} --no_save_image\
-                  '.format(opt.dataroot, opt.name, opt.model, opt.dataset_mode, 
-                           gpu_ids, opt.bp_tap, opt.bp_sigma)
+    # command = 'python test_bp.py --dataroot {}\
+    #           --name {} --model {}\
+    #           --dataset_mode {} --num_test 3000 --re_index\
+    #           --gpu_ids {} --disp_brighest_info\
+    #           --bp_tap {} --bp_sigma {} --no_save_image\
+    #               '.format(opt.dataroot, opt.name, opt.model, opt.dataset_mode, 
+    #                        gpu_ids, opt.bp_tap, opt.bp_sigma)
+    command = ['python', 'test_bp.py', '--dataroot', opt.dataroot,
+              '--name', opt.name, '--model', opt.model,
+              '--dataset_mode', opt.dataset_mode, '--num_test', '3000', '--re_index',
+              '--gpu_ids', gpu_ids, '--disp_brighest_info',
+              '--bp_tap', opt.bp_tap, '--bp_sigma', opt.bp_sigma '--no_save_image']
     if opt.no_mask:
-        command += ' --no_mask'
+        # command += ' --no_mask'
+        command += ['--no_mask']
 
     if opt.edge_mask:
-        command += ' --edge_mask'
+        # command += ' --edge_mask'
+        command += ['--edge_mask']
 
     if opt.shading_norm:
-        command += ' --shading_norm'
+        # command += ' --shading_norm'
+        command += ['--shading_norm']
     try:
         if opt.joint_enc:
-            command += ' --joint_enc'
+            # command += ' --joint_enc'
+            command += ['--joint_enc']
     except:
         pass
     return command
@@ -106,6 +115,7 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
-        test_command_each = test_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        # test_command_each = test_command + ' --result_name {}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)
+        test_command_each = test_command + ['--result_name', '{}_bp_eval_epoch{}'.format(os.path.basename(opt.name), epoch)]
         print(test_command_each)
         subprocess.run(test_command_each)
