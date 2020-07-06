@@ -40,8 +40,8 @@ def make_command_test(opt):
     command = ['python', 'test_bp.py', '--dataroot', opt.dataroot,
               '--name', opt.name, '--model', opt.model,
               '--dataset_mode', opt.dataset_mode, '--num_test', '3000', '--re_index',
-              '--gpu_ids', gpu_ids, '--disp_brighest_info',
-              '--bp_tap', opt.bp_tap, '--bp_sigma', opt.bp_sigma '--no_save_image']
+              '--gpu_ids', str(gpu_ids), '--disp_brighest_info',
+              '--bp_tap', str(opt.bp_tap), '--bp_sigma', str(opt.bp_sigma) '--no_save_image']
     if opt.no_mask:
         # command += ' --no_mask'
         command += ['--no_mask']

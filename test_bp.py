@@ -47,7 +47,7 @@ def make_command_iiw(opt):
         gpu_ids = -1
     else:
         gpu_ids = opt.gpu_ids[0]
-    command = ['python', 'test_iiw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', gpu_ids]
+    command = ['python', 'test_iiw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', str(gpu_ids)]
     # command = 'python test_iiw.py --name {} --model {} --gpu_ids {}\
     #               '.format(opt.name, opt.model, gpu_ids)
     try:
@@ -73,7 +73,7 @@ def make_command_saw(opt):
         gpu_ids = -1
     else:
         gpu_ids = opt.gpu_ids[0]
-    command = ['python', 'test_saw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', gpu_ids]
+    command = ['python', 'test_saw.py', '--name', opt.name, '--model', opt.model, '--gpu_ids', str(gpu_ids)]
     # command = ['python test_saw.py --name {} --model {} --gpu_ids {}\
     #               '.format(opt.name, opt.model, gpu_ids)
     try:
