@@ -17,6 +17,13 @@ random.seed(101)
 # erosion = nn.MaxPool2d(15, stride=1, padding=7)
 erosion = nn.MaxPool2d(11, stride=1, padding=5)
 
+def min_loss_BC(pr_BC, gt_BC, criterionBC):
+    loss_G_BC = criterionBC(pr_BC, gt_BC[:, 0])
+    for i in range(1, bc_num):
+        loss_G_BC_cmp = criterionBC(pr_BC, gt_BC[:, i].squeeze(1))
+        loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
+    return loss_G_BC
+
 def normalize_0p1_to_n1p1(grayscale=False):
     transform_list = []
     if grayscale:
