@@ -288,6 +288,7 @@ class BrightestCasResnetModel(BaseModel):
             self.compute_visuals()
         pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
         input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
+        mask = torch.squeeze(self.mask, 0)*0.5+0.5
 
         pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
         pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
