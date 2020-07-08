@@ -17,7 +17,7 @@ random.seed(101)
 # erosion = nn.MaxPool2d(15, stride=1, padding=7)
 erosion = nn.MaxPool2d(11, stride=1, padding=5)
 
-def min_loss_BC(pr_BC, gt_BC, criterionBC):
+def min_loss_BC(pr_BC, gt_BC, bc_num, criterionBC):
     loss_G_BC = criterionBC(pr_BC, gt_BC[:, 0])
     for i in range(1, bc_num):
         loss_G_BC_cmp = criterionBC(pr_BC, gt_BC[:, i].squeeze(1))

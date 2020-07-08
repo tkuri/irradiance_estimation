@@ -168,8 +168,8 @@ class BrightestCasResnetModel(BaseModel):
             self.loss_G += self.loss_G_BC + self.loss_G_BC2
         # else:
         elif condition==2:
-            loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, self.criterionBC)
-            loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, self.criterionBC)
+            loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
+            loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
             # loss_G_BC = self.criterionBC(self.pr_BC, gt_BC[:, 0])
             # for i in range(1, bc_num):
             #     loss_G_BC_cmp = self.criterionBC(self.pr_BC, gt_BC[:, i].squeeze(1))
