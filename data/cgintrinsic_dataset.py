@@ -113,19 +113,9 @@ class CGIntrinsicDataset(BaseDataset):
             mask[gt_SH_gray > 10] = 0
             mask = 1.0 - util.erosion(1.0-mask)
 
-        mask_edge = mask.clone()
-
-        if self.opt.edge_mask:
-            edge_w = int(mask_edge.size(-1)*0.05)
-            edge_h = int(mask_edge.size(-2)*0.05)
-            mask_edge[:, :edge_h, :] = 0
-            mask_edge[:, -edge_h:, :] = 0
-            mask_edge[:, :, :edge_w] = 0
-            mask_edge[:, :, -edge_w:] = 0
-
         gt_BA, brightest_20, gt_BP, gt_BC\
              = util.calc_brightest(
-                 gt_SH_gray, mask_edge,
+                 gt_SH_gray, mask,
                  nr_tap=self.opt.bp_nr_tap, 
                  nr_sigma=self.opt.bp_nr_sigma,
                  spread_tap=self.opt.bp_tap, 
@@ -147,7 +137,6 @@ class CGIntrinsicDataset(BaseDataset):
         gt_AL = normalize()(gt_AL)
         gt_SH = normalize()(gt_SH)
         mask = normalize(grayscale=True)(mask)
-        mask_edge = normalize(grayscale=True)(mask_edge)
         gt_BA = normalize(grayscale=True)(gt_BA)
         gt_BP = normalize(grayscale=True)(gt_BP)
         gt_BC = torch.Tensor(list(gt_BC))
@@ -156,13 +145,11 @@ class CGIntrinsicDataset(BaseDataset):
         gt_AL = torch.unsqueeze(gt_AL, 0)
         gt_SH = torch.unsqueeze(gt_SH, 0)
         mask = torch.unsqueeze(mask, 0)
-        mask_edge = torch.unsqueeze(mask_edge, 0)
         gt_BA = torch.unsqueeze(gt_BA, 0)
         gt_BP = torch.unsqueeze(gt_BP, 0)        
         # radiantest = torch.unsqueeze(radiantest, 0)
         
-        # return {'A': srgb_img, 'B': gt_AL, 'C': gt_SH, 'D': mask, 'E': gt_BA, 'F': gt_BA, 'G': radiantest, 'A_paths': img_path}
-        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'A_paths': img_path}
+        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.

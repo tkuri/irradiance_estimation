@@ -17,11 +17,9 @@ else:
 
 def calc_brightest_portions(visuals, name, disp, opt):
     img = torch.squeeze(visuals[name], 0)
-    # mask = torch.squeeze(visuals['mask_edge'], 0)
 
     img_gray = torch.mean(img, 0, keepdim=True)
     img_gray = util.normalize_n1p1_to_0p1(grayscale=True)(img_gray)
-    # mask = util.normalize_n1p1_to_0p1(grayscale=True)(mask)
     mask = torch.ones_like(img_gray)
     brightest_area, _, brightest_pixel, _ = util.calc_brightest(img_gray, mask, nr_tap=opt.bp_nr_tap, nr_sigma=opt.bp_nr_sigma, spread_tap=opt.bp_tap, spread_sigma=opt.bp_sigma)
 
