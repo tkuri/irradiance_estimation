@@ -46,10 +46,6 @@ class BrightestCasResnetModel(BaseModel):
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
-            parser.add_argument('--in_gt_AL', action='store_true', help='GT albedo is also used as input')
-            parser.add_argument('--in_gt_SH', action='store_true', help='GT shading is also used as input')
-            parser.add_argument('--in_pr_AL', action='store_true', help='Predicted albedo is also used as input')
-            parser.add_argument('--reg', action='store_true', help='regularization')
         parser.add_argument('--cat_AL', action='store_true', help='Concat AL')
         parser.add_argument('--cat_In_AL', action='store_true', help='Concat Input and AL')
 
@@ -62,21 +58,15 @@ class BrightestCasResnetModel(BaseModel):
             opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseModel.__init__(self, opt)
-        # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
+
         self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP', 'G_BC']
         if not opt.no_gt:
             self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask']
         else:
             self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2', 'pr_AL', 'pr_SH']
-        # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
-        # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
+
         self.model_names = ['G1', 'G2', 'G3']
-        # define networks (both generator and discriminator)
 
-        # print('generator output:', output)
-
-        # self.netG = networks.define_G(opt.input_nc, output, opt.ngf, opt.netG, opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG1 = networks.define_G(opt.input_nc, 3, opt.ngf, 'unet_256_multi', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
@@ -105,13 +95,6 @@ class BrightestCasResnetModel(BaseModel):
             self.optimizers.append(self.optimizer_G3)
 
     def set_input(self, input):
-        """Unpack input data from the dataloader and perform necessary pre-processing steps.
-
-        Parameters:
-            input (dict): include the data itself and its metadata information.
-
-        The option 'direction' can be used to swap images in domain A and domain B.
-        """
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
         if not self.opt.no_gt:
@@ -160,34 +143,6 @@ class BrightestCasResnetModel(BaseModel):
             g3_input = self.pr_SH
 
         self.pr_BC2, self.pr_BA2, self.pr_BP2 = self.netG3(g3_input)
-
-        # # Multi input shared network
-        # if self.isTrain:
-        #     if self.opt.in_gt_AL:
-        #         pr_BC, pr_BA, pr_BP = self.netG2(self.gt_AL)
-        #         self.pr_BC = (self.pr_BC + pr_BC)*0.5
-        #         self.pr_BA = (self.pr_BA + pr_BA)*0.5
-        #         self.pr_BP = (self.pr_BP + pr_BP)*0.5
-        #     if self.opt.in_gt_SH:
-        #         pr_BC, pr_BA, pr_BP = self.netG2(self.gt_SH)
-        #         self.pr_BC = (self.pr_BC + pr_BC)*0.5
-        #         self.pr_BA = (self.pr_BA + pr_BA)*0.5
-        #         self.pr_BP = (self.pr_BP + pr_BP)*0.5
-        #     if self.opt.in_gt_AL:
-        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_AL)
-        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-        #     if self.opt.in_gt_SH:
-        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.gt_SH)
-        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
-        #     if self.opt.in_pr_AL:
-        #         pr_BC2, pr_BA2, pr_BP2 = self.netG3(self.pr_AL)
-        #         self.pr_BC2 = (self.pr_BC2 + pr_BC2)*0.5
-        #         self.pr_BA2 = (self.pr_BA2 + pr_BA2)*0.5
-        #         self.pr_BP2 = (self.pr_BP2 + pr_BP2)*0.5
         
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
@@ -202,14 +157,8 @@ class BrightestCasResnetModel(BaseModel):
         self.loss_G_BP = self.criterionBP(self.pr_BP*mask, self.gt_BP*mask) * self.opt.lambda_BP  
         self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask, self.gt_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask, self.gt_BP*mask) * self.opt.lambda_BP  
-        # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC) * self.opt.lambda_BC
-        # self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC) * self.opt.lambda_BC
 
         self.loss_G = self.loss_G_AL + self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
-        # if condition==1:
-        #     self.loss_G += self.loss_G_BC + self.loss_G_BC2
-        # else:
-        #     print('Pass loss_G_BC because condition is {}'.format(condition))
         if condition==1:
             self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
