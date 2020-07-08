@@ -74,7 +74,7 @@ class BrightestCasResnetModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         g3_input_nc = opt.input_nc
-        if opt.cat_AL:
+        if opt.cat_AL or opt.cat_In:
             g3_input_nc = g3_input_nc + 3
         if opt.cat_In_AL:
             g3_input_nc = g3_input_nc + 6
