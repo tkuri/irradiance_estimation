@@ -47,6 +47,7 @@ class BrightestCasResnetModel(BaseModel):
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
         parser.add_argument('--cat_AL', action='store_true', help='Concat AL')
+        parser.add_argument('--cat_In', action='store_true', help='Concat Input')
         parser.add_argument('--cat_In_AL', action='store_true', help='Concat Input and AL')
 
         return parser
@@ -136,6 +137,8 @@ class BrightestCasResnetModel(BaseModel):
 
         if self.opt.cat_AL:
             g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
+        elif self.opt.cat_In:
+            g3_input = torch.cat((self.pr_SH, self.input), 1)
         elif self.opt.cat_In_AL:
             g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
             g3_input = torch.cat((g3_input, self.input), 1)
