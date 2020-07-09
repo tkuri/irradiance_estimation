@@ -65,7 +65,7 @@ class Aligned3BPDataset(BaseDataset):
         gt_AL = torch.clamp(rgb_img / torch.clamp(gt_SH, min=1e-6), max=1.0, min=0.0)
 
         mask = torch.ones_like(L)
-        mask[srgb < 1e-6] = 0
+        mask[srgb_img < 1e-6] = 0
         mask = 1.0 - util.erosion(1.0-mask)
 
         srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
