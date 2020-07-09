@@ -24,6 +24,20 @@ def min_loss_BC(pr_BC, gt_BC, bc_num, criterionBC):
         loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
     return loss_G_BC
 
+def get_current_BC(pr_BC, pr_BP, opt):
+    pr_BP_BC = disp_brightest_coord(pr_BC, pr_BP, opt.bp_tap, opt.bp_sigma)
+    pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
+    return pr_BP_BC
+
+def get_current_BP(pr_BP, opt):
+    pr_BP_norm = torch.squeeze(pr_BP, 0)*0.5+0.5
+    mask_one = torch.ones_like(pr_BP_norm)
+    _, _, pr_BP_BP, _ = calc_brightest(pr_BP_norm, mask_one, opt.bp_nr_tap, opt.bp_nr_sigma, opt.bp_tap, opt.bp_sigma)
+    pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
+    pr_BP_BP = pr_BP_BP.unsqueeze(0)
+    return pr_BP_BP
+
+
 def normalize_0p1_to_n1p1(grayscale=False):
     transform_list = []
     if grayscale:

@@ -167,18 +167,18 @@ class BrightestResnetModel(BaseModel):
         self.optimizer_G1.step()             # udpate G's weights
         self.optimizer_G2.step()             # udpate G's weights
 
-    def get_current_BC(self):
-        pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.pr_BP, self.opt.bp_tap, self.opt.bp_sigma)
-        pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
-        return pr_BP_BC
+    # def get_current_BC(self):
+    #     pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.pr_BP, self.opt.bp_tap, self.opt.bp_sigma)
+    #     pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
+    #     return pr_BP_BC
 
-    def get_current_BP(self):
-        pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
-        mask_one = torch.ones_like(pr_BP)
-        _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP, mask_one, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
-        pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
-        pr_BP_BP = pr_BP_BP.unsqueeze(0)
-        return pr_BP_BP
+    # def get_current_BP(self):
+    #     pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
+    #     mask_one = torch.ones_like(pr_BP)
+    #     _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP, mask_one, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
+    #     pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
+    #     pr_BP_BP = pr_BP_BP.unsqueeze(0)
+    #     return pr_BP_BP
 
     def get_current_visuals(self):
         """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""
@@ -186,8 +186,8 @@ class BrightestResnetModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-        visual_ret['pr_BP_BC'] = self.get_current_BC()
-        visual_ret['pr_BP_BP'] = self.get_current_BP()
+        visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
+        visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
         return visual_ret
 
 
@@ -217,7 +217,7 @@ class BrightestResnetModel(BaseModel):
         res_base = self.eval_bp_base()
 
         result = []
-        label = eval_label()
+        label = self.eval_label()
         for l in label:
             if l in res_base:
                 result.append(res_base[l])
