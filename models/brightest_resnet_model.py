@@ -99,26 +99,6 @@ class BrightestResnetModel(BaseModel):
         self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = input['gt_BC'].to(self.device) 
     
-    def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
-        k = 1 + round(.01 * float(q) * (t.numel() - 1))
-        result = t.view(-1).kthvalue(k).values.item()
-        return result
-
-    def calc_shading(self, img, albedo, mask):
-        img = torch.clamp(img * 0.5 + 0.5, min=0.0, max=1.0) # 0~1
-        albedo = torch.clamp(albedo * 0.5 + 0.5, min=1e-6, max=1.0) # 0~1
-        shading = img**2.2/albedo
-        if self.opt.shading_norm:
-            if torch.sum(mask) < 10:
-                max_S = 1.0
-            else:
-                max_S = self.percentile(shading[self.mask.expand(shading.size()) > 0.5], 90)
-
-            shading = shading/max_S
-
-        shading = (shading - 0.5) / 0.5
-        return torch.clamp(shading, min=-1.0, max=1.0) # -1~1
-
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         pr_SH, pr_AL, color = self.netG1(self.input)  # G(A)

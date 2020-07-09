@@ -37,6 +37,21 @@ def get_current_BP(pr_BP, opt):
     pr_BP_BP = pr_BP_BP.unsqueeze(0)
     return pr_BP_BP
 
+def calc_shading(img, albedo, mask, opt):
+    img = torch.clamp(img * 0.5 + 0.5, min=0.0, max=1.0) # 0~1
+    albedo = torch.clamp(albedo * 0.5 + 0.5, min=1e-6, max=1.0) # 0~1
+    shading = img**2.2/albedo
+    if opt.shading_norm:
+        if torch.sum(mask) < 10:
+            max_S = 1.0
+        else:
+            max_S = percentile(shading[mask.expand(shading.size()) > 0.5], 90)
+
+        shading = shading/max_S
+
+    shading = (shading - 0.5) / 0.5
+    return torch.clamp(shading, min=-1.0, max=1.0) # -1~1
+
 
 def normalize_0p1_to_n1p1(grayscale=False):
     transform_list = []
