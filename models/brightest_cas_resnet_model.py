@@ -61,10 +61,7 @@ class BrightestCasResnetModel(BaseModel):
         BaseModel.__init__(self, opt)
 
         self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP', 'G_BC']
-        if not opt.no_gt:
-            self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask']
-        else:
-            self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'pr_BP', 'pr_BP2', 'pr_AL', 'pr_SH']
+        self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask']
 
         self.model_names = ['G1', 'G2', 'G3']
 
@@ -98,13 +95,12 @@ class BrightestCasResnetModel(BaseModel):
     def set_input(self, input):
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
-        if not self.opt.no_gt:
-            self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
-            self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
-            self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
-            self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
-            self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-            self.gt_BC = input['gt_BC'].to(self.device) 
+        self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
+        self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
+        self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BC = input['gt_BC'].to(self.device) 
     
     def percentile(self, t: torch.tensor, q: float) -> Union[int, float]:
         k = 1 + round(.01 * float(q) * (t.numel() - 1))
