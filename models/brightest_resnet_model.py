@@ -222,21 +222,3 @@ class BrightestResnetModel(BaseModel):
             if l in res_base:
                 result.append(res_base[l])
         return result
-
-    def test_iiw_data(self, input_):
-        # switch to evaluation mode
-        input_images = input_.contiguous().float()
-
-        pr_SH, pr_AL, color = self.netG1(input_images)  # G(A)
-        self.pr_AL = pr_AL
-        pr_SH = pr_SH.repeat(1, 3, 1, 1)
-        color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        self.pr_SH = pr_SH * color
-        self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(input_images)
-
-        # prediction_R = torch.exp(prediction_R)
-
-        pr_BC_hmap = util.disp_brightest_coord(pr_BC, pr_BP)
-
-
-        return pr_SH, pr_AL, pr_BP, pr_BA, pr_BC_hmap
