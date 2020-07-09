@@ -167,19 +167,6 @@ class BrightestResnetModel(BaseModel):
         self.optimizer_G1.step()             # udpate G's weights
         self.optimizer_G2.step()             # udpate G's weights
 
-    # def get_current_BC(self):
-    #     pr_BP_BC = util.disp_brightest_coord(self.pr_BC, self.pr_BP, self.opt.bp_tap, self.opt.bp_sigma)
-    #     pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
-    #     return pr_BP_BC
-
-    # def get_current_BP(self):
-    #     pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
-    #     mask_one = torch.ones_like(pr_BP)
-    #     _, _, pr_BP_BP, _ = util.calc_brightest(pr_BP, mask_one, self.opt.bp_nr_tap, self.opt.bp_nr_sigma, self.opt.bp_tap, self.opt.bp_sigma)
-    #     pr_BP_BP = (pr_BP_BP - 0.5) / 0.5
-    #     pr_BP_BP = pr_BP_BP.unsqueeze(0)
-    #     return pr_BP_BP
-
     def get_current_visuals(self):
         """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""
         visual_ret = OrderedDict()
