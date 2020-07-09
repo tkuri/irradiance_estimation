@@ -240,83 +240,101 @@ class BrightestCasResnetModel(BaseModel):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
-        pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
-        input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
-        mask = torch.squeeze(self.mask, 0)*0.5+0.5
+        
+        res_base = self.eval_bp_base()
+        res_cas = self.eval_bp_cas()
 
-        pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
-        pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
-        pr_BA2 = torch.squeeze(self.pr_BA2, 0)*0.5+0.5
-        pr_BP2 = torch.squeeze(self.pr_BP2, 0)*0.5+0.5
-
-        all_one = torch.ones_like(input_g)
-        all_half = torch.ones_like(input_g) * 0.5
-        all_zero = torch.zeros_like(input_g)
-        pr_BA_RA, _, pr_BP_RA, pr_BC_RA = util.calc_brightest(input_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BA2, pr_BC_BA2 = util.calc_brightest(pr_BA2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BP2, pr_BC_BP2 = util.calc_brightest(pr_BP2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-
-        # Evaluation of 20% brightest area
-        gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
-        ba_mse_ra = util.mse_with_mask(pr_BA_RA, gt_BA, mask).item()
-        ba_mse_sh = util.mse_with_mask(pr_BA_SH, gt_BA, mask).item()
-        ba_mse_ba = util.mse_with_mask(pr_BA, gt_BA, mask).item()
-        ba_mse_ba2 = util.mse_with_mask(pr_BA2, gt_BA, mask).item()
-        ba_mse_0 = util.mse_with_mask(all_zero, gt_BA, mask).item()
-        ba_mse_h = util.mse_with_mask(all_half, gt_BA, mask).item()
-        ba_mse_1 = util.mse_with_mask(all_one, gt_BA, mask).item()
-
-        # Evaluation of brightest pixel (Spread)
-        gt_BP = torch.squeeze(self.gt_BP, 0)*0.5+0.5
-        bp_mse_ra = util.mse_with_mask(pr_BP_RA, gt_BP, mask).item()
-        bp_mse_sh = util.mse_with_mask(pr_BP_SH, gt_BP, mask).item()
-        bp_mse_ba = util.mse_with_mask(pr_BP_BA, gt_BP, mask).item()
-        bp_mse_bp = util.mse_with_mask(pr_BP_BP, gt_BP, mask).item()
-        bp_mse_bp_direct = util.mse_with_mask(pr_BP, gt_BP, mask).item()
-        bp_mse_ba2 = util.mse_with_mask(pr_BP_BA2, gt_BP, mask).item()
-        bp_mse_bp2 = util.mse_with_mask(pr_BP_BP2, gt_BP, mask).item()
-        bp_mse_bp2_direct = util.mse_with_mask(pr_BP2, gt_BP, mask).item()
-        bp_mse_0 = util.mse_with_mask(all_zero, gt_BP, mask).item()
-        bp_mse_h = util.mse_with_mask(all_half, gt_BP, mask).item()
-        bp_mse_1 = util.mse_with_mask(all_one, gt_BP, mask).item()
-
-        # Evaluation of brightest coordinate
-        bc_gt = []
-        bc_gt_num = int(self.gt_BC[0, 0, 3].item())
-        for i in range(bc_gt_num):
-            bc_gt.append((self.gt_BC[0, i, 0].item(), self.gt_BC[0, i, 1].item(), int(self.gt_BC[0, i, 2].item()), int(self.gt_BC[0, i, 3].item())))
-        bc_ra = pr_BC_RA
-        bc_sh = pr_BC_SH
-        bc_ba = pr_BC_BA
-        bc_bp = pr_BC_BP
-        bc_ba2 = pr_BC_BA2
-        bc_bp2 = pr_BC_BP2
-        bc_bc = [(self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item(), 1, 1)]
-        bc_bc2 = [(self.pr_BC2[0, 0].item(), self.pr_BC2[0, 1].item(), 1, 1)]
-        bc_05 = [(0.5, 0.5, 1, 1)]
-
-        dist_ra = util.calc_dist(bc_gt, bc_ra)
-        dist_sh = util.calc_dist(bc_gt, bc_sh)
-        dist_ba = util.calc_dist(bc_gt, bc_ba)
-        dist_bp = util.calc_dist(bc_gt, bc_bp)
-        dist_bc = util.calc_dist(bc_gt, bc_bc)
-        dist_ba2 = util.calc_dist(bc_gt, bc_ba2)
-        dist_bp2 = util.calc_dist(bc_gt, bc_bp2)
-        dist_bc2 = util.calc_dist(bc_gt, bc_bc2)
-        dist_05 = util.calc_dist(bc_gt, bc_05)
-
-        condition = bc_gt[0][2]
-        if torch.sum(mask > 0.5) < 1:
-            condition = 3
-
-        result = [condition, bc_gt[0], bc_ra[0], bc_sh[0], bc_ba[0], bc_bp[0], bc_bc[0], bc_ba2[0], bc_bp2[0], bc_bc2[0],
-                     dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, 
-                     dist_ba2, dist_bp2, dist_bc2, dist_05,
-                     ba_mse_ra, ba_mse_sh, ba_mse_ba, ba_mse_ba2, ba_mse_0, ba_mse_h, ba_mse_1,
-                     bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp, bp_mse_bp_direct,
-                     bp_mse_ba2, bp_mse_bp2, bp_mse_bp2_direct, bp_mse_0, bp_mse_h, bp_mse_1,
-                     ]
+        result = []
+        label = eval_label()
+        for l in label:
+            if l in res_base:
+                result.append(res_base[l])
+            if l in res_cas:
+                result.append(res_cas[l])
         return result
+
+
+    # def eval_brightest_pixel(self):
+    #     with torch.no_grad():
+    #         self.forward()     
+    #         self.compute_visuals()
+    #     pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
+    #     input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
+    #     mask = torch.squeeze(self.mask, 0)*0.5+0.5
+
+    #     pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
+    #     pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
+    #     pr_BA2 = torch.squeeze(self.pr_BA2, 0)*0.5+0.5
+    #     pr_BP2 = torch.squeeze(self.pr_BP2, 0)*0.5+0.5
+
+    #     all_one = torch.ones_like(input_g)
+    #     all_half = torch.ones_like(input_g) * 0.5
+    #     all_zero = torch.zeros_like(input_g)
+    #     pr_BA_RA, _, pr_BP_RA, pr_BC_RA = util.calc_brightest(input_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+    #     pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+    #     _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+    #     _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+    #     _, _, pr_BP_BA2, pr_BC_BA2 = util.calc_brightest(pr_BA2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+    #     _, _, pr_BP_BP2, pr_BC_BP2 = util.calc_brightest(pr_BP2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+
+    #     # Evaluation of 20% brightest area
+    #     gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
+    #     ba_mse_ra = util.mse_with_mask(pr_BA_RA, gt_BA, mask).item()
+    #     ba_mse_sh = util.mse_with_mask(pr_BA_SH, gt_BA, mask).item()
+    #     ba_mse_ba = util.mse_with_mask(pr_BA, gt_BA, mask).item()
+    #     ba_mse_ba2 = util.mse_with_mask(pr_BA2, gt_BA, mask).item()
+    #     ba_mse_0 = util.mse_with_mask(all_zero, gt_BA, mask).item()
+    #     ba_mse_h = util.mse_with_mask(all_half, gt_BA, mask).item()
+    #     ba_mse_1 = util.mse_with_mask(all_one, gt_BA, mask).item()
+
+    #     # Evaluation of brightest pixel (Spread)
+    #     gt_BP = torch.squeeze(self.gt_BP, 0)*0.5+0.5
+    #     bp_mse_ra = util.mse_with_mask(pr_BP_RA, gt_BP, mask).item()
+    #     bp_mse_sh = util.mse_with_mask(pr_BP_SH, gt_BP, mask).item()
+    #     bp_mse_ba = util.mse_with_mask(pr_BP_BA, gt_BP, mask).item()
+    #     bp_mse_bp = util.mse_with_mask(pr_BP_BP, gt_BP, mask).item()
+    #     bp_mse_bp_direct = util.mse_with_mask(pr_BP, gt_BP, mask).item()
+    #     bp_mse_ba2 = util.mse_with_mask(pr_BP_BA2, gt_BP, mask).item()
+    #     bp_mse_bp2 = util.mse_with_mask(pr_BP_BP2, gt_BP, mask).item()
+    #     bp_mse_bp2_direct = util.mse_with_mask(pr_BP2, gt_BP, mask).item()
+    #     bp_mse_0 = util.mse_with_mask(all_zero, gt_BP, mask).item()
+    #     bp_mse_h = util.mse_with_mask(all_half, gt_BP, mask).item()
+    #     bp_mse_1 = util.mse_with_mask(all_one, gt_BP, mask).item()
+
+    #     # Evaluation of brightest coordinate
+    #     bc_gt = []
+    #     bc_gt_num = int(self.gt_BC[0, 0, 3].item())
+    #     for i in range(bc_gt_num):
+    #         bc_gt.append((self.gt_BC[0, i, 0].item(), self.gt_BC[0, i, 1].item(), int(self.gt_BC[0, i, 2].item()), int(self.gt_BC[0, i, 3].item())))
+    #     bc_ra = pr_BC_RA
+    #     bc_sh = pr_BC_SH
+    #     bc_ba = pr_BC_BA
+    #     bc_bp = pr_BC_BP
+    #     bc_ba2 = pr_BC_BA2
+    #     bc_bp2 = pr_BC_BP2
+    #     bc_bc = [(self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item(), 1, 1)]
+    #     bc_bc2 = [(self.pr_BC2[0, 0].item(), self.pr_BC2[0, 1].item(), 1, 1)]
+    #     bc_05 = [(0.5, 0.5, 1, 1)]
+
+    #     dist_ra = util.calc_dist(bc_gt, bc_ra)
+    #     dist_sh = util.calc_dist(bc_gt, bc_sh)
+    #     dist_ba = util.calc_dist(bc_gt, bc_ba)
+    #     dist_bp = util.calc_dist(bc_gt, bc_bp)
+    #     dist_bc = util.calc_dist(bc_gt, bc_bc)
+    #     dist_ba2 = util.calc_dist(bc_gt, bc_ba2)
+    #     dist_bp2 = util.calc_dist(bc_gt, bc_bp2)
+    #     dist_bc2 = util.calc_dist(bc_gt, bc_bc2)
+    #     dist_05 = util.calc_dist(bc_gt, bc_05)
+
+    #     condition = bc_gt[0][2]
+    #     if torch.sum(mask > 0.5) < 1:
+    #         condition = 3
+
+    #     result = [condition, bc_gt[0], bc_ra[0], bc_sh[0], bc_ba[0], bc_bp[0], bc_bc[0], bc_ba2[0], bc_bp2[0], bc_bc2[0],
+    #                  dist_ra, dist_sh, dist_ba, dist_bp, dist_bc, 
+    #                  dist_ba2, dist_bp2, dist_bc2, dist_05,
+    #                  ba_mse_ra, ba_mse_sh, ba_mse_ba, ba_mse_ba2, ba_mse_0, ba_mse_h, ba_mse_1,
+    #                  bp_mse_ra, bp_mse_sh, bp_mse_ba, bp_mse_bp, bp_mse_bp_direct,
+    #                  bp_mse_ba2, bp_mse_bp2, bp_mse_bp2_direct, bp_mse_0, bp_mse_h, bp_mse_1,
+    #                  ]
+    #     return result
