@@ -239,13 +239,17 @@ class BaseModel(ABC):
     def eval_bp_cas(self):
         result = {}
         mask = torch.squeeze(self.mask, 0)*0.5+0.5
+        all_one = torch.ones_like(mask)
+        if self.eval_mask_calc_bp:
+            mask_bp = mask
+        else:
+            mask_bp = all_one
 
         pr_BA2 = torch.squeeze(self.pr_BA2, 0)*0.5+0.5
         pr_BP2 = torch.squeeze(self.pr_BP2, 0)*0.5+0.5
 
-        all_one = torch.ones_like(mask)
-        _, _, pr_BP_BA2, pr_BC_BA2 = util.calc_brightest(pr_BA2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BP2, pr_BC_BP2 = util.calc_brightest(pr_BP2, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BA2, pr_BC_BA2 = util.calc_brightest(pr_BA2, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BP2, pr_BC_BP2 = util.calc_brightest(pr_BP2, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         # Evaluation of 20% brightest area
         gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
@@ -284,6 +288,11 @@ class BaseModel(ABC):
         pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
         input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
         mask = torch.squeeze(self.mask, 0)*0.5+0.5
+        all_one = torch.ones_like(mask)
+        if self.eval_mask_calc_bp:
+            mask_bp = mask
+        else:
+            mask_bp = all_one
 
         pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
         pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
@@ -291,10 +300,10 @@ class BaseModel(ABC):
         all_one = torch.ones_like(input_g)
         all_half = torch.ones_like(input_g) * 0.5
         all_zero = torch.zeros_like(input_g)
-        pr_BA_RA, _, pr_BP_RA, pr_BC_RA = util.calc_brightest(input_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
-        _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, all_one, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        pr_BA_RA, _, pr_BP_RA, pr_BC_RA = util.calc_brightest(input_g, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        pr_BA_SH, _, pr_BP_SH, pr_BC_SH = util.calc_brightest(pr_SH_g, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
+        _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         # Evaluation of 20% brightest area
         gt_BA = torch.squeeze(self.gt_BA, 0)*0.5+0.5
