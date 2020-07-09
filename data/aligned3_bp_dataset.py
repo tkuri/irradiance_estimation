@@ -59,12 +59,12 @@ class Aligned3BPDataset(BaseDataset):
 
         srgb_img = A_transform(A)
         gt_SH = B_transform(B)
-        light = C_transform(C)
+        L = C_transform(C)
 
         rgb_img = srgb_img**2.2
         gt_AL = torch.clamp(rgb_img / torch.clamp(gt_SH, min=1e-6), max=1.0, min=0.0)
 
-        mask = torch.ones_like(light)
+        mask = torch.ones_like(L)
         mask_edge = mask.clone()
 
         srgb_img_gray = torch.mean(srgb_img, 0, keepdim=True)
@@ -99,9 +99,9 @@ class Aligned3BPDataset(BaseDataset):
         gt_BA = torch.unsqueeze(gt_BA, 0)
         gt_BP = torch.unsqueeze(gt_BP, 0)        
 
-        light = torch.unsqueeze(light, 0)
+        L = torch.unsqueeze(L, 0)
 
-        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'light': light, 'A_paths': ABC_path}
+        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'mask_edge': mask_edge, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'L': L, 'A_paths': ABC_path}
 
     def __len__(self):
         """Return the total number of images in the dataset."""
