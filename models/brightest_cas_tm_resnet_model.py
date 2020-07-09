@@ -11,6 +11,7 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.measurements import label
 import cv2
 import json
+from torch.nn import functional as F
 
 class BrightestCasTmResnetModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
