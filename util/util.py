@@ -68,12 +68,6 @@ def mse_with_mask(src, tar, mask):
     return result
 
 def calc_dist(bc_gt, bc_tar):
-    # dist = 10
-    # for i in range(int(bc_gt[0][3])):
-    #     for j in range(int(bc_tar[0][3])):
-    #         dist_tmp = np.hypot(bc_gt[i][0] - bc_tar[j][0], bc_gt[i][1] - bc_tar[j][1])
-    #         if dist_tmp < dist:
-    #             dist = dist_tmp
     dist = 0.0
     cnt = 0
     for i in range(int(bc_gt[0][3])):
