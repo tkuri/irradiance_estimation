@@ -38,9 +38,6 @@ def make_command_test(opt):
     if opt.no_mask:
         command += ['--no_mask']
 
-    if opt.edge_mask:
-        command += ['--edge_mask']
-
     if opt.shading_norm:
         command += ['--shading_norm']
     try:
