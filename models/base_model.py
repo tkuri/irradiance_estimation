@@ -240,7 +240,7 @@ class BaseModel(ABC):
         result = {}
         mask = torch.squeeze(self.mask, 0)*0.5+0.5
         all_one = torch.ones_like(mask)
-        if self.eval_mask_calc_bp:
+        if self.opt.eval_mask_calc_bp:
             mask_bp = mask
         else:
             mask_bp = all_one
@@ -289,7 +289,7 @@ class BaseModel(ABC):
         input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
         mask = torch.squeeze(self.mask, 0)*0.5+0.5
         all_one = torch.ones_like(mask)
-        if self.eval_mask_calc_bp:
+        if self.opt.eval_mask_calc_bp:
             mask_bp = mask
         else:
             mask_bp = all_one
