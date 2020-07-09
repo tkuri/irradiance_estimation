@@ -237,10 +237,6 @@ class BaseModel(ABC):
                     param.requires_grad = requires_grad
 
     def eval_bp_cas(self):
-        with torch.no_grad():
-            self.forward()     
-            self.compute_visuals()
-
         result = {}
         mask = torch.squeeze(self.mask, 0)*0.5+0.5
 
@@ -284,10 +280,6 @@ class BaseModel(ABC):
         return result
 
     def eval_bp_base(self):
-        with torch.no_grad():
-            self.forward()     
-            self.compute_visuals()
-
         result = {}
         pr_SH_g = torch.squeeze(torch.mean(self.pr_SH, 1, keepdim=True), 0)*0.5+0.5
         input_g = torch.squeeze(torch.mean(self.input, 1, keepdim=True), 0)*0.5+0.5
