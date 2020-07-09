@@ -65,6 +65,7 @@ class BrightestCasTmResnetModel(BaseModel):
 
         self.model_names = ['G1', 'G2', 'G3']
 
+        self.light_res = opt.light_res
         # self.netG1 = networks.define_G(opt.input_nc, 3, opt.ngf, 'unet_256_multi', opt.norm,
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_multi', opt.norm,
