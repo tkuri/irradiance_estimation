@@ -167,6 +167,9 @@ def __print_size_warning(ow, oh, w, h):
 
 def make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=None):
     result = {}
+
+    gt_SH_gray = torch.mean(gt_SH, 0, keepdim=True)
+
     gt_BA, brightest_20, gt_BP, gt_BC\
             = util.calc_brightest(
                 gt_SH_gray, mask,
