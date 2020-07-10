@@ -180,7 +180,7 @@ def make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=None):
                 spread_sigma=opt.bp_sigma
                 )
 
-    if self.opt.shading_norm:
+    if opt.shading_norm:
         gt_SH = gt_SH/brightest_20
 
     srgb_img = normalize()(srgb_img)
