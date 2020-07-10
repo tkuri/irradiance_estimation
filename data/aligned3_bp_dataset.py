@@ -96,7 +96,7 @@ class Aligned3BPDataset(BaseDataset):
         # gt_BA = torch.unsqueeze(gt_BA, 0)
         # gt_BP = torch.unsqueeze(gt_BP, 0)
 
-        res = self.make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=gt_AL)
+        res = self.make_bp_data(srgb_img, gt_SH, mask, self.opt, gt_AL=gt_AL)
 
         res['L'] = torch.unsqueeze(L, 0)
         res['A_paths'] = ABC_path
