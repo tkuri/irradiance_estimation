@@ -43,13 +43,10 @@ class BrightestCasTmResnetModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode='vanilla')
             parser.add_argument('--lambda_S', type=float, default=1.0, help='weight for Shading loss')
-            parser.add_argument('--lambda_AL', type=float, default=1.0, help='weight for Reflection loss')
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
-        parser.add_argument('--cat_AL', action='store_true', help='Concat AL')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
-        parser.add_argument('--cat_In_AL', action='store_true', help='Concat Input and AL')
 
         return parser
 
@@ -61,8 +58,8 @@ class BrightestCasTmResnetModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
 
-        self.loss_names = ['G_AL', 'G_SH', 'G_BA', 'G_BP', 'G_BC']
-        self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_AL', 'gt_AL', 'pr_SH', 'gt_SH', 'mask']
+        self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
+        self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
 
         self.model_names = ['G1', 'G2', 'G3']
 
@@ -75,10 +72,8 @@ class BrightestCasTmResnetModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         g3_input_nc = opt.input_nc
-        if opt.cat_AL or opt.cat_In:
+        if opt.cat_In:
             g3_input_nc = g3_input_nc + 3
-        if opt.cat_In_AL:
-            g3_input_nc = g3_input_nc + 6
         self.netG3 = networks.define_G(g3_input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         if self.isTrain:
@@ -99,7 +94,6 @@ class BrightestCasTmResnetModel(BaseModel):
     def set_input(self, input):
         self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
-        self.gt_AL = torch.squeeze(input['gt_AL'],0).to(self.device) # [bn, 3, 256, 256]
         self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
@@ -135,9 +129,7 @@ class BrightestCasTmResnetModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
 
-        # pr_SH, pr_AL, color = self.netG1(self.input)  # G(A)
         pr_SH, color = self.ltm_module()
-        self.pr_AL = self.gt_AL
         pr_SH = pr_SH.repeat(1, 3, 1, 1)
         pr_SH = pr_SH * 0.5 + 0.5
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
@@ -145,13 +137,8 @@ class BrightestCasTmResnetModel(BaseModel):
         self.pr_SH = self.pr_SH * 2.0 - 1.0
         self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
-        if self.opt.cat_AL:
-            g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
-        elif self.opt.cat_In:
+        if self.opt.cat_In:
             g3_input = torch.cat((self.pr_SH, self.input), 1)
-        elif self.opt.cat_In_AL:
-            g3_input = torch.cat((self.pr_SH, self.pr_AL), 1)
-            g3_input = torch.cat((g3_input, self.input), 1)
         else:
             g3_input = self.pr_SH
 
@@ -164,14 +151,13 @@ class BrightestCasTmResnetModel(BaseModel):
         condition = int(self.gt_BC[:, 0, 2].item())
         bc_num = int(self.gt_BC[:, 0, 3].item())
 
-        self.loss_G_AL = self.criterionR(self.pr_AL*mask, self.gt_AL*mask) * self.opt.lambda_AL
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
         self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP = self.criterionBP(self.pr_BP*mask, self.gt_BP*mask) * self.opt.lambda_BP  
         self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask, self.gt_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask, self.gt_BP*mask) * self.opt.lambda_BP  
 
-        self.loss_G = self.loss_G_AL + self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
+        self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
         if condition==1:
             self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
