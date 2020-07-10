@@ -164,3 +164,36 @@ def __print_size_warning(ow, oh, w, h):
               "(%d, %d). This adjustment will be done to all images "
               "whose sizes are not multiples of 4" % (ow, oh, w, h))
         __print_size_warning.has_printed = True
+
+def make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=None):
+    result = {}
+    gt_BA, brightest_20, gt_BP, gt_BC\
+            = util.calc_brightest(
+                gt_SH_gray, mask,
+                nr_tap=opt.bp_nr_tap, 
+                nr_sigma=opt.bp_nr_sigma,
+                spread_tap=opt.bp_tap, 
+                spread_sigma=opt.bp_sigma
+                )
+
+    if self.opt.shading_norm:
+        gt_SH = gt_SH/brightest_20
+
+    srgb_img = normalize()(srgb_img)
+    gt_SH = normalize()(gt_SH)
+    mask = normalize(grayscale=True)(mask)
+    gt_BA = normalize(grayscale=True)(gt_BA)
+    gt_BP = normalize(grayscale=True)(gt_BP)
+    result['gt_BC'] = torch.Tensor(list(gt_BC))
+
+    result['A'] = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
+    result['gt_SH'] = torch.unsqueeze(gt_SH, 0)
+    result['mask'] = torch.unsqueeze(mask, 0)
+    result['gt_BA'] = torch.unsqueeze(gt_BA, 0)
+    result['gt_BP'] = torch.unsqueeze(gt_BP, 0)
+
+    if not gt_AL==None:
+        gt_AL = normalize()(gt_AL)
+        result['gt_AL'] = torch.unsqueeze(gt_AL, 0)
+    
+    return result

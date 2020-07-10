@@ -69,36 +69,41 @@ class Aligned3BPDataset(BaseDataset):
         # mask[gt_SH_gray < 1e-4] = 0
         # mask = 1.0 - util.erosion(1.0-mask)
 
-        gt_BA, brightest_20, gt_BP, gt_BC\
-             = util.calc_brightest(
-                 gt_SH_gray, mask,
-                 nr_tap=self.opt.bp_nr_tap, 
-                 nr_sigma=self.opt.bp_nr_sigma,
-                 spread_tap=self.opt.bp_tap, 
-                 spread_sigma=self.opt.bp_sigma
-                 )
+        # gt_BA, brightest_20, gt_BP, gt_BC\
+        #      = util.calc_brightest(
+        #          gt_SH_gray, mask,
+        #          nr_tap=self.opt.bp_nr_tap, 
+        #          nr_sigma=self.opt.bp_nr_sigma,
+        #          spread_tap=self.opt.bp_tap, 
+        #          spread_sigma=self.opt.bp_sigma
+        #          )
 
-        if self.opt.shading_norm:
-            gt_SH = gt_SH/brightest_20
+        # if self.opt.shading_norm:
+        #     gt_SH = gt_SH/brightest_20
 
-        srgb_img = normalize()(srgb_img)
-        gt_AL = normalize()(gt_AL)
-        gt_SH = normalize()(gt_SH)
-        mask = normalize(grayscale=True)(mask)
-        gt_BA = normalize(grayscale=True)(gt_BA)
-        gt_BP = normalize(grayscale=True)(gt_BP)
-        gt_BC = torch.Tensor(list(gt_BC))
+        # srgb_img = normalize()(srgb_img)
+        # gt_AL = normalize()(gt_AL)
+        # gt_SH = normalize()(gt_SH)
+        # mask = normalize(grayscale=True)(mask)
+        # gt_BA = normalize(grayscale=True)(gt_BA)
+        # gt_BP = normalize(grayscale=True)(gt_BP)
+        # gt_BC = torch.Tensor(list(gt_BC))
 
-        srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
-        gt_AL = torch.unsqueeze(gt_AL, 0)
-        gt_SH = torch.unsqueeze(gt_SH, 0)
-        mask = torch.unsqueeze(mask, 0)
-        gt_BA = torch.unsqueeze(gt_BA, 0)
-        gt_BP = torch.unsqueeze(gt_BP, 0)        
+        # srgb_img = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
+        # gt_AL = torch.unsqueeze(gt_AL, 0)
+        # gt_SH = torch.unsqueeze(gt_SH, 0)
+        # mask = torch.unsqueeze(mask, 0)
+        # gt_BA = torch.unsqueeze(gt_BA, 0)
+        # gt_BP = torch.unsqueeze(gt_BP, 0)
 
-        L = torch.unsqueeze(L, 0)
+        res = self.make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=gt_AL)
 
-        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'L': L, 'A_paths': ABC_path}
+        res['L'] = torch.unsqueeze(L, 0)
+        res['A_paths'] = ABC_path
+
+        # res(dict): A(srgb_img), gt_AL, gt_SH, gt_BA, gt_BP, gt_BC, L, mask
+        # return {'A': res['srgb_img'], 'gt_AL': res['gt_AL'], 'gt_SH': res['gt_SH'], 'mask': mask, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'L': L, 'A_paths': ABC_path}
+        return res
 
     def __len__(self):
         """Return the total number of images in the dataset."""
