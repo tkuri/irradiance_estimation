@@ -48,21 +48,21 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         w, h = ABC.size
         h25 = int(h / 25)
         w3 = int(w / 3)
-        A = []
-        B = []
-        C = []
+        srgb_img = []
+        gt_SH = []
+        L = []
 
         # tidx = 12
         for i in range(25):
             tidx = random.randrange(25)
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
-            A.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
-            B.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
-            Ctmp = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
-            Ctmp = Ctmp.convert("L")
-            _, vmax = Ctmp.getextrema()
-            Ctmp = Ctmp.point(lambda x: 0 if x < vmax else 255) 
-            C.append(Ctmp)
+            srgb_img.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
+            gt_SH.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
+            Ltmp = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
+            Ltmp = Ltmp.convert("L")
+            _, vmax = Ltmp.getextrema()
+            Ltmp = Ltmp.point(lambda x: 0 if x < vmax else 255) 
+            L.append(Ltmp)
 
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, A[0].size)
@@ -71,9 +71,9 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         C_transform = get_transform(self.opt, transform_params, grayscale=(self.input2_nc == 1), convert=False)
 
         for i in range(25):
-            srgb_img[i] = A_transform(A[i])
-            gt_SH[i] = B_transform(B[i])
-            L[i] = C_transform(C[i])
+            srgb_img[i] = A_transform(srgb_img[i])
+            gt_SH[i] = B_transform(gt_SH[i])
+            L[i] = C_transform(L[i])
 
         mask = torch.ones_like(L[0])
         result = {}
