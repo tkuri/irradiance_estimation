@@ -120,11 +120,11 @@ class BrightestCasTmResnetModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
 
-        pr_SH, color = self.ltm_module()
-        pr_SH = pr_SH.repeat(1, 3, 1, 1)
-        pr_SH = pr_SH * 0.5 + 0.5
+        self.pr_SH, color = self.ltm_module()
+        self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
+        self.pr_SH = self.pr_SH * 0.5 + 0.5
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        self.pr_SH = pr_SH * color
+        self.pr_SH = self.pr_SH * color
         self.pr_SH = self.pr_SH * 2.0 - 1.0
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
@@ -139,7 +139,6 @@ class BrightestCasTmResnetModel(BaseModel):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         # gt_BC = self.gt_BC[:,:,:2]
-        print('self gt_BC.shape', self.gt_BC[0].shape)
         gt_BC = [self.gt_BC[i][:,:2] for i in range(25)]
         # condition = int(self.gt_BC[:, 0, 2].item())
         # bc_num = int(self.gt_BC[:, 0, 3].item())
@@ -158,9 +157,7 @@ class BrightestCasTmResnetModel(BaseModel):
         # gt_BC = gt_BC[:,0].squeeze(1)
         # print('gt_BC.shape 3', gt_BC.shape)
 
-        print('gt_BC.shape 1', gt_BC[0].shape)
         gt_BC = torch.cat([gt_BC[i][0].unsqueeze(0) for i in range(25)], dim=0)
-        print('gt_BC.shape 2', gt_BC.shape)
 
         loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC)
         self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
