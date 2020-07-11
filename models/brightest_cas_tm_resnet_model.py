@@ -79,7 +79,6 @@ class BrightestCasTmResnetModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         if self.isTrain:
             # define loss functions
-            self.criterionR = torch.nn.MSELoss()
             self.criterionS = torch.nn.MSELoss()
             self.criterionBA = torch.nn.MSELoss()
             self.criterionBP = torch.nn.MSELoss()
@@ -160,7 +159,8 @@ class BrightestCasTmResnetModel(BaseModel):
         # else:
         elif condition==2:
             # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
-            loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
+            # loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
+            loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[:,0].squeeze(1), bc_num, self.criterionBC)
 
             # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
             self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
