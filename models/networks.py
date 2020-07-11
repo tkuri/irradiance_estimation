@@ -870,13 +870,13 @@ class UnetLatentGenerator(nn.Module):
 		# assert(input_nc == output_nc)
 
 		# construct unet structure
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
+		unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, innermost=True)
 		for i in range(num_downs - 5):
-			unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
+			unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+		unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+		unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+		unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+		unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer)
 
 		self.model = unet_block
 
@@ -887,13 +887,16 @@ class UnetLatentGenerator(nn.Module):
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
 class UnetLatentSkipConnectionBlock(nn.Module):
-	def __init__(self, outer_nc, inner_nc,
+	def __init__(self, outer_nc, inner_nc, input_nc=None,
 				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
 		super(UnetLatentSkipConnectionBlock, self).__init__()
 		self.outermost = outermost
 		self.innermost = innermost
-		# print("we are in mutilUnet")
-		downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+        if input_nc is None:
+            input_nc = outer_nc
+		# downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+		# 					 stride=2, padding=1)
+		downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
 							 stride=2, padding=1)
 		downrelu = nn.LeakyReLU(0.2, False)
 		downnorm = norm_layer(inner_nc, affine=True)
@@ -907,7 +910,7 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 			# upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
 			# 							kernel_size=4, stride=2,
 			# 							padding=1)]
-			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
 										kernel_size=4, stride=2,
 										padding=1)]
 
@@ -925,7 +928,10 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 		else:
 
 			down = [downrelu, downconv, downnorm]
-			up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+			# up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+			# 							kernel_size=4, stride=2,
+			# 							padding=1), norm_layer(outer_nc, affine=True)]
+			up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
 										kernel_size=4, stride=2,
 										padding=1), norm_layer(outer_nc, affine=True)]
 
