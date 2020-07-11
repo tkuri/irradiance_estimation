@@ -966,7 +966,7 @@ class UnetLatentGenerator(nn.Module):
 		unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
 		unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
 		unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer)
+		unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
 
 		self.model = unet_block
 
@@ -978,7 +978,7 @@ class UnetLatentGenerator(nn.Module):
 #   |-- downsampling -- |submodule| -- upsampling --|
 class UnetLatentSkipConnectionBlock(nn.Module):
 	def __init__(self, outer_nc, inner_nc, input_nc=None,
-				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
+				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False):
 		super(UnetLatentSkipConnectionBlock, self).__init__()
 		self.outermost = outermost
 		self.innermost = innermost
@@ -997,12 +997,18 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 			down = [downconv]
 
             # Shading (1ch out)
-			# upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
+            upconv = nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
+										kernel_size=4, stride=2,
+										padding=1)
+
+			# upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
 			# 							kernel_size=4, stride=2,
 			# 							padding=1)]
-			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
-										kernel_size=4, stride=2,
-										padding=1)]
+
+            if last_relu:
+                upconv_model = [uprelu, upconv, uprelu]
+            else:
+                upconv_model = [uprelu, upconv, nn.Tanh()]
 
 		elif innermost:
 
