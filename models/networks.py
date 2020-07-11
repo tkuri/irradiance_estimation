@@ -963,7 +963,7 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 			color_s = color_s.view(color_s.size(0), -1)
 			color_s  = self.fc(color_s)
 
-			y = self.upconv_model_1(down_output)
+			y = self.upconv_model(down_output)
 			y = torch.cat([y, x], 1)
 
 			return y, color_s
