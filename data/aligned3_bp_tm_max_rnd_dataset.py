@@ -115,6 +115,8 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         
         result['A_paths'] = ABC_path
 
+        print('L.shape', L_cat.shape)
+
         # res['L'] = torch.unsqueeze(L, 0)
         # res['A_paths'] = ABC_path
 
