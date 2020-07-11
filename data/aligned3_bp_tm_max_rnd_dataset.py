@@ -110,8 +110,8 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         result['mask'] = torch.unsqueeze(mask, 0)
 
         result['gt_BA'] = gt_BA_cat
-        result['gt_BP'] = gt_BP
-        result['gt_BC'] = gt_BC
+        result['gt_BP'] = gt_BP_cat
+        result['gt_BC'] = gt_BC_cat
         
         result['A_paths'] = ABC_path
 
