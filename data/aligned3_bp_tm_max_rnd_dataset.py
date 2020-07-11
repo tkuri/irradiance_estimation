@@ -1,5 +1,5 @@
 import os.path
-from data.base_dataset import BaseDataset, get_params, get_transform
+from data.base_dataset import BaseDataset, get_params, get_transform, make_bp_data
 from data.image_folder import make_dataset
 from PIL import Image, ImageOps
 import torch
