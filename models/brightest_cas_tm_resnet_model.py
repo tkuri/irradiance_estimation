@@ -110,9 +110,10 @@ class BrightestCasTmResnetModel(BaseModel):
         # self.ltm_slice00 = torch.clamp((trans_matrix[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
         # self.ltm_slice12 = torch.clamp((trans_matrix[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
         # self.ltm_slice24 = torch.clamp((trans_matrix[:, [24, 25+24, 25*2+24], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
+        print('trans_matrix.shape 1:', trans_matrix.shape)
         trans_matrix = trans_matrix.view(-1, self.light_res**2, (trans_matrix.size(-1)*trans_matrix.size(-2)))  # [25, 3*16, 256x256]
         trans_matrix = torch.transpose(trans_matrix, 1, 2)  # [25, 256x256, 3*16]
-        print('trans_matrix.shape:', trans_matrix.shape)
+        print('trans_matrix.shape 2:', trans_matrix.shape)
         # tmR = trans_matrix[:, :, 0:self.light_res**2] # [25, 256x256, 16]
         # tmG = trans_matrix[:, :, self.light_res**2:(self.light_res**2)*2]
         # tmB = trans_matrix[:, :, (self.light_res**2)*2:(self.light_res**2)*3]
