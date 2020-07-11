@@ -106,29 +106,15 @@ class BrightestCasTmResnetModel(BaseModel):
         self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
 
     def ltm_module(self):
-        print('input.shape', self.input.shape)
-        trans_matrix, color = self.netG1(self.input) # [25, 25, 256, 256]
-        # self.ltm_slice00 = torch.clamp((trans_matrix[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        # self.ltm_slice12 = torch.clamp((trans_matrix[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        # self.ltm_slice24 = torch.clamp((trans_matrix[:, [24, 25+24, 25*2+24], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
-        print('trans_matrix.shape 1:', trans_matrix.shape)
-        trans_matrix = trans_matrix.view(-1, self.light_res**2, (trans_matrix.size(-1)*trans_matrix.size(-2)))  # [25, 3*16, 256x256]
-        trans_matrix = torch.transpose(trans_matrix, 1, 2)  # [25, 256x256, 3*16]
-        print('trans_matrix.shape 2:', trans_matrix.shape)
-        # tmR = trans_matrix[:, :, 0:self.light_res**2] # [25, 256x256, 16]
-        # tmG = trans_matrix[:, :, self.light_res**2:(self.light_res**2)*2]
-        # tmB = trans_matrix[:, :, (self.light_res**2)*2:(self.light_res**2)*3]
-        # bufR = torch.matmul(tmR, self.real_C_itp_flat) # [25, 256x256, 1]
-        # bufG = torch.matmul(tmG, self.real_C_itp_flat)
-        # bufB = torch.matmul(tmB, self.real_C_itp_flat)
-        # buf = torch.cat([bufR, bufG, bufB], dim=2) # [25, 256x256, 3]
-        buf = torch.matmul(trans_matrix, self.L_itp_flat)
-        buf = torch.transpose(buf, 1, 2) # [25, 1, 256x256]
-        buf = (buf - 0.5) / 0.5
-        buf = torch.clamp(buf, min=-1.0, max=1.0)
-        print('buf.shape:', buf.shape)
+        ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+        ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 3*16, 256x256]
+        ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 3*16]
+        ltm = torch.matmul(ltm, self.L_itp_flat)
+        ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
+        ltm = (ltm - 0.5) / 0.5
+        ltm = torch.clamp(ltm, min=-1.0, max=1.0)
         # pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
-        pr_SH = buf.view(buf.size(0), buf.size(1), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
+        pr_SH = ltm.view(ltm.size(0), ltm.size(1), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
         return pr_SH, color
 
 
