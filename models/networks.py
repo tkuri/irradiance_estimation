@@ -892,8 +892,8 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 		super(UnetLatentSkipConnectionBlock, self).__init__()
 		self.outermost = outermost
 		self.innermost = innermost
-        if input_nc is None:
-            input_nc = outer_nc
+		if input_nc is None:
+			input_nc = outer_nc
 		# downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
 		# 					 stride=2, padding=1)
 		downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
