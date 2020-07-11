@@ -942,9 +942,9 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 	def forward(self, x):
 
 		if self.outermost:
-            print('x.shape:', x.shape)
+			print('x.shape:', x.shape)
 			down_x = self.downconv_model(x)
-            print('down_x.shape:', down_x.shape)
+			print('down_x.shape:', down_x.shape)
 
 			y, color_s = self.submodule.forward(down_x)
 			y = self.upconv_model(y)
