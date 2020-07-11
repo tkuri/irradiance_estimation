@@ -143,7 +143,7 @@ class BrightestCasTmResnetModel(BaseModel):
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
-        gt_BC = self.gt_BC[:,:,:2]
+        # gt_BC = self.gt_BC[:,:,:2]
         # condition = int(self.gt_BC[:, 0, 2].item())
         # bc_num = int(self.gt_BC[:, 0, 3].item())
 
@@ -167,7 +167,7 @@ class BrightestCasTmResnetModel(BaseModel):
 
         # loss_G_BC2 = []
         for i in range(25):
-            gt_BC = gt_BC[i]
+            gt_BC = self.gt_BC[i][:, :2]
             bc_num = int(self.gt_BC[i][0, 3].item())
             pr_BC2 = self.pr_BC2[i]
             loss_G_BC2 = util.min_loss_BC(pr_BC2, gt_BC, bc_num, self.criterionBC)
