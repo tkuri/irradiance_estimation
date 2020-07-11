@@ -910,7 +910,7 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 			# upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
 			# 							kernel_size=4, stride=2,
 			# 							padding=1)]
-			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
 										kernel_size=4, stride=2,
 										padding=1)]
 
@@ -931,7 +931,7 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 			# up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
 			# 							kernel_size=4, stride=2,
 			# 							padding=1), norm_layer(outer_nc, affine=True)]
-			up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+			up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
 										kernel_size=4, stride=2,
 										padding=1), norm_layer(outer_nc, affine=True)]
 
