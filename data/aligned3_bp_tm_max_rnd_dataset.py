@@ -65,7 +65,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
             L.append(Ltmp)
 
         # apply the same transform to both A and B
-        transform_params = get_params(self.opt, A[0].size)
+        transform_params = get_params(self.opt, srgb_img[0].size)
         A_transform = get_transform(self.opt, transform_params, grayscale=(self.input_nc == 1), convert=False)
         B_transform = get_transform(self.opt, transform_params, grayscale=(self.output_nc == 1), convert=False)
         C_transform = get_transform(self.opt, transform_params, grayscale=(self.input2_nc == 1), convert=False)
