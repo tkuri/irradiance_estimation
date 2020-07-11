@@ -126,7 +126,8 @@ class BrightestCasTmResnetModel(BaseModel):
         buf = (buf - 0.5) / 0.5
         buf = torch.clamp(buf, min=-1.0, max=1.0)
         print('buf.shape:', buf.shape)
-        pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
+        # pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
+        pr_SH = buf.view(buf.size(0), buf.size(2), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
         return pr_SH, color
 
 
