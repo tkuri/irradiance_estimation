@@ -863,7 +863,7 @@ class MultiUnetSkipConnectionBlock(nn.Module):
 class UnetLatentGenerator(nn.Module):
 	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
 				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
-		super(MultiUnetGenerator, self).__init__()
+		super(UnetLatentGenerator, self).__init__()
 		self.gpu_ids = gpu_ids
 
 		# currently support only input_nc == output_nc
