@@ -100,15 +100,15 @@ class BrightestCasTmResnetModel(BaseModel):
         self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = input['gt_BC'].to(self.device) 
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
-        self.L_itp = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
-        self.L_itp_flat = self.L_itp.view(-1, self.light_res**2, 1) # [bn, 25, 1]
-        self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
+        self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
+        self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
+        # self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
 
     def ltm_module(self):
         ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 3*16, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 3*16]
-        ltm = torch.matmul(ltm, self.L_itp_flat)
+        ltm = torch.matmul(ltm, self.L)
         ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
         ltm = (ltm - 0.5) / 0.5
         ltm = torch.clamp(ltm, min=-1.0, max=1.0)
