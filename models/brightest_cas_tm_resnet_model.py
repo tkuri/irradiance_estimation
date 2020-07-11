@@ -92,15 +92,14 @@ class BrightestCasTmResnetModel(BaseModel):
             self.optimizers.append(self.optimizer_G3)
 
     def set_input(self, input):
-        self.input = input['A'].to(self.device) # [bn, 3, 256, 256]
+        self.input = torch.squeeze(input['A'],0).to(self.device) # [bn, 3, 256, 256]
         self.image_paths = input['A_paths']
-        self.gt_SH = input['gt_SH'].to(self.device) # [bn, 3, 256, 256]
+        self.gt_SH = torch.squeeze(input['gt_SH'],0).to(self.device) # [bn, 3, 256, 256]
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BA = input['gt_BA'].to(self.device) # [bn, 1, 256, 256]
-        self.gt_BP = input['gt_BP'].to(self.device) # [bn, 1, 256, 256]
+        self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
+        self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = input['gt_BC'].to(self.device) 
-        self.L = input['L'].to(self.device) # [bn, 1, 256, 256]
-        print('L.shape 2:', self.L.shape)
+        self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
         self.L_itp = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L_itp_flat = self.L_itp.view(-1, self.light_res**2, 1) # [bn, 25, 1]
         self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
