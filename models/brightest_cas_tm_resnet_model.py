@@ -168,7 +168,8 @@ class BrightestCasTmResnetModel(BaseModel):
         if condition==1:
             # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
-            self.loss_G += self.loss_G_BC + self.loss_G_BC2
+            # self.loss_G += self.loss_G_BC + self.loss_G_BC2
+            self.loss_G += self.loss_G_BC2
         # else:
         elif condition==2:
             # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
@@ -176,7 +177,8 @@ class BrightestCasTmResnetModel(BaseModel):
 
             # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
             self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
-            self.loss_G += self.loss_G_BC + self.loss_G_BC2
+            # self.loss_G += self.loss_G_BC + self.loss_G_BC2
+            self.loss_G += self.loss_G_BC2
         else:
             print('Pass loss_G_BC because condition is {}'.format(condition))
 
