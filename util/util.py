@@ -24,6 +24,14 @@ def min_loss_BC(pr_BC, gt_BC, bc_num, criterionBC):
         loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
     return loss_G_BC
 
+def min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, criterionBC):
+    loss_G_BC = criterionBC(pr_BC, gt_BC[0])
+    for i in range(1, bc_num):
+        loss_G_BC_cmp = criterionBC(pr_BC, gt_BC[i])
+        loss_G_BC = torch.min(loss_G_BC, loss_G_BC_cmp)
+    return loss_G_BC
+
+
 def get_current_BC(pr_BC, pr_BP, opt):
     pr_BP_BC = disp_brightest_coord(pr_BC, pr_BP, opt.bp_tap, opt.bp_sigma)
     pr_BP_BC = (pr_BP_BC - 0.5) / 0.5

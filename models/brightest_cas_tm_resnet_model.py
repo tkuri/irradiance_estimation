@@ -170,7 +170,7 @@ class BrightestCasTmResnetModel(BaseModel):
             gt_BC = self.gt_BC[i][:, :2]
             bc_num = int(self.gt_BC[i][0, 3].item())
             pr_BC2 = self.pr_BC2[i]
-            loss_G_BC2 = util.min_loss_BC(pr_BC2, gt_BC, bc_num, self.criterionBC)
+            loss_G_BC2 = util.min_loss_BC_NoBatch(pr_BC2, gt_BC, bc_num, self.criterionBC)
             self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC / 25.0
             self.loss_G += self.loss_G_BC2
 
