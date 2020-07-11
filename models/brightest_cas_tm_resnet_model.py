@@ -159,7 +159,7 @@ class BrightestCasTmResnetModel(BaseModel):
         # print('gt_BC.shape 3', gt_BC.shape)
 
         print('gt_BC.shape 1', gt_BC[0].shape)
-        gt_BC = torch.cat([gt_BC[i][0] for i in range(25)], dim=0)
+        gt_BC = torch.cat([gt_BC[i][0].unsqueeze(0) for i in range(25)], dim=0)
         print('gt_BC.shape 2', gt_BC.shape)
 
         loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC)
