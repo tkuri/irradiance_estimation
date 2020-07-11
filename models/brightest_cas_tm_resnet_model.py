@@ -208,7 +208,7 @@ class BrightestCasTmResnetModel(BaseModel):
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
         # visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
-        visual_ret['pr_BP_BC2'] = util.get_current_BC(self.pr_BC2, self.pr_BP2, self.opt)
+        # visual_ret['pr_BP_BC2'] = util.get_current_BC(self.pr_BC2, self.pr_BP2, self.opt)
         # visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
         # visual_ret['pr_BP_BP2'] = util.get_current_BP(self.pr_BP2, self.opt)
         return visual_ret
