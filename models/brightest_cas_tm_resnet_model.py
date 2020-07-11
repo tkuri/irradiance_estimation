@@ -141,7 +141,7 @@ class BrightestCasTmResnetModel(BaseModel):
         # gt_BC = self.gt_BC[:,:,:2]
         gt_BC = [self.gt_BC[i][:,:2] for i in range(25)]
         # condition = int(self.gt_BC[:, 0, 2].item())
-        bc_num = int(self.gt_BC[:, 0, 3].item())
+        # bc_num = int(self.gt_BC[:, 0, 3].item())
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
         # self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
