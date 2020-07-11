@@ -61,15 +61,16 @@ class BrightestCasTmResnetModel(BaseModel):
         self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
         self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
 
-        self.model_names = ['G1', 'G2', 'G3']
+        # self.model_names = ['G1', 'G2', 'G3']
+        self.model_names = ['G1', 'G3']
 
         self.light_res = opt.light_res
         # self.netG1 = networks.define_G(opt.input_nc, 3, opt.ngf, 'unet_256_multi', opt.norm,
         #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_latent', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
-                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        # self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
+        #                                 not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         g3_input_nc = opt.input_nc
         if opt.cat_In:
@@ -85,10 +86,10 @@ class BrightestCasTmResnetModel(BaseModel):
             self.criterionBC = torch.nn.MSELoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G1 = torch.optim.Adam(self.netG1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            # self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_G3 = torch.optim.Adam(self.netG3.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G1)
-            self.optimizers.append(self.optimizer_G2)
+            # self.optimizers.append(self.optimizer_G2)
             self.optimizers.append(self.optimizer_G3)
 
     def set_input(self, input):
@@ -140,7 +141,7 @@ class BrightestCasTmResnetModel(BaseModel):
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
         self.pr_SH = pr_SH * color
         self.pr_SH = self.pr_SH * 2.0 - 1.0
-        self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
+        # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
         if self.opt.cat_In:
             g3_input = torch.cat((self.pr_SH, self.input), 1)
@@ -157,22 +158,22 @@ class BrightestCasTmResnetModel(BaseModel):
         bc_num = int(self.gt_BC[:, 0, 3].item())
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
-        self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
-        self.loss_G_BP = self.criterionBP(self.pr_BP*mask, self.gt_BP*mask) * self.opt.lambda_BP  
+        # self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
+        # self.loss_G_BP = self.criterionBP(self.pr_BP*mask, self.gt_BP*mask) * self.opt.lambda_BP  
         self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask, self.gt_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask, self.gt_BP*mask) * self.opt.lambda_BP  
 
         self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
         if condition==1:
-            self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
+            # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G += self.loss_G_BC + self.loss_G_BC2
         # else:
         elif condition==2:
-            loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
+            # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
             loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
 
-            self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
+            # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
             self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
             self.loss_G += self.loss_G_BC + self.loss_G_BC2
         else:
@@ -184,12 +185,12 @@ class BrightestCasTmResnetModel(BaseModel):
         # with torch.autograd.set_detect_anomaly(True):
         self.forward()                   # compute fake images: G(A)
         self.optimizer_G1.zero_grad()        # set G's gradients to zero
-        self.optimizer_G2.zero_grad()        # set G's gradients to zero
+        # self.optimizer_G2.zero_grad()        # set G's gradients to zero
         self.optimizer_G3.zero_grad()        # set G's gradients to zero
         self.backward_G()                   # calculate graidents for G
         self.optimizer_G3.step()             # udpate G's weights
         self.optimizer_G1.step()             # udpate G's weights
-        self.optimizer_G2.step()             # udpate G's weights
+        # self.optimizer_G2.step()             # udpate G's weights
 
     def get_current_visuals(self):
         """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""
@@ -197,19 +198,26 @@ class BrightestCasTmResnetModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-        visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
+        # visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
         visual_ret['pr_BP_BC2'] = util.get_current_BC(self.pr_BC2, self.pr_BP2, self.opt)
-        visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
+        # visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
         visual_ret['pr_BP_BP2'] = util.get_current_BP(self.pr_BP2, self.opt)
         return visual_ret
 
     def eval_label(self):
-        label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
+        # label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
+        # 'bc_ba2', 'bc_bp2', 'bc_bc2', 
+        # 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc',
+        # 'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
+        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
+        # 'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_bp_direct', 
+        # 'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
+        label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 
         'bc_ba2', 'bc_bp2', 'bc_bc2', 
-        'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc',
+        'dist_ra', 'dist_sh',
         'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
-        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
-        'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_bp_direct', 
+        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
+        'bp_mse_ra', 'bp_mse_sh', 
         'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
 
         return label
