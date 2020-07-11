@@ -105,6 +105,7 @@ class BrightestCasTmResnetModel(BaseModel):
         self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
 
     def ltm_module(self):
+        print('input.shape', self.input.shape)
         trans_matrix, color = self.netG1(self.input) # [25, 25, 256, 256]
         # self.ltm_slice00 = torch.clamp((trans_matrix[:, [0, 25, 25*2], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
         # self.ltm_slice12 = torch.clamp((trans_matrix[:, [12, 25+12, 25*2+12], :, :] - 0.5) / 0.5, min=-1.0, max=1.0) # [25, 3, 256, 256]
