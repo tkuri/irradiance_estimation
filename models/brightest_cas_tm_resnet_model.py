@@ -139,7 +139,7 @@ class BrightestCasTmResnetModel(BaseModel):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
         gt_BC = self.gt_BC[:,:,:2]
-        condition = int(self.gt_BC[:, 0, 2].item())
+        # condition = int(self.gt_BC[:, 0, 2].item())
         bc_num = int(self.gt_BC[:, 0, 3].item())
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
@@ -150,24 +150,29 @@ class BrightestCasTmResnetModel(BaseModel):
 
         # self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
         self.loss_G = self.loss_G_SH + self.loss_G_BA2 + self.loss_G_BP2
-        print('condition:', condition)
-        if condition==1:
-            # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
-            self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
-            # self.loss_G += self.loss_G_BC + self.loss_G_BC2
-            self.loss_G += self.loss_G_BC2
-        # else:
-        elif condition==2:
-            # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
-            # loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
-            loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[:,0].squeeze(1), bc_num, self.criterionBC)
 
-            # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
-            self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
-            # self.loss_G += self.loss_G_BC + self.loss_G_BC2
-            self.loss_G += self.loss_G_BC2
-        else:
-            print('Pass loss_G_BC because condition is {}'.format(condition))
+        loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[:,0].squeeze(1))
+        self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
+        self.loss_G += self.loss_G_BC2
+
+        # print('condition:', condition)
+        # if condition==1:
+        #     # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
+        #     self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
+        #     # self.loss_G += self.loss_G_BC + self.loss_G_BC2
+        #     self.loss_G += self.loss_G_BC2
+        # # else:
+        # elif condition==2:
+        #     # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
+        #     # loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
+        #     loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[:,0].squeeze(1))
+
+        #     # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
+        #     self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
+        #     # self.loss_G += self.loss_G_BC + self.loss_G_BC2
+        #     self.loss_G += self.loss_G_BC2
+        # else:
+        #     print('Pass loss_G_BC because condition is {}'.format(condition))
 
         self.loss_G.backward()
 
