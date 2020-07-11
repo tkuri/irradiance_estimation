@@ -97,7 +97,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         srgb_img_cat = torch.cat([res[i]['A'] for i in range(25)], dim=0)
         gt_SH_cat = torch.cat([res[i]['gt_SH'] for i in range(25)], dim=0)
         gt_BA_cat = torch.cat([res[i]['gt_BA'] for i in range(25)], dim=0)
-        gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
+        # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
         L_cat = torch.cat([torch.unsqueeze(L[i], 0) for i in range(25)], dim=0)
         
@@ -107,7 +107,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         result['mask'] = torch.unsqueeze(mask, 0)
 
         result['gt_BA'] = gt_BA_cat
-        result['gt_BP'] = gt_BP_cat
+        # result['gt_BP'] = gt_BP_cat
         # result['gt_BC'] = gt_BC_cat
         result['gt_BC'] = []
         for i in range(25):
