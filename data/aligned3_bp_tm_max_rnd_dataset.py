@@ -81,7 +81,11 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         for i in range(25):
             res_tmp = make_bp_data(srgb_img[i], gt_SH[i], mask, self.opt)
             res.append(res_tmp)
-        
+
+        result['gt_BC'] = []
+        for i in range(25):
+            result['gt_BC'].append(res[0]['gt_BC'])
+
         # srgb_img_cat = srgb_img[0]
         # gt_SH_cat = gt_SH[0]
         # L_cat = L[0]

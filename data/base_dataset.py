@@ -188,7 +188,7 @@ def make_bp_data(srgb_img, gt_SH, mask, opt, gt_AL=None):
     mask = normalize(grayscale=True)(mask)
     gt_BA = normalize(grayscale=True)(gt_BA)
     gt_BP = normalize(grayscale=True)(gt_BP)
-    result['gt_BC'] = torch.Tensor(list(gt_BC)).unsqueeze(0)
+    result['gt_BC'] = torch.Tensor(list(gt_BC))
 
     result['A'] = torch.unsqueeze(srgb_img, 0) # [1, 3, 256, 256]
     result['gt_SH'] = torch.unsqueeze(gt_SH, 0)
