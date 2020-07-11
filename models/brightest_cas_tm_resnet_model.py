@@ -60,7 +60,7 @@ class BrightestCasTmResnetModel(BaseModel):
 
         # self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
         # self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
-        self.loss_names = ['G_SH', 'G_BA', 'G_BC']
+        self.loss_names = ['G_SH', 'G_BA2', 'G_BC2']
         self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH', 'mask']
 
         # self.model_names = ['G1', 'G2', 'G3']
