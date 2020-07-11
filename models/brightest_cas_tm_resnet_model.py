@@ -98,7 +98,7 @@ class BrightestCasTmResnetModel(BaseModel):
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BC = [input['gt_BC'][i].to(self.device) for i in range(25)] 
+        self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
