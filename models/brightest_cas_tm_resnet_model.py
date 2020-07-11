@@ -98,7 +98,7 @@ class BrightestCasTmResnetModel(BaseModel):
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BC = input['gt_BC'].to(self.device) 
+        self.gt_BC = [input['gt_BC'][i].to(self.device) for i in range(25)] 
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
@@ -138,7 +138,8 @@ class BrightestCasTmResnetModel(BaseModel):
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
-        gt_BC = self.gt_BC[:,:,:2]
+        # gt_BC = self.gt_BC[:,:,:2]
+        gt_BC = [self.gt_BC[i][:,:2] for i in range(25)]
         # condition = int(self.gt_BC[:, 0, 2].item())
         bc_num = int(self.gt_BC[:, 0, 3].item())
 
@@ -156,7 +157,7 @@ class BrightestCasTmResnetModel(BaseModel):
         gt_BC = gt_BC[:,0].squeeze(1)
         print('gt_BC.shape 3', gt_BC.shape)
 
-        loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC)
+        loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[0])
         self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
         self.loss_G += self.loss_G_BC2
 
