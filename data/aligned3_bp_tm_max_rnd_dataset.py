@@ -84,7 +84,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
 
         result['gt_BC'] = []
         for i in range(25):
-            result['gt_BC'].append(res[0]['gt_BC'])
+            result['gt_BC'].append(res[i]['gt_BC'])
 
         # srgb_img_cat = srgb_img[0]
         # gt_SH_cat = gt_SH[0]
