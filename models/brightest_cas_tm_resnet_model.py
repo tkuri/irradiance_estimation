@@ -163,7 +163,8 @@ class BrightestCasTmResnetModel(BaseModel):
         self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask, self.gt_BA*mask) * self.opt.lambda_BA
         self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask, self.gt_BP*mask) * self.opt.lambda_BP  
 
-        self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
+        # self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
+        self.loss_G = self.loss_G_SH + self.loss_G_BA2 + self.loss_G_BP2
         if condition==1:
             # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
             self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
