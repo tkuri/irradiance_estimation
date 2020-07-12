@@ -816,134 +816,134 @@ class UnetGeneratorLastRelu(nn.Module):
 #   |-- downsampling -- |submodule| -- upsampling --|
 
 class MultiUnetGenerator(nn.Module):
-	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
-				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
-		super(MultiUnetGenerator, self).__init__()
-		self.gpu_ids = gpu_ids
+    def __init__(self, input_nc, output_nc, num_downs, ngf=64,
+                 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+        super(MultiUnetGenerator, self).__init__()
+        self.gpu_ids = gpu_ids
 
-		# currently support only input_nc == output_nc
-		# assert(input_nc == output_nc)
+        # currently support only input_nc == output_nc
+        # assert(input_nc == output_nc)
 
-		# construct unet structure
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
-		for i in range(num_downs - 5):
-			unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
-		unet_block = MultiUnetSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
-		unet_block = MultiUnetSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
-		unet_block = MultiUnetSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
+        # construct unet structure
+        unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, innermost=True)
+        for i in range(num_downs - 5):
+            unet_block = MultiUnetSkipConnectionBlock(ngf * 8, ngf * 8, unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+        unet_block = MultiUnetSkipConnectionBlock(ngf * 4, ngf * 8, unet_block, norm_layer=norm_layer)
+        unet_block = MultiUnetSkipConnectionBlock(ngf * 2, ngf * 4, unet_block, norm_layer=norm_layer)
+        unet_block = MultiUnetSkipConnectionBlock(ngf, ngf * 2, unet_block, norm_layer=norm_layer)
+        unet_block = MultiUnetSkipConnectionBlock(output_nc, ngf, unet_block, outermost=True, norm_layer=norm_layer)
 
-		self.model = unet_block
+        self.model = unet_block
 
-	def forward(self, input):
-		return self.model(input)
-		# if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
-		# 	return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
-		# else:
-		# 	return self.model(input)
-			# self.model(input)
+    def forward(self, input):
+        return self.model(input)
+        # if  self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+        #     return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+        # else:
+        #     return self.model(input)
+            # self.model(input)
 
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
 class MultiUnetSkipConnectionBlock(nn.Module):
-	def __init__(self, outer_nc, inner_nc,
-				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
-		super(MultiUnetSkipConnectionBlock, self).__init__()
-		self.outermost = outermost
-		self.innermost = innermost
-		# print("we are in mutilUnet")
-		downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
-							 stride=2, padding=1)
-		downrelu = nn.LeakyReLU(0.2, False)
-		downnorm = norm_layer(inner_nc, affine=True)
-		uprelu = nn.ReLU(False)
-		upnorm = norm_layer(outer_nc, affine=True)
+    def __init__(self, outer_nc, inner_nc,
+                 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
+        super(MultiUnetSkipConnectionBlock, self).__init__()
+        self.outermost = outermost
+        self.innermost = innermost
+        # print("we are in mutilUnet")
+        downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+                             stride=2, padding=1)
+        downrelu = nn.LeakyReLU(0.2, False)
+        downnorm = norm_layer(inner_nc, affine=True)
+        uprelu = nn.ReLU(False)
+        upnorm = norm_layer(outer_nc, affine=True)
 
-		if outermost:
-			n_output_dim = 3
+        if outermost:
+            n_output_dim = 3
 
-			down = [downconv]
+            down = [downconv]
 
             # Shading (1ch out)
-			upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
-										kernel_size=4, stride=2,
-										padding=1)]
+            upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 1,
+                                        kernel_size=4, stride=2,
+                                        padding=1)]
             # Albedo (3ch out)
-			upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 3,
-										kernel_size=4, stride=2,
-										padding=1)]
+            upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, 3,
+                                        kernel_size=4, stride=2,
+                                        padding=1)]
 
-		elif innermost:
+        elif innermost:
 
-			down = [downrelu, downconv]
-			upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
-			upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
-			#  for rgb shading 
-			int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
-			fc = [nn.Linear(256, 3)]
-			self.int_conv = nn.Sequential(* int_conv) 
-			self.fc = nn.Sequential(* fc)
-		else:
+            down = [downrelu, downconv]
+            upconv_model_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            upconv_model_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            #  for rgb shading 
+            int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
+            fc = [nn.Linear(256, 3)]
+            self.int_conv = nn.Sequential(* int_conv) 
+            self.fc = nn.Sequential(* fc)
+        else:
 
-			down = [downrelu, downconv, downnorm]
-			up_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
-			up_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
+            down = [downrelu, downconv, downnorm]
+            up_1 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            up_2 = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
 
-			if use_dropout:
-				upconv_model_1 = up_1 + [nn.Dropout(0.5)]
-				upconv_model_2 = up_2 + [nn.Dropout(0.5)]
-			else:
-				upconv_model_1 = up_1
-				upconv_model_2 = up_2
-		
+            if use_dropout:
+                upconv_model_1 = up_1 + [nn.Dropout(0.5)]
+                upconv_model_2 = up_2 + [nn.Dropout(0.5)]
+            else:
+                upconv_model_1 = up_1
+                upconv_model_2 = up_2
+        
 
-		self.downconv_model = nn.Sequential(*down)
-		self.submodule = submodule
-		self.upconv_model_1 = nn.Sequential(*upconv_model_1)
-		self.upconv_model_2 = nn.Sequential(*upconv_model_2)
+        self.downconv_model = nn.Sequential(*down)
+        self.submodule = submodule
+        self.upconv_model_1 = nn.Sequential(*upconv_model_1)
+        self.upconv_model_2 = nn.Sequential(*upconv_model_2)
 
-	def forward(self, x):
+    def forward(self, x):
 
-		if self.outermost:
-			down_x = self.downconv_model(x)
+        if self.outermost:
+            down_x = self.downconv_model(x)
 
-			y_1, y_2, color_s = self.submodule.forward(down_x)
-			y_1 = self.upconv_model_1(y_1)
-			y_2 = self.upconv_model_2(y_2)
+            y_1, y_2, color_s = self.submodule.forward(down_x)
+            y_1 = self.upconv_model_1(y_1)
+            y_2 = self.upconv_model_2(y_2)
 
-			return y_1, y_2, color_s
+            return y_1, y_2, color_s
 
-		elif self.innermost:
-			down_output = self.downconv_model(x)
-			color_s = self.int_conv(down_output)
-			color_s = color_s.view(color_s.size(0), -1)
-			color_s  = self.fc(color_s)
+        elif self.innermost:
+            down_output = self.downconv_model(x)
+            color_s = self.int_conv(down_output)
+            color_s = color_s.view(color_s.size(0), -1)
+            color_s  = self.fc(color_s)
 
-			y_1 = self.upconv_model_1(down_output)
-			y_2 = self.upconv_model_2(down_output)  
-			y_1 = torch.cat([y_1, x], 1)
-			y_2 = torch.cat([y_2, x], 1)
+            y_1 = self.upconv_model_1(down_output)
+            y_2 = self.upconv_model_2(down_output)  
+            y_1 = torch.cat([y_1, x], 1)
+            y_2 = torch.cat([y_2, x], 1)
 
 
-			return y_1, y_2, color_s
-		else:
-			down_x = self.downconv_model(x)
-			y_1, y_2, color_s = self.submodule.forward(down_x)
-			y_1 = self.upconv_model_1(y_1)
-			y_2 = self.upconv_model_2(y_2)
-			y_1 = torch.cat([y_1, x], 1)
-			y_2 = torch.cat([y_2, x], 1)
+            return y_1, y_2, color_s
+        else:
+            down_x = self.downconv_model(x)
+            y_1, y_2, color_s = self.submodule.forward(down_x)
+            y_1 = self.upconv_model_1(y_1)
+            y_2 = self.upconv_model_2(y_2)
+            y_1 = torch.cat([y_1, x], 1)
+            y_2 = torch.cat([y_2, x], 1)
 
-			return y_1, y_2, color_s
+            return y_1, y_2, color_s
 
 
 # Defines the submodule with skip connection.
@@ -951,123 +951,123 @@ class MultiUnetSkipConnectionBlock(nn.Module):
 #   |-- downsampling -- |submodule| -- upsampling --|
 
 class UnetLatentGenerator(nn.Module):
-	def __init__(self, input_nc, output_nc, num_downs, ngf=64,
-				 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
-		super(UnetLatentGenerator, self).__init__()
-		self.gpu_ids = gpu_ids
+    def __init__(self, input_nc, output_nc, num_downs, ngf=64,
+                 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+        super(UnetLatentGenerator, self).__init__()
+        self.gpu_ids = gpu_ids
 
-		# currently support only input_nc == output_nc
-		# assert(input_nc == output_nc)
+        # currently support only input_nc == output_nc
+        # assert(input_nc == output_nc)
 
-		# construct unet structure
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, innermost=True)
-		for i in range(num_downs - 5):
-			unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-		unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
+        # construct unet structure
+        unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, innermost=True)
+        for i in range(num_downs - 5):
+            unet_block = UnetLatentSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+        unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
 
-		self.model = unet_block
+        self.model = unet_block
 
-	def forward(self, input):
-		return self.model(input)
+    def forward(self, input):
+        return self.model(input)
 
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
 class UnetLatentSkipConnectionBlock(nn.Module):
-	def __init__(self, outer_nc, inner_nc, input_nc=None,
-				 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False):
-		super(UnetLatentSkipConnectionBlock, self).__init__()
-		self.outermost = outermost
-		self.innermost = innermost
-		if input_nc is None:
-			input_nc = outer_nc
-		# downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
-		# 					 stride=2, padding=1)
-		downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
-							 stride=2, padding=1)
-		downrelu = nn.LeakyReLU(0.2, False)
-		downnorm = norm_layer(inner_nc, affine=True)
-		uprelu = nn.ReLU(False)
-		upnorm = norm_layer(outer_nc, affine=True)
+    def __init__(self, outer_nc, inner_nc, input_nc=None,
+                 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False):
+        super(UnetLatentSkipConnectionBlock, self).__init__()
+        self.outermost = outermost
+        self.innermost = innermost
+        if input_nc is None:
+            input_nc = outer_nc
+        # downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+        #                      stride=2, padding=1)
+        downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
+                             stride=2, padding=1)
+        downrelu = nn.LeakyReLU(0.2, False)
+        downnorm = norm_layer(inner_nc, affine=True)
+        uprelu = nn.ReLU(False)
+        upnorm = norm_layer(outer_nc, affine=True)
 
-		if outermost:
-			down = [downconv]
+        if outermost:
+            down = [downconv]
 
             # Shading (1ch out)
             upconv = nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
-										kernel_size=4, stride=2,
-										padding=1)
+                                        kernel_size=4, stride=2,
+                                        padding=1)
 
-			# upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
-			# 							kernel_size=4, stride=2,
-			# 							padding=1)]
+            # upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
+            #                             kernel_size=4, stride=2,
+            #                             padding=1)]
 
             if last_relu:
                 upconv_model = [uprelu, upconv, uprelu]
             else:
                 upconv_model = [uprelu, upconv, nn.Tanh()]
 
-		elif innermost:
+        elif innermost:
 
-			down = [downrelu, downconv]
-			upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
-			#  for rgb shading 
-			int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
-			fc = [nn.Linear(256, 3)]
-			self.int_conv = nn.Sequential(* int_conv) 
-			self.fc = nn.Sequential(* fc)
-		else:
+            down = [downrelu, downconv]
+            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            #  for rgb shading 
+            int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
+            fc = [nn.Linear(256, 3)]
+            self.int_conv = nn.Sequential(* int_conv) 
+            self.fc = nn.Sequential(* fc)
+        else:
 
-			down = [downrelu, downconv, downnorm]
-			# up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-			# 							kernel_size=4, stride=2,
-			# 							padding=1), norm_layer(outer_nc, affine=True)]
-			up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-										kernel_size=4, stride=2,
-										padding=1), norm_layer(outer_nc, affine=True)]
+            down = [downrelu, downconv, downnorm]
+            # up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+            #                             kernel_size=4, stride=2,
+            #                             padding=1), norm_layer(outer_nc, affine=True)]
+            up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
 
-			if use_dropout:
-				upconv_model = up + [nn.Dropout(0.5)]
-			else:
-				upconv_model = up
-		
+            if use_dropout:
+                upconv_model = up + [nn.Dropout(0.5)]
+            else:
+                upconv_model = up
+        
 
-		self.downconv_model = nn.Sequential(*down)
-		self.submodule = submodule
-		self.upconv_model = nn.Sequential(*upconv_model)
+        self.downconv_model = nn.Sequential(*down)
+        self.submodule = submodule
+        self.upconv_model = nn.Sequential(*upconv_model)
 
-	def forward(self, x):
+    def forward(self, x):
 
-		if self.outermost:
-			down_x = self.downconv_model(x)
+        if self.outermost:
+            down_x = self.downconv_model(x)
 
-			y, color_s = self.submodule.forward(down_x)
-			y = self.upconv_model(y)
+            y, color_s = self.submodule.forward(down_x)
+            y = self.upconv_model(y)
 
-			return y, color_s
+            return y, color_s
 
-		elif self.innermost:
-			down_output = self.downconv_model(x)
-			color_s = self.int_conv(down_output)
-			color_s = color_s.view(color_s.size(0), -1)
-			color_s  = self.fc(color_s)
+        elif self.innermost:
+            down_output = self.downconv_model(x)
+            color_s = self.int_conv(down_output)
+            color_s = color_s.view(color_s.size(0), -1)
+            color_s  = self.fc(color_s)
 
-			y = self.upconv_model(down_output)
-			y = torch.cat([y, x], 1)
+            y = self.upconv_model(down_output)
+            y = torch.cat([y, x], 1)
 
-			return y, color_s
-		else:
-			down_x = self.downconv_model(x)
-			y, color_s = self.submodule.forward(down_x)
-			y = self.upconv_model(y)
-			y = torch.cat([y, x], 1)
+            return y, color_s
+        else:
+            down_x = self.downconv_model(x)
+            y, color_s = self.submodule.forward(down_x)
+            y = self.upconv_model(y)
+            y = torch.cat([y, x], 1)
 
-			return y, color_s
+            return y, color_s
 
 
 class UnetGenerator2Decoder(nn.Module):
