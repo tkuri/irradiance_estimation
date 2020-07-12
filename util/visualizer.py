@@ -243,6 +243,7 @@ class Visualizer():
                     self.create_visdom_connections()
 
         if self.use_html and (save_result or not self.saved):  # save images to an HTML file if they haven't been saved.
+            print('Updated images...')
             self.saved = True
             # save images to the disk
             for label, image in visuals.items():
