@@ -110,15 +110,15 @@ class BrightestCasTmResnetModel(BaseModel):
 
     def ltm_module(self):
         ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
-        ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 3*16, 256x256]
-        ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 3*16]
-        ltm = torch.matmul(ltm, self.L)
+        ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
+        ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
+        ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
         ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
         ltm = (ltm - 0.5) / 0.5
         ltm = torch.clamp(ltm, min=-1.0, max=1.0)
         # pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
         pr_SH = ltm.view(ltm.size(0), ltm.size(1), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
-        return pr_SH, color
+        return pr_SH, color # pr_SH: -1~1
 
 
     def forward(self):
@@ -126,10 +126,11 @@ class BrightestCasTmResnetModel(BaseModel):
 
         self.pr_SH, color = self.ltm_module()
         self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
-        self.pr_SH = self.pr_SH * 0.5 + 0.5
-        color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        self.pr_SH = self.pr_SH * color
-        self.pr_SH = self.pr_SH * 2.0 - 1.0
+        # self.pr_SH = self.pr_SH * 0.5 + 0.5
+        # color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
+        # self.pr_SH = self.pr_SH * color
+        # self.pr_SH = self.pr_SH * 2.0 - 1.0
+
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
         if self.opt.cat_In:
