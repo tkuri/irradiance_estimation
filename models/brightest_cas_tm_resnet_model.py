@@ -128,10 +128,10 @@ class BrightestCasTmResnetModel(BaseModel):
         self.pr_SH, color = self.ltm_module()
         # self.pr_SH = self.ltm_module()
         self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
-        # self.pr_SH = self.pr_SH * 0.5 + 0.5
-        # color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        # self.pr_SH = self.pr_SH * color
-        # self.pr_SH = self.pr_SH * 2.0 - 1.0
+        self.pr_SH = self.pr_SH * 0.5 + 0.5
+        color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
+        self.pr_SH = self.pr_SH * color
+        self.pr_SH = self.pr_SH * 2.0 - 1.0
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
