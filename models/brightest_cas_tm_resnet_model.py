@@ -67,10 +67,10 @@ class BrightestCasTmResnetModel(BaseModel):
         self.model_names = ['G1', 'G3']
 
         self.light_res = opt.light_res
-        # self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_latent', opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_lastrelu', opt.norm,
+        self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_latent', opt.norm,
                                       not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        # self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_lastrelu', opt.norm,
+        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         # self.netG2 = networks.define_G(opt.input_nc, 1, opt.ngf, 'resnet_9blocks_multi', opt.norm,
         #                                 not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -108,8 +108,8 @@ class BrightestCasTmResnetModel(BaseModel):
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
 
     def ltm_module(self):
-        # ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
-        ltm = self.netG1(self.input) # [25, 25, 256, 256]
+        ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+        # ltm = self.netG1(self.input) # [25, 25, 256, 256]
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
         ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
@@ -118,8 +118,8 @@ class BrightestCasTmResnetModel(BaseModel):
         ltm = torch.clamp(ltm, min=-1.0, max=1.0)
         # pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
         pr_SH = ltm.view(ltm.size(0), ltm.size(1), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
-        # return pr_SH, color # pr_SH: -1~1
-        return pr_SH
+        return pr_SH, color # pr_SH: -1~1
+        # return pr_SH
 
 
     def forward(self):
