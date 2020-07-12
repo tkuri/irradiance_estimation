@@ -125,8 +125,8 @@ class BrightestCasTmResnetModel(BaseModel):
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
 
-        # self.pr_SH, color = self.ltm_module()
-        self.pr_SH = self.ltm_module()
+        self.pr_SH, color = self.ltm_module()
+        # self.pr_SH = self.ltm_module()
         self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
         # self.pr_SH = self.pr_SH * 0.5 + 0.5
         # color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
