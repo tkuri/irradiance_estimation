@@ -61,7 +61,7 @@ class BrightestCasTmResnetModel(BaseModel):
         # self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
         # self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
         self.loss_names = ['G_SH', 'G_BA2', 'G_BC2']
-        self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH', 'mask']
+        self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH', 'mask', 'L']
 
         # self.model_names = ['G1', 'G2', 'G3']
         self.model_names = ['G1', 'G3']
@@ -106,7 +106,6 @@ class BrightestCasTmResnetModel(BaseModel):
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
-        # self.L_itp = torch.clamp((F.interpolate(self.L_itp, (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
 
     def ltm_module(self):
         ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
