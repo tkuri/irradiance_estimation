@@ -382,7 +382,7 @@ class BaseModel(ABC):
             label['BC'] = ['pr_BC_BA{}'.format(suffix), 'pr_BC{}'.format(suffix)]
         return label
 
-    def eval_bp_base(self, mask, gt_BA, gt_BP, gt_BC, input):
+    def eval_bp_base(self, mask, gt_BA, gt_BP, gt_BC, input_):
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5
@@ -392,7 +392,7 @@ class BaseModel(ABC):
         else:
             mask_bp = all_one
 
-        input_g = torch.squeeze(torch.mean(input, 1, keepdim=True), 0)*0.5+0.5
+        input_g = torch.squeeze(torch.mean(input_, 1, keepdim=True), 0)*0.5+0.5
         all_half = torch.ones_like(input_g) * 0.5
         all_zero = torch.zeros_like(input_g)
         print('input_g.shape:', input_g.shape)
