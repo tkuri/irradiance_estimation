@@ -383,7 +383,7 @@ class BaseModel(ABC):
         if torch.sum(mask > 0.5) < 1:
             condition = 3
         result['condition'] = condition
-        result['gt_BC_num'] = condition
+        result['gt_BC_num'] = gt_BC_num
 
         result['gt_BC'] = gt_BC[0]
         result['base_BC_RA'] = base_BC_RA[0]
