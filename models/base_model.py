@@ -323,7 +323,7 @@ class BaseModel(ABC):
         label['BC'] = ['pr_BC_SH']
         return label
 
-    def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, suffix='')
+    def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, suffix="")
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5
