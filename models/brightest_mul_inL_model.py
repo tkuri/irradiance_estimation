@@ -169,7 +169,7 @@ class BrightestMulInLModel(BaseModel):
         result = []        
         for i in range(25):
             res = [idx]
-            res_base = self.eval_bp_base(self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i], self.input[i])
+            res_base = self.eval_bp_base(self.mask, self.gt_BA[i], self.gt_BP[i], self.gt_BC[i], self.input[i])
             res_sh = self.eval_bp_sh(self.mask, self.gt_BA[i], self.gt_BP[i], self.gt_BC[i], self.gt_SH[i])
             res_pr = self.eval_bp_pr(self.mask, self.gt_BA[i], self.gt_BP[i], self.gt_BC[i], self.pr_BA[i], None, '')
 
