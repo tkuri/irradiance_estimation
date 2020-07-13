@@ -178,17 +178,23 @@ class BrightestMulInLModel(BaseModel):
             self.forward()     
             self.compute_visuals()
         
-        res_base = self.eval_bp_base()
-        res_sh = self.eval_bp_sh()
-        res_pr = self.eval_bp_pr(self.pr_BA, None)
+        result = []        
+        for i in range(25):
+            res = [idx]
+            res_base = self.eval_bp_base(self.input[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+            res_sh = self.eval_bp_sh(self.gt_SH[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+            res_pr = self.eval_bp_pr(self.pr_BA[i], None, '', self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
 
-        result = []
-        label = self.eval_label()
-        for l in label:
-            if l in res_base:
-                result.append(res_base[l])
-            if l in res_sh:
-                result.append(res_sh[l])
-            if l in res_pr:
-                result.append(res_pr[l])
+            res = []
+            label = self.eval_label()
+            for l in label:
+                if l in res_base:
+                    res.append(res_base[l])
+                if l in res_sh:
+                    res.append(res_sh[l])
+                if l in res_pr:
+                    res.append(res_pr[l])
+
+            result.append(res)
+
         return result

@@ -116,8 +116,8 @@ if __name__ == '__main__':
                 break
             model.set_input(data)  # unpack data from data loader
             # model.test()           # run inference
-            res_row = model.eval_brightest_pixel()
-            res_row = [i] + res_row
+            res_row = model.eval_brightest_pixel(i)
+            # res_row = [i] + res_row
             result.append(res_row)
 
             if not opt.no_save_image:        

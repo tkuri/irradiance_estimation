@@ -196,7 +196,7 @@ class BrightestCasModel(BaseModel):
 
         return label
 
-    def eval_brightest_pixel(self):
+    def eval_brightest_pixel(self, idx=0):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
@@ -207,7 +207,7 @@ class BrightestCasModel(BaseModel):
         res_pr2 = self.eval_bp_pr(self.pr_BA2, self.pr_BP2, '2')
 
         result = []
-        label = self.eval_label()
+        label = self.eval_label(idx)
         for l in label:
             if l in res_base:
                 result.append(res_base[l])

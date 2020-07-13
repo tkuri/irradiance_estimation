@@ -240,22 +240,27 @@ class BrightestMulTmCasResnetModel(BaseModel):
 
         return label
 
-    def eval_brightest_pixel(self):
+    def eval_brightest_pixel(self, idx=0):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
-        
-        res_base = self.eval_bp_base()
-        res_sh = self.eval_bp_sh()
-        res_pr2 = self.eval_bp_pr(self.pr_BA2, None, '2')
 
-        result = []
-        label = self.eval_label()
-        for l in label:
-            if l in res_base:
-                result.append(res_base[l])
-            if l in res_sh:
-                result.append(res_sh[l])
-            if l in res_pr2:
-                result.append(res_pr2[l])
+        result = []        
+        for i in range(25):
+            res = [idx]
+            res_base = self.eval_bp_base(self.input[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+            res_sh = self.eval_bp_sh(self.gt_SH[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+            res_pr2 = self.eval_bp_pr(self.pr_BA2[i], None, '2', self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+
+            label = self.eval_label()
+            for l in label:
+                if l in res_base:
+                    res.append(res_base[l])
+                if l in res_sh:
+                    res.append(res_sh[l])
+                if l in res_pr2:
+                    res.append(res_pr2[l])
+
+            result.append(res)
+
         return result

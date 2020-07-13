@@ -172,7 +172,7 @@ class BrightestModel(BaseModel):
 
         return label
 
-    def eval_brightest_pixel(self):
+    def eval_brightest_pixel(self, idx=0):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
@@ -181,7 +181,7 @@ class BrightestModel(BaseModel):
         res_sh = self.eval_bp_sh()
         res_pr = self.eval_bp_pr(self.pr_BA, self.pr_BP)
 
-        result = []
+        result = [idx]
 
         label = self.eval_label()
         for l in label:
