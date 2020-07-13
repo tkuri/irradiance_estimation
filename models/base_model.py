@@ -11,7 +11,7 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.measurements import label
 import cv2
 import json
-
+from skimage.measure import compare_ssim, compare_psnr
 
 class BaseModel(ABC):
     """This class is an abstract base class (ABC) for models.
@@ -271,12 +271,28 @@ class BaseModel(ABC):
 
         return result
 
+    def eval_sh(self, mask, gt_SH, pr_SH):
+        mask = torch.squeeze(mask, 0)*0.5+0.5
+        gt_SH = torch.squeeze(gt_SH, 0)*0.5+0.5
+        pr_SH = torch.squeeze(pr_SH, 0)*0.5+0.5
+        result['shMSE'] = util.mse_with_mask(pr_SH, gt_SH, mask).item()
+
+        gt_SH_np = gt_SH.detach().numpy().copy()
+        pr_SH_np = pr_SH.detach().numpy().copy()
+
+        result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
+        result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np)
+
+        return result
+
     def label_sh(self):
         label = {}
         label['baMSE'] = ['baMSE_pr_BA_SH']
         label['bpMSE'] = ['bpMSE_pr_BP_SH']
         label['bcDist'] = ['bcDist_pr_BC_SH']
         label['BC'] = ['pr_BC_SH']
+
+        label['shEval'] = ['shMSE', 'shPSNR', 'shSSIM']
         return label
 
     def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, pr_BC=None, suffix=''):

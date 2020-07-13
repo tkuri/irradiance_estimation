@@ -164,6 +164,7 @@ class BrightestModel(BaseModel):
         label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr()['bcDist']
         label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr()['baMSE']
         label += self.label_base()['bpMSE'] + self.label_sh()['bpMSE'] + self.label_pr()['bpMSE']
+        label += self.label_base()['shEval']
 
         return label
 
@@ -174,6 +175,7 @@ class BrightestModel(BaseModel):
         
         res_base = self.eval_bp_base(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.input)
         res_sh = self.eval_bp_sh(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_SH)
+        res_sh += self.eval_sh(self.mask, self.gt_SH, self.pr_SH)
         res_pr = self.eval_bp_pr(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_BA, self.pr_BP, self.pr_BC, '')
 
         result = [idx]
