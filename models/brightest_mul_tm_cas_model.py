@@ -227,8 +227,8 @@ class BrightestMulTmCasModel(BaseModel):
     def eval_label(self):
         label = ['idx', 'condition']
         label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr(False, '2')['BC']
-        label += self.label_base()['dict_BC'] + self.label_sh()['dict_BC'] + self.label_pr(False, '2')['dict_BC']
-        label += self.label_base()['mse_BA'] + self.label_sh()['mse_BA'] + self.label_pr(False, '2')['mse_BA']
+        label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr(False, '2')['bcDist']
+        label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr(False, '2')['baMSE']
 
         return label
 

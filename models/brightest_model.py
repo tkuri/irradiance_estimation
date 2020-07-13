@@ -161,14 +161,9 @@ class BrightestModel(BaseModel):
     def eval_label(self):
         label = ['idx', 'condition']
         label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr()['BC']
-        label += self.label_base()['dict_BC'] + self.label_sh()['dict_BC'] + self.label_pr()['dict_BC']
-        label += self.label_base()['mse_BA'] + self.label_sh()['mse_BA'] + self.label_pr()['mse_BA']
-        label += self.label_base()['mse_BP'] + self.label_sh()['mse_BP'] + self.label_pr()['mse_BP']
-
-        # label = ['idx', 'condition', 'gt_BC', 'base_BC_RA', 'pr_BC_BA', 'bc_ba', 'bc_bp', 'bc_bc', 
-        # 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc', 'dist_05',
-        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_0',
-        # 'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_bp_direct', 'bp_mse_0']
+        label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr()['bcDist']
+        label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr()['baMSE']
+        label += self.label_base()['bpMSE'] + self.label_sh()['bpMSE'] + self.label_pr()['bpMSE']
 
         return label
 

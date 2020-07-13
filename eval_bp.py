@@ -17,8 +17,8 @@ def main():
     # df = pd.read_csv('./results/cgintrinsic/brightest_resnet/test_latest/bp_eval_epoch3.csv')
     df = pd.read_csv(args.fname)
     labels = df.columns
-    ba_mse_labels = [s for s in labels if 'ba_mse' in s]
-    bp_mse_labels = [s for s in labels if 'bp_mse' in s]
+    ba_mse_labels = [s for s in labels if 'bamse' in s]
+    bp_mse_labels = [s for s in labels if 'bpmse' in s]
     dist_labels = [s for s in labels if 'dist' in s]
     print(labels)
     result = [['Original data length:', len(df)]]

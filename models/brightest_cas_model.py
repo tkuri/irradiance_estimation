@@ -183,16 +183,9 @@ class BrightestCasModel(BaseModel):
     def eval_label(self):
         label = ['idx', 'condition']
         label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr()['BC'] + self.label_pr(True, '2')['BC']
-        label += self.label_base()['dict_BC'] + self.label_sh()['dict_BC'] + self.label_pr()['dict_BC'] + self.label_pr(True, '2')['dict_BC']
-        label += self.label_base()['mse_BA'] + self.label_sh()['mse_BA'] + self.label_pr()['mse_BA'] + self.label_pr(True, '2')['mse_BA']
-        label += self.label_base()['mse_BP'] + self.label_sh()['mse_BP'] + self.label_pr()['mse_BP'] + self.label_pr(True, '2')['mse_BP']
-        # label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
-        # 'bc_ba2', 'bc_bp2', 'bc_bc2', 
-        # 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc',
-        # 'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
-        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
-        # 'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_bp_direct', 
-        # 'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
+        label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr()['bcDist'] + self.label_pr(True, '2')['dict_BC']
+        label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr()['baMSE'] + self.label_pr(True, '2')['baMSE']
+        label += self.label_base()['bpMSE'] + self.label_sh()['bpMSE'] + self.label_pr()['bpMSE'] + self.label_pr(True, '2')['bpMSE']
 
         return label
 
