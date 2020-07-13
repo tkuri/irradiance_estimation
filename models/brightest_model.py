@@ -12,7 +12,7 @@ from scipy.ndimage.measurements import label
 import cv2
 import json
 
-class BrightestResnetModel(BaseModel):
+class BrightestModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
