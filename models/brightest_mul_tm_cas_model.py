@@ -61,7 +61,7 @@ class BrightestMulTmCasModel(BaseModel):
         # self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
         # self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
         self.loss_names = ['G_SH', 'G_BA2', 'G_BC2']
-        self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH', 'mask', 'L_itp']
+        self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH']
 
         # self.model_names = ['G1', 'G2', 'G3']
         self.model_names = ['G1', 'G3']
@@ -103,7 +103,7 @@ class BrightestMulTmCasModel(BaseModel):
         # self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
-        self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
+        # self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
 
