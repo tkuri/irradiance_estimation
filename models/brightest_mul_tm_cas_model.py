@@ -13,7 +13,7 @@ import cv2
 import json
 from torch.nn import functional as F
 
-class BrightestMulTmCasResnetModel(BaseModel):
+class BrightestMulTmCasModel(BaseModel):
     """ This class implements the pix2pix model, for learning a mapping from input images to output images given paired data.
 
     The model training requires '--dataset_mode aligned' dataset.
