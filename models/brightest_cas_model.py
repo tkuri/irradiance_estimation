@@ -186,7 +186,7 @@ class BrightestCasModel(BaseModel):
         label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr()['bcDist'] + self.label_pr(True, '2')['dict_BC']
         label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr()['baMSE'] + self.label_pr(True, '2')['baMSE']
         label += self.label_base()['bpMSE'] + self.label_sh()['bpMSE'] + self.label_pr()['bpMSE'] + self.label_pr(True, '2')['bpMSE']
-        label += self.label_base()['shEval']
+        label += self.label_sh()['shEval']
 
         return label
 

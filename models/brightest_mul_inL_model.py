@@ -159,7 +159,7 @@ class BrightestMulInLModel(BaseModel):
         label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr(False)['BC']
         label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr(False)['bcDist']
         label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr(False)['baMSE']
-        label += self.label_base()['shEval']
+        label += self.label_sh()['shEval']
         return label
 
     def eval_brightest_pixel(self, idx=0):
