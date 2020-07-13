@@ -315,7 +315,7 @@ class BaseModel(ABC):
 
         return result
 
-    def label_sh():
+    def label_sh(self):
         label = {}
         label['mse_BA'] = ['mse_pr_BA_SH']
         label['mse_BP'] = ['mse_pr_BP_SH']
@@ -432,7 +432,7 @@ class BaseModel(ABC):
 
         return result
 
-    def label_base():
+    def label_base(self):
         label = {}
         label['mse_BA'] = ['mse_base_BA_RA', 'mse_base_BA_0', 'mse_base_BA_h', 'mse_base_BA_1']
         label['mse_BP'] = ['mse_base_BP_RA', 'mse_base_BP_0', 'mse_base_BP_h', 'mse_base_BP_1']
