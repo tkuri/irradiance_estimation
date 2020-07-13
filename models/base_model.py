@@ -395,6 +395,8 @@ class BaseModel(ABC):
         input_g = torch.squeeze(torch.mean(input, 1, keepdim=True), 0)*0.5+0.5
         all_half = torch.ones_like(input_g) * 0.5
         all_zero = torch.zeros_like(input_g)
+        print('input_g.shape:', input_g.shape)
+        print('mask.shape:', mask.shape)
         base_BA_RA, _, base_BP_RA, base_BC_RA = util.calc_brightest(input_g, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
         # Evaluation of 20% brightest area
