@@ -191,4 +191,4 @@ class BrightestModel(BaseModel):
                 result.append(res_sh[l])
             if l in res_pr:
                 result.append(res_pr[l])
-        return result
+        return list(result)

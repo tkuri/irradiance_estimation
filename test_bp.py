@@ -118,7 +118,8 @@ if __name__ == '__main__':
             # model.test()           # run inference
             res_row = model.eval_brightest_pixel(i)
             # res_row = [i] + res_row
-            result.append(res_row)
+            # result.append(res_row)
+            result += res_row
 
             if not opt.no_save_image:        
                 visuals = model.get_current_visuals()  # get image results

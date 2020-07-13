@@ -261,6 +261,6 @@ class BrightestMulTmCasModel(BaseModel):
                 if l in res_pr2:
                     res.append(res_pr2[l])
 
-            result.append(*res)
+            result.append(res)
 
         return result

@@ -216,4 +216,4 @@ class BrightestCasModel(BaseModel):
                 result.append(res_pr[l])
             if l in res_pr2:
                 result.append(res_pr2[l])
-        return result
+        return list(result)
