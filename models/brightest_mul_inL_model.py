@@ -161,7 +161,7 @@ class BrightestMulInLModel(BaseModel):
         label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr(False)['baMSE']
         return label
 
-    def eval_brightest_pixel(self):
+    def eval_brightest_pixel(self, idx=0):
         with torch.no_grad():
             self.forward()     
             self.compute_visuals()
