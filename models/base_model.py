@@ -342,12 +342,12 @@ class BaseModel(ABC):
 
         # Evaluation of 20% brightest area
         gt_BA = torch.squeeze(gt_BA, 0)*0.5+0.5
-        result['mse_pr_BA{}'.format{suffix}] = util.mse_with_mask(pr_BA, gt_BA, mask).item()
+        result['mse_pr_BA{}'.format(suffix)] = util.mse_with_mask(pr_BA, gt_BA, mask).item()
 
         # Evaluation of brightest pixel (Spread)
         if not gt_BP==None:
             gt_BP = torch.squeeze(gt_BP, 0)*0.5+0.5
-            result['mse_pr_BP_BA{}'.format{suffix}] = util.mse_with_mask(pr_BP_BA, gt_BP, mask).item()
+            result['mse_pr_BP_BA{}'.format(suffix)] = util.mse_with_mask(pr_BP_BA, gt_BP, mask).item()
 
         # Evaluation of brightest coordinate
         gt_BC_list = []
@@ -357,19 +357,19 @@ class BaseModel(ABC):
         gt_BC = gt_BC_list
         pr_BC = [(self.pr_BC[0, 0].item(), self.pr_BC[0, 1].item(), 1, 1)]
 
-        result['dist_pr_BC_BA{}'.format{suffix}] = util.calc_dist(gt_BC, pr_BC_BA)
-        result['dist_pr_BC{}'.format{suffix}] = util.calc_dist(gt_BC, pr_BC)
+        result['dist_pr_BC_BA{}'.format(suffix)] = util.calc_dist(gt_BC, pr_BC_BA)
+        result['dist_pr_BC{}'.format(suffix)] = util.calc_dist(gt_BC, pr_BC)
 
-        result['pr_BC_BA{}'.format{suffix}] = pr_BC_BA[0]
-        result['pr_BC{}'.format{suffix}] = pr_BC[0]
+        result['pr_BC_BA{}'.format(suffix)] = pr_BC_BA[0]
+        result['pr_BC{}'.format(suffix)] = pr_BC[0]
 
         if not pr_BP==None:
             pr_BP = torch.squeeze(pr_BP, 0)*0.5+0.5
             _, _, pr_BP_BP, pr_BC_BP = util.calc_brightest(pr_BP, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
             if not gt_BP==None:
-                result['mse_pr_BP_BP{}'.format{suffix}] = util.mse_with_mask(pr_BP_BP, gt_BP, mask).item()
-            result['dist_pr_BC_BP{}'.format{suffix}] = util.calc_dist(gt_BC, pr_BC_BP)
-            result['pr_BC_BP{}'.format{suffix}] = pr_BC_BP[0]
+                result['mse_pr_BP_BP{}'.format(suffix)] = util.mse_with_mask(pr_BP_BP, gt_BP, mask).item()
+            result['dist_pr_BC_BP{}'.format(suffix)] = util.calc_dist(gt_BC, pr_BC_BP)
+            result['pr_BC_BP{}'.format(suffix)] = pr_BC_BP[0]
 
         return result
 
