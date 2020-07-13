@@ -200,7 +200,7 @@ class BrightestCasModel(BaseModel):
         res_pr = self.eval_bp_pr(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_BA, self.pr_BP, self.pr_BC, '')
         res_pr2 = self.eval_bp_pr(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_BA2, self.pr_BP2, self.pr_BC2, '2')
 
-        result = []
+        result = [idx]
         label = self.eval_label(idx)
         for l in label:
             if l in res_base:
