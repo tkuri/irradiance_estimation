@@ -181,7 +181,7 @@ class BrightestCasModel(BaseModel):
         return visual_ret
 
     def eval_label(self):
-        label = ['idx', 'condition']
+        label = ['idx', 'condition', 'gt_BC_num']
         label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr()['BC'] + self.label_pr(True, '2')['BC']
         label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr()['bcDist'] + self.label_pr(True, '2')['dict_BC']
         label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr()['baMSE'] + self.label_pr(True, '2')['baMSE']
