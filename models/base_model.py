@@ -275,6 +275,8 @@ class BaseModel(ABC):
         mask = torch.squeeze(mask, 0)*0.5+0.5
         gt_SH = torch.squeeze(gt_SH, 0)*0.5+0.5
         pr_SH = torch.squeeze(pr_SH, 0)*0.5+0.5
+        print('gt_SH.shape:', gt_SH.shape)
+        print('pr_SH.shape:', pr_SH.shape)
         result['shMSE'] = util.mse_with_mask(pr_SH, gt_SH, mask).item()
 
         gt_SH_np = gt_SH.detach().numpy().copy()
