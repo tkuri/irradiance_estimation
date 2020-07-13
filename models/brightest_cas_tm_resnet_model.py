@@ -225,20 +225,18 @@ class BrightestCasTmResnetModel(BaseModel):
         return visual_ret
 
     def eval_label(self):
-        # label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 'bc_ba', 'bc_bp', 'bc_bc', 
+        label = ['idx', 'condition']
+        label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr(False, '2')['BC']
+        label += self.label_base()['dict_BC'] + self.label_sh()['dict_BC'] + self.label_pr(False, '2')['dict_BC']
+        label += self.label_base()['mse_BA'] + self.label_sh()['mse_BA'] + self.label_pr(False, '2')['mse_BA']
+
+        # label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 
         # 'bc_ba2', 'bc_bp2', 'bc_bc2', 
-        # 'dist_ra', 'dist_sh', 'dist_ba', 'dist_bp', 'dist_bc',
+        # 'dist_ra', 'dist_sh',
         # 'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
-        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
-        # 'bp_mse_ra', 'bp_mse_sh', 'bp_mse_ba', 'bp_mse_bp', 'bp_mse_bp_direct', 
+        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
+        # 'bp_mse_ra', 'bp_mse_sh', 
         # 'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
-        label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 
-        'bc_ba2', 'bc_bp2', 'bc_bc2', 
-        'dist_ra', 'dist_sh',
-        'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
-        'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
-        'bp_mse_ra', 'bp_mse_sh', 
-        'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
 
         return label
 
@@ -248,13 +246,16 @@ class BrightestCasTmResnetModel(BaseModel):
             self.compute_visuals()
         
         res_base = self.eval_bp_base()
-        res_cas = self.eval_bp_cas()
+        res_sh = self.eval_bp_sh()
+        res_pr2 = self.eval_bp_pr(self.pr_BA2, None, '2')
 
         result = []
         label = self.eval_label()
         for l in label:
             if l in res_base:
                 result.append(res_base[l])
-            if l in res_cas:
-                result.append(res_cas[l])
+            if l in res_sh:
+                result.append(res_sh[l])
+            if l in res_pr2:
+                result.append(res_pr2[l])
         return result
