@@ -323,7 +323,7 @@ class BaseModel(ABC):
         label['BC'] = ['pr_BC_SH']
         return label
 
-    def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, suffix=''):
+    def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, pr_BC=None, suffix=''):
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5
@@ -351,8 +351,7 @@ class BaseModel(ABC):
         for i in range(gt_BC_num):
             gt_BC_list.append((gt_BC[0, i, 0].item(), gt_BC[0, i, 1].item(), int(gt_BC[0, i, 2].item()), int(gt_BC[0, i, 3].item())))
         gt_BC = gt_BC_list
-        pr_BC_list = [(pr_BC[0, 0].item(), pr_BC[0, 1].item(), 1, 1)]
-        pr_BC = pr_BC_list
+        pr_BC = [(pr_BC[0, 0].item(), pr_BC[0, 1].item(), 1, 1)]
 
         result['dist_pr_BC_BA{}'.format(suffix)] = util.calc_dist(gt_BC, pr_BC_BA)
         result['dist_pr_BC{}'.format(suffix)] = util.calc_dist(gt_BC, pr_BC)
