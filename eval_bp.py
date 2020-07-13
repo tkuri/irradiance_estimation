@@ -17,9 +17,9 @@ def main():
     # df = pd.read_csv('./results/cgintrinsic/brightest_resnet/test_latest/bp_eval_epoch3.csv')
     df = pd.read_csv(args.fname)
     labels = df.columns
-    ba_mse_labels = [s for s in labels if 'bamse' in s]
-    bp_mse_labels = [s for s in labels if 'bpmse' in s]
-    dist_labels = [s for s in labels if 'dist' in s]
+    ba_mse_labels = [s for s in labels if 'baMSE' in s]
+    bp_mse_labels = [s for s in labels if 'bpMSE' in s]
+    dist_labels = [s for s in labels if 'bcDist' in s]
     print(labels)
     result = [['Original data length:', len(df)]]
     df = df[df['condition'] != 0]
