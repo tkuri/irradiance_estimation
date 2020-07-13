@@ -280,8 +280,7 @@ class BaseModel(ABC):
 
     #     return result
 
-    def eval_bp_sh(self, gt_SH=self.gt_SH, mask=self.mask, 
-                     gt_BA=self.gt_BA, gt_BP=self.gt_BP, gt_BC=self.gt_BC):
+    def eval_bp_sh(self, mask, gt_BA, gt_BP, gt_BC, pr_SH):
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5
@@ -324,8 +323,7 @@ class BaseModel(ABC):
         label['BC'] = ['pr_BC_SH']
         return label
 
-    def eval_bp_pr(self, pr_BA, pr_BP=None, suffix='', mask=self.mask,
-                   gt_BA=self.gt_BA, gt_BP=self.gt_BP, gt_BC=self.gt_BC):
+    def eval_bp_pr(self, mask, gt_BA, gt_BP, gt_BC, pr_BA, pr_BP=None, suffix='')
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5
@@ -335,8 +333,6 @@ class BaseModel(ABC):
         else:
             mask_bp = all_one
 
-        # pr_BA = torch.squeeze(self.pr_BA, 0)*0.5+0.5
-        # pr_BP = torch.squeeze(self.pr_BP, 0)*0.5+0.5
         pr_BA = torch.squeeze(pr_BA, 0)*0.5+0.5
         _, _, pr_BP_BA, pr_BC_BA = util.calc_brightest(pr_BA, mask_bp, nr_tap=self.opt.bp_nr_tap, nr_sigma=self.opt.bp_nr_sigma, spread_tap=self.opt.bp_tap, spread_sigma=self.opt.bp_sigma)
 
@@ -386,8 +382,7 @@ class BaseModel(ABC):
             label['BC'] = ['pr_BC_BA{}'.format(suffix), 'pr_BC{}'.format(suffix)]
         return label
 
-    def eval_bp_base(self, input=self.input, mask=self.mask, 
-                     gt_BA=self.gt_BA, gt_BP=self.gt_BP, gt_BC=self.gt_BC):
+    def eval_bp_base(self, mask, gt_BA, gt_BP, gt_BC, input):
         result = {}
 
         mask = torch.squeeze(mask, 0)*0.5+0.5

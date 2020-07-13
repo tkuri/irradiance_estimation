@@ -177,9 +177,9 @@ class BrightestModel(BaseModel):
             self.forward()     
             self.compute_visuals()
         
-        res_base = self.eval_bp_base()
-        res_sh = self.eval_bp_sh()
-        res_pr = self.eval_bp_pr(self.pr_BA, self.pr_BP)
+        res_base = self.eval_bp_base(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.input)
+        res_sh = self.eval_bp_sh(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_SH)
+        res_pr = self.eval_bp_pr(self.mask, self.gt_BA, self.gt_BP, self.gt_BC, self.pr_BA, self.pr_BP, '')
 
         result = [idx]
 

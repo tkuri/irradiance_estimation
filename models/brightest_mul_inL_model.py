@@ -151,10 +151,7 @@ class BrightestMulInLModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-        # visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
-        # visual_ret['pr_BP_BC2'] = util.get_current_BC(self.pr_BC2, self.pr_BP2, self.opt)
-        # visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
-        # visual_ret['pr_BP_BP2'] = util.get_current_BP(self.pr_BP2, self.opt)
+        visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
         return visual_ret
 
     def eval_label(self):
@@ -162,15 +159,6 @@ class BrightestMulInLModel(BaseModel):
         label += self.label_base()['dict_BC'] + self.label_sh()['dict_BC'] + self.label_pr(False)['dict_BC']
         label += self.label_base()['mse_BA'] + self.label_sh()['mse_BA'] + self.label_pr(False)['mse_BA']
         label += self.label_base()['mse_BP'] + self.label_sh()['mse_BP'] + self.label_pr(False)['mse_BP']
-
-        # label = ['idx', 'condition', 'bc_gt', 'bc_ra', 'bc_sh', 
-        # 'bc_ba2', 'bc_bp2', 'bc_bc2', 
-        # 'dist_ra', 'dist_sh',
-        # 'dist_ba2', 'dist_bp2', 'dist_bc2', 'dist_05',
-        # 'ba_mse_ra', 'ba_mse_sh', 'ba_mse_ba2','ba_mse_0', 'ba_mse_h', 'ba_mse_1',
-        # 'bp_mse_ra', 'bp_mse_sh', 
-        # 'bp_mse_ba2', 'bp_mse_bp2', 'bp_mse_bp2_direct', 'bp_mse_0', 'bp_mse_h', 'bp_mse_1']
-
         return label
 
     def eval_brightest_pixel(self):
@@ -181,9 +169,9 @@ class BrightestMulInLModel(BaseModel):
         result = []        
         for i in range(25):
             res = [idx]
-            res_base = self.eval_bp_base(self.input[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
-            res_sh = self.eval_bp_sh(self.gt_SH[i], self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
-            res_pr = self.eval_bp_pr(self.pr_BA[i], None, '', self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i])
+            res_base = self.eval_bp_base(self.mask, self.ge_BA[i], self.gt_BP[i], self.gt_BC[i], self.input[i])
+            res_sh = self.eval_bp_sh(self.mask, self.gt_BA[i], self.gt_BP[i], self.gt_BC[i], self.gt_SH[i])
+            res_pr = self.eval_bp_pr(self.mask, self.gt_BA[i], self.gt_BP[i], self.gt_BC[i], self.pr_BA[i], None, '')
 
             res = []
             label = self.eval_label()
