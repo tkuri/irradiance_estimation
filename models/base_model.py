@@ -379,9 +379,11 @@ class BaseModel(ABC):
         result['bcDist_base_BC_05'] = util.calc_dist(gt_BC, [(0.5, 0.5, 1, 1)])
 
         condition = gt_BC[0][2]
+        gt_BC_num = gt_BC[0][3]
         if torch.sum(mask > 0.5) < 1:
             condition = 3
         result['condition'] = condition
+        result['gt_BC_num'] = condition
 
         result['gt_BC'] = gt_BC[0]
         result['base_BC_RA'] = base_BC_RA[0]
