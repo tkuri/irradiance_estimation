@@ -20,10 +20,15 @@ def main():
     ba_mse_labels = [s for s in labels if 'baMSE' in s]
     bp_mse_labels = [s for s in labels if 'bpMSE' in s]
     dist_labels = [s for s in labels if 'bcDist' in s]
+    sh_labels = [s for s in labels if 'sh' in s]
     print(labels)
     result = [['Original data length:', len(df)]]
     df = df[df['condition'] != 0]
     result += [['Modified data length for brightest area/pixel evaluation:', len(df)]]
+    result += [['Sading Evaluation', 'mean', 'meadian']]
+    for label in sh_labels:
+        values = df[label].values
+        result += [[label, '{:.5f}'.format(np.mean(values)), '{:.5f}'.format(np.median(values))]]
     result += [['BA MSE Evaluation', 'mean', 'meadian']]
     for label in ba_mse_labels:
         values = df[label].values
