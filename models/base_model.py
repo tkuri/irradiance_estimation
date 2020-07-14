@@ -281,8 +281,8 @@ class BaseModel(ABC):
         print('pr_SH.shape:', pr_SH.shape)
         result['shMSE'] = util.mse_with_mask(pr_SH, gt_SH, mask.expand(gt_SH.size())).item()
 
-        gt_SH_np = gt_SH.detach().numpy().copy()
-        pr_SH_np = pr_SH.detach().numpy().copy()
+        gt_SH_np = gt_SH.to('cpu').detach().numpy().copy()
+        pr_SH_np = pr_SH.to('cpu').detach().numpy().copy()
 
         result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
         result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np)
