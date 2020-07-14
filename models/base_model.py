@@ -285,7 +285,7 @@ class BaseModel(ABC):
         pr_SH_np = pr_SH.to('cpu').detach().numpy().copy()
 
         result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
-        result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np)
+        result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np, multichannel=True)
 
         return result
 
