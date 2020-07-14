@@ -272,6 +272,8 @@ class BaseModel(ABC):
         return result
 
     def eval_sh(self, mask, gt_SH, pr_SH):
+        result = {}
+
         mask = torch.squeeze(mask, 0)*0.5+0.5
         gt_SH = torch.squeeze(gt_SH, 0)*0.5+0.5
         pr_SH = torch.squeeze(pr_SH, 0)*0.5+0.5
