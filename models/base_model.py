@@ -284,8 +284,6 @@ class BaseModel(ABC):
 
         gt_SH_np = np.transpose(gt_SH_np, (1, 2, 0))
         pr_SH_np = np.transpose(pr_SH_np, (1, 2, 0))
-        print('gt_SH.shape:', gt_SH_np.shape)
-        print('pr_SH.shape:', pr_SH_np.shape)
 
         result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
         result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np, multichannel=True)
