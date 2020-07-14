@@ -242,7 +242,7 @@ class BrightestMulTmCasModel(BaseModel):
             res = [idx]
             res_base = self.eval_bp_base(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.input[i].unsqueeze(0))
             res_sh = self.eval_bp_sh(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_SH[i].unsqueeze(0))
-            res_sh += self.eval_sh(self.mask, self.gt_SH[i], self.pr_SH[i])
+            res_sh.update(self.eval_sh(self.mask, self.gt_SH[i], self.pr_SH[i]))
             res_pr2 = self.eval_bp_pr(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_BA2[i].unsqueeze(0), None, self.pr_BC2[i].unsqueeze(0), '2')
 
             label = self.eval_label()
