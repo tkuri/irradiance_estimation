@@ -277,12 +277,15 @@ class BaseModel(ABC):
         mask = torch.squeeze(mask, 0)*0.5+0.5
         gt_SH = torch.squeeze(gt_SH, 0)*0.5+0.5
         pr_SH = torch.squeeze(pr_SH, 0)*0.5+0.5
-        print('gt_SH.shape:', gt_SH.shape)
-        print('pr_SH.shape:', pr_SH.shape)
         result['shMSE'] = util.mse_with_mask(pr_SH, gt_SH, mask.expand(gt_SH.size())).item()
 
         gt_SH_np = gt_SH.to('cpu').detach().numpy().copy()
         pr_SH_np = pr_SH.to('cpu').detach().numpy().copy()
+
+        gt_SH_np = np.transpose(gt_SH_np, (2, 0, 1))
+        pr_SH_np = np.transpose(pr_SH_np, (2, 0, 1))
+        print('gt_SH.shape:', gt_SH_np.shape)
+        print('pr_SH.shape:', pr_SH_np.shape)
 
         result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
         result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np, multichannel=True)
