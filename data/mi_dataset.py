@@ -59,10 +59,9 @@ class MiDataset(BaseDataset):
         BaseDataset.__init__(self, opt)
         self.dataroot = opt.dataroot 
         list_dir = self.dataroot + '/train_list/'
-        self.img_dirs = self.dataroot + make_dataset(list_dir, opt.max_dataset_size, opt.phase)
+        self.img_dirs = self.dataroot + MI_make_dataset(list_dir)
         if len(self.img_dirs) == 0:
             raise(RuntimeError("Found 0 directories in directory \n")
-
         assert(self.opt.load_size >= self.opt.crop_size)   # crop_size should be smaller than the size of loaded image
             
     def __getitem__(self, index):
