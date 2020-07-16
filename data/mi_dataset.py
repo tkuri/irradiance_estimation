@@ -93,7 +93,7 @@ class MiDataset(BaseDataset):
 
 
         # apply the same transform to both A and B
-        transform_params = get_params(self.opt, srgb_img.size)
+        transform_params = get_params(self.opt, srgb_img[0].size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         L_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         SH_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
