@@ -80,7 +80,7 @@ class MiDataset(BaseDataset):
         srgb_img = []
         L = []
         gt_SH = []
-        path = dir_list[index]
+        path = self.img_dirs[index]
         for i in range(25):
             img_path = self.dataroot + path + '/dir_{}_mip2_input.jpg'.format(i)
             srgb_img.append(Image.open(img_path).convert('RGB'))
