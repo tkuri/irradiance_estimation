@@ -60,7 +60,7 @@ class MiDataset(BaseDataset):
         BaseDataset.__init__(self, opt)
         self.dataroot = opt.dataroot 
         list_dir = self.dataroot + '/train_list/'
-        self.img_dirs = MI_make_dataset(list_dir)
+        self.img_dirs = MI_make_dataset(list_dir, opt.phase)
         if len(self.img_dirs) == 0:
             raise(RuntimeError("Found 0 directories in directory \n"))
         assert(self.opt.load_size >= self.opt.crop_size)
