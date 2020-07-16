@@ -130,7 +130,7 @@ class MiDataset(BaseDataset):
         
         result['A_paths'] = path
 
-        return {'A': srgb_img, 'gt_AL': gt_AL, 'gt_SH': gt_SH, 'mask': mask, 'gt_BA': gt_BA, 'gt_BP': gt_BP, 'gt_BC':gt_BC, 'A_paths': img_path}
+        return {'A': srgb_img, 'gt_SH': gt_SH, 'mask': mask, 'gt_BA': gt_BA, 'gt_BC':gt_BC, 'A_paths': img_path}
 
     def __len__(self):
         """Return the total number of images in the dataset.
