@@ -59,7 +59,7 @@ class MiDataset(BaseDataset):
         BaseDataset.__init__(self, opt)
         self.dataroot = opt.dataroot 
         list_dir = self.dataroot + '/train_list/'
-        self.img_dirs = self.dataroot + MI_make_dataset(list_dir)
+        self.img_dirs = MI_make_dataset(list_dir)
         if len(self.img_dirs) == 0:
             raise(RuntimeError("Found 0 directories in directory \n"))
         assert(self.opt.load_size >= self.opt.crop_size)
@@ -82,13 +82,13 @@ class MiDataset(BaseDataset):
         gt_SH = []
         path = dir_list[index]
         for i in range(25):
-            img_path = path + '/dir_{}_mip2_input.jpg'.format(i)
+            img_path = self.dataroot + path + '/dir_{}_mip2_input.jpg'.format(i)
             srgb_img.append(Image.open(img_path).convert('RGB'))
 
-            L_path = path + '/dir_{}_mip2_L.jpg'.format(i)
+            L_path = self.dataroot + path + '/dir_{}_mip2_L.jpg'.format(i)
             L.append(Image.open(L_path).convert('RGB'))
 
-            SH_path = path + '/dir_{}_mip2_SH.jpg'.format(i)
+            SH_path = self.dataroot + path + '/dir_{}_mip2_SH.jpg'.format(i)
             gt_SH.append(Image.open(SH_path).convert('RGB'))
 
 
