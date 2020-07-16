@@ -61,9 +61,9 @@ class MiDataset(BaseDataset):
         list_dir = self.dataroot + '/train_list/'
         self.img_dirs = self.dataroot + MI_make_dataset(list_dir)
         if len(self.img_dirs) == 0:
-            raise(RuntimeError("Found 0 directories in directory \n")
-        assert(self.opt.load_size >= self.opt.crop_size)   # crop_size should be smaller than the size of loaded image
-            
+            raise(RuntimeError("Found 0 directories in directory \n"))
+        assert(self.opt.load_size >= self.opt.crop_size)
+
     def __getitem__(self, index):
         """Return a data point and its metadata information.
 
