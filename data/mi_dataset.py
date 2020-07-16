@@ -93,7 +93,7 @@ class MiDataset(BaseDataset):
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img[0].size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
-        L_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+        L_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
         SH_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
 
         for i in range(25):
@@ -101,8 +101,7 @@ class MiDataset(BaseDataset):
             gt_SH[i] = SH_transform(gt_SH[i])
             L[i] = L_transform(L[i])
 
-        mask = torch.ones_like(srgb_img[0])
-        mask = mask[0].unsqueeze(0)
+        mask = torch.ones_like(L[0])
         result = {}
         res = []
         for i in range(25):
