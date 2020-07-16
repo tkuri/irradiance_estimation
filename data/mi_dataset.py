@@ -139,4 +139,4 @@ class MiDataset(BaseDataset):
         As we have two datasets with potentially different number of images,
         we take a maximum of
         """
-        return len(self.img_paths)
+        return len(self.img_dirs)
