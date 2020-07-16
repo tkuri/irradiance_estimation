@@ -82,13 +82,13 @@ class MiDataset(BaseDataset):
         gt_SH = []
         path = self.img_dirs[index]
         for i in range(25):
-            img_path = self.dataroot + '/result/' + path + '/dir_{}_mip2_input.jpg'.format(i)
+            img_path = self.dataroot + '/results/' + path + '/dir_{}_mip2_input.jpg'.format(i)
             srgb_img.append(Image.open(img_path).convert('RGB'))
 
-            L_path = self.dataroot + '/result/' + path + '/dir_{}_mip2_L.jpg'.format(i)
+            L_path = self.dataroot + '/results/' + path + '/dir_{}_mip2_L.jpg'.format(i)
             L.append(Image.open(L_path).convert('RGB'))
 
-            SH_path = self.dataroot + '/result/' + path + '/dir_{}_mip2_SH.jpg'.format(i)
+            SH_path = self.dataroot + '/results/' + path + '/dir_{}_mip2_SH.jpg'.format(i)
             gt_SH.append(Image.open(SH_path).convert('RGB'))
 
 
