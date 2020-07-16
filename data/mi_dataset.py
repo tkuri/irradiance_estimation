@@ -101,7 +101,7 @@ class MiDataset(BaseDataset):
             gt_SH[i] = SH_transform(gt_SH[i])
             L[i] = L_transform(L[i])
 
-        mask = torch.ones_like(L[0])
+        mask = torch.ones_like(gt_SH[0])
         result = {}
         res = []
         for i in range(25):
