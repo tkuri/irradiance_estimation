@@ -29,8 +29,11 @@ from util import util
 #     print('images_list:', images_list)
 #     return images_list, lights_list, SHs_list
 
-def MI_make_dataset(list_dir):
-    file_name = list_dir + "list_sub4.txt"
+def MI_make_dataset(list_dir, phase='train'):
+    if phase=='train':
+        file_name = list_dir + "list_sub4.txt"
+    else:
+        file_name = list_dir + "list_sub2.txt"
     dir_list = pickle.load( open( file_name, "rb" ) )
 
     print('images_list:', dir_list)

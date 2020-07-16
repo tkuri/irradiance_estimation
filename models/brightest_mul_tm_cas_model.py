@@ -106,7 +106,7 @@ class BrightestMulTmCasModel(BaseModel):
         self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
         # self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
-        self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.L.size(-2), self.L.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
+        self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.input.size(-2), self.input.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
 
     def ltm_module(self):
