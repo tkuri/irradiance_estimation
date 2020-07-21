@@ -200,7 +200,8 @@ class MiDataset(BaseDataset):
         # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
         L_cat = torch.cat([torch.unsqueeze(L[i], 0) for i in range(25)], dim=0)
-        L_stat_cat  = torch.cat([torch.unsqueeze(L_stat[i], 0) for i in range(25)], dim=0)
+        # L_stat_cat  = torch.cat([torch.unsqueeze(L_stat[i], 0) for i in range(25)], dim=0)
+        L_stat_cat  = torch.cat([L_stat[i] for i in range(25)], dim=0)
         
         result['A'] = srgb_img_cat
         result['gt_SH'] = gt_SH_cat
