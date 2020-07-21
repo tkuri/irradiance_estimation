@@ -56,9 +56,10 @@ def coordinate_map(height=256, width=256):
 def create_probe_mask(xx, yy, xy):
     mask = {}
 
-    first_cond = (xy <= 1/6)
-    second_cond = (xy > 1/6) & (xy <= 1/3)
-    third_cond = (xy > 1/3) & (xy <= 1/2)
+    first_cond = (xy <= 1/8)
+    second_cond = (xy > 1/8) & (xy <= 2/8)
+    third_cond = (xy > 2/8) & (xy <= 3/8)
+    fourth_cond = (xy > 3/8) & (xy <= 4/8)
 
     upright = (xx > 0) & (yy > 0)
     downright = (xx > 0) & (yy < 0)
@@ -66,19 +67,33 @@ def create_probe_mask(xx, yy, xy):
     downleft = (xx < 0) & (yy < 0)
 
     mask['0'] = first_cond
-    mask['1_0'] = second_cond & upright
-    mask['1_1'] = second_cond & downright
-    mask['1_2'] = second_cond & downleft
-    mask['1_3'] = second_cond & upleft
 
-    mask['2_0'] = second_cond & upright & (yy >= xx)
-    mask['2_1'] = second_cond & upright & (yy < xx)
-    mask['2_2'] = second_cond & downright & (yy >= -xx)
-    mask['2_3'] = second_cond & downright & (yy < -xx)
-    mask['2_4'] = second_cond & downleft & (yy < xx)
-    mask['2_5'] = second_cond & downleft & (yy >= xx)
-    mask['2_6'] = second_cond & upleft & (yy < -xx)
-    mask['2_7'] = second_cond & upleft & (yy >= -xx)
+    mask['1_0'] = second_cond & upright & (yy >= xx)
+    mask['1_1'] = second_cond & upright & (yy < xx)
+    mask['1_2'] = second_cond & downright & (yy >= -xx)
+    mask['1_3'] = second_cond & downright & (yy < -xx)
+    mask['1_4'] = second_cond & downleft & (yy < xx)
+    mask['1_5'] = second_cond & downleft & (yy >= xx)
+    mask['1_6'] = second_cond & upleft & (yy < -xx)
+    mask['1_7'] = second_cond & upleft & (yy >= -xx)
+
+    mask['2_0'] = third_cond & upright & (yy >= xx)
+    mask['2_1'] = third_cond & upright & (yy < xx)
+    mask['2_2'] = third_cond & downright & (yy >= -xx)
+    mask['2_3'] = third_cond & downright & (yy < -xx)
+    mask['2_4'] = third_cond & downleft & (yy < xx)
+    mask['2_5'] = third_cond & downleft & (yy >= xx)
+    mask['2_6'] = third_cond & upleft & (yy < -xx)
+    mask['2_7'] = third_cond & upleft & (yy >= -xx)
+
+    mask['3_0'] = fourth_cond & upright & (yy >= xx)
+    mask['3_1'] = fourth_cond & upright & (yy < xx)
+    mask['3_2'] = fourth_cond & downright & (yy >= -xx)
+    mask['3_3'] = fourth_cond & downright & (yy < -xx)
+    mask['3_4'] = fourth_cond & downleft & (yy < xx)
+    mask['3_5'] = fourth_cond & downleft & (yy >= xx)
+    mask['3_6'] = fourth_cond & upleft & (yy < -xx)
+    mask['3_7'] = fourth_cond & upleft & (yy >= -xx)
 
     return mask
 
@@ -89,11 +104,14 @@ def calc_probe_stat(L_np):
     L_stat = []
     L_stat.append(np.mean(L_np[mask['0']>0.5]))
 
-    for i in range(4):
+    for i in range(8):
         L_stat.append(np.mean(L_np[mask['1_{}'.format(i)]>0.5]))
 
     for i in range(8):
         L_stat.append(np.mean(L_np[mask['2_{}'.format(i)]>0.5]))
+
+    for i in range(8):
+        L_stat.append(np.mean(L_np[mask['3_{}'.format(i)]>0.5]))
 
     L_stat_np = np.array(L_stat)
 
