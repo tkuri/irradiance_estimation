@@ -95,7 +95,9 @@ def calc_probe_stat(L_np):
     for i in range(8):
         L_stat.append(np.mean(L_np[mask['2_{}'.format(i)]>0.5]))
 
-    return L_stat
+    L_stat_np = np.array(L_stat)
+
+    return L_stat_np
 
 class MiDataset(BaseDataset):
     """
@@ -151,15 +153,17 @@ class MiDataset(BaseDataset):
             SH_path = self.dataroot + '/results/' + path + '/dir_{}_mip2_SH.png'.format(i)
             gt_SH.append(Image.open(SH_path).convert('RGB'))
 
-        result['L_stat'] = []
-        for i in range(25):
-            result['L_stat'].append(calc_probe_stat(np.asarray(L[i])/256.0))
-            
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img[0].size)
         srgb_img_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
         L_transform = get_transform(self.opt, transform_params, grayscale=True, convert=False)
         SH_transform = get_transform(self.opt, transform_params, grayscale=False, convert=False)
+
+        L_stat = []
+        for i in range(25):
+            L_stat_np = calc_probe_stat(np.asarray(L[i]))
+            L_stat_pil = Image.fromarray(L_stat_np.uint8(imgArray))
+            L_stat.append(L_transform(L_stat_pil[i]))            
 
         for i in range(25):
             srgb_img[i] = srgb_img_transform(srgb_img[i])
@@ -178,10 +182,12 @@ class MiDataset(BaseDataset):
         # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
         L_cat = torch.cat([torch.unsqueeze(L[i], 0) for i in range(25)], dim=0)
+        L_stat_cat  = torch.cat([torch.unsqueeze(L_stat[i], 0) for i in range(25)], dim=0)
         
         result['A'] = srgb_img_cat
         result['gt_SH'] = gt_SH_cat
         result['L'] = L_cat
+        result['L_stat'] = L_stat_cat
         result['mask'] = torch.unsqueeze(mask, 0)
 
         result['gt_BA'] = gt_BA_cat
