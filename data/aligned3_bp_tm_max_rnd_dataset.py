@@ -75,6 +75,11 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
             gt_SH[i] = B_transform(gt_SH[i])
             L[i] = C_transform(L[i])
 
+        L_stat = []
+        for i in range(25):
+            L_stat_tmp = F.interpolate(L[i], (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
+            L_stat.append(L_stat_tmp.view(self.light_res**2, 1))
+
         mask = torch.ones_like(L[0])
         result = {}
         res = []
@@ -100,10 +105,12 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
         L_cat = torch.cat([torch.unsqueeze(L[i], 0) for i in range(25)], dim=0)
+        L_stat_cat = torch.cat([torch.unsqueeze(L_stat_cat[i], 0) for i in range(25)], dim=0)
         
         result['A'] = srgb_img_cat
         result['gt_SH'] = gt_SH_cat
         result['L'] = L_cat
+        result['L_stat'] = L_stat_cat
         result['mask'] = torch.unsqueeze(mask, 0)
 
         result['gt_BA'] = gt_BA_cat
