@@ -83,7 +83,7 @@ def create_probe_mask(xx, yy, xy):
     return mask
 
 def calc_probe_stat(L_np):
-    xx, yy, xy = coordinate_map(L.np.shape[0], L.np.shape[1])
+    xx, yy, xy = coordinate_map(L_np.shape[0], L_np.shape[1])
     mask = create_probe_mask(xx, yy, xy)
 
     L_stat = []
