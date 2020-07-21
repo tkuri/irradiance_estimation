@@ -53,9 +53,13 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         gt_SH = []
         L = []
 
+        tidx_list = list(range(25))
+        random.shuffle(tidx_list)
+
         # tidx = 12
         for i in range(25):
-            tidx = random.randrange(25)
+            # tidx = random.randrange(25)
+            tidx = tidx_list[i]
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
             srgb_img.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
             gt_SH.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
