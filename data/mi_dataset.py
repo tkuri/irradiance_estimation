@@ -90,10 +90,10 @@ def calc_probe_stat(L_np):
     L_stat.append(np.mean(L_np[mask['0']>0.5]))
 
     for i in range(4):
-    L_stat.append(np.mean(L_np[mask['1_{}'.format(i)]>0.5]))
+        L_stat.append(np.mean(L_np[mask['1_{}'.format(i)]>0.5]))
 
     for i in range(8):
-    L_stat.append(np.mean(L_np[mask['2_{}'.format(i)]>0.5]))
+        L_stat.append(np.mean(L_np[mask['2_{}'.format(i)]>0.5]))
 
     return L_stat
 
