@@ -97,7 +97,7 @@ def calc_probe_stat(L_np):
 
     L_stat_np = np.array(L_stat)
 
-    return L_stat_np[np.newaxis, :]
+    return L_stat_np
 
 class MiDataset(BaseDataset):
     """
@@ -163,7 +163,7 @@ class MiDataset(BaseDataset):
         for i in range(25):
             L_stat_np = calc_probe_stat(np.asarray(L[i]))
             L_stat_pil = Image.fromarray(np.uint8(L_stat_np))
-            L_stat.append(L_transform(L_stat_pil[i]))            
+            L_stat.append(L_transform(L_stat_pil))            
 
         for i in range(25):
             srgb_img[i] = srgb_img_transform(srgb_img[i])
