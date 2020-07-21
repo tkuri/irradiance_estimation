@@ -108,13 +108,17 @@ class BrightestMulTmCasModel(BaseModel):
         self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.input.size(-2), self.input.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
         self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
+        self.L_stat = torch.squeeze(input['L_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
     def ltm_module(self):
         ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
         # ltm = self.netG1(self.input) # [25, 25, 256, 256]
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
-        ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
+        # ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
+        print('L_stat:', L.stat)
+        print('L_stat.shape:', L.stat.shape)
+        ltm = torch.matmul(ltm, self.L_stat) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
         ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
         ltm = (ltm - 0.5) / 0.5
         ltm = torch.clamp(ltm, min=-1.0, max=1.0)
