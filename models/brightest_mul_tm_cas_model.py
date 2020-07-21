@@ -116,8 +116,8 @@ class BrightestMulTmCasModel(BaseModel):
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
         # ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
-        print('L_stat:', L.stat)
-        print('L_stat.shape:', L.stat.shape)
+        print('L_stat:', L_stat)
+        print('L_stat.shape:', L_stat.shape)
         ltm = torch.matmul(ltm, self.L_stat) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
         ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
         ltm = (ltm - 0.5) / 0.5
