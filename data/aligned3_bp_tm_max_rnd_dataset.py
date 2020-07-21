@@ -4,6 +4,7 @@ from data.image_folder import make_dataset
 from PIL import Image, ImageOps
 import torch
 import random
+from torch.nn import functional as F
 
 class Aligned3BpTmMaxRndDataset(BaseDataset):
     """A dataset class for paired image dataset.
