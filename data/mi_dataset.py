@@ -162,7 +162,7 @@ class MiDataset(BaseDataset):
         L_stat = []
         for i in range(25):
             L_stat_np = calc_probe_stat(np.asarray(L[i]))
-            L_stat_pil = Image.fromarray(L_stat_np.uint8(imgArray))
+            L_stat_pil = Image.fromarray(np.uint8(L_stat_np))
             L_stat.append(L_transform(L_stat_pil[i]))            
 
         for i in range(25):
