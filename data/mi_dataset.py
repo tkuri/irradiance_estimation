@@ -33,9 +33,9 @@ import torchvision.transforms as transforms
 
 def MI_make_dataset(list_dir, phase='train'):
     if phase=='train':
-        file_name = list_dir + "list_sub4.txt"
+        file_name = list_dir + "list_sub_train400.txt"
     else:
-        file_name = list_dir + "list_sub2.txt"
+        file_name = list_dir + "list_sub_test100.txt"
     dir_list = pickle.load( open( file_name, "rb" ) )
 
     print('images_list:', dir_list)
