@@ -138,6 +138,8 @@ class MiDataset(BaseDataset):
         srgb_img = []
         L = []
         gt_SH = []
+        result = {}
+
         path = self.img_dirs[index]
         for i in range(25):
             img_path = self.dataroot + '/results/' + path + '/dir_{}_mip2_input.png'.format(i)
@@ -165,7 +167,6 @@ class MiDataset(BaseDataset):
             L[i] = L_transform(L[i])
 
         mask = torch.ones_like(L[0])
-        result = {}
         res = []
         for i in range(25):
             res_tmp = make_bp_data(srgb_img[i], gt_SH[i], mask, self.opt)
