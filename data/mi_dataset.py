@@ -181,7 +181,7 @@ class MiDataset(BaseDataset):
         for i in range(25):
             L_stat_np = calc_probe_stat(np.asarray(L[i]))
             L_stat_pil = Image.fromarray(np.uint8(L_stat_np))
-            L_stat.append(normalize(toTensor=True)(L_stat_pil))            
+            L_stat.append(normalize(grayscale=True, toTensor=True)(L_stat_pil))            
 
         for i in range(25):
             srgb_img[i] = srgb_img_transform(srgb_img[i])
