@@ -115,7 +115,7 @@ def calc_probe_stat(L_np):
 
     L_stat_np = np.array(L_stat)
 
-    return L_stat_np[np.newaxis, :]
+    return L_stat_np[:, np.newaxis]
 
 class MiDataset(BaseDataset):
     """
