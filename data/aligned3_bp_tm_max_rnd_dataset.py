@@ -78,8 +78,8 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
 
         L_stat = []
         for i in range(25):
-            L_stat_tmp = F.interpolate(L[i], (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
-            L_stat.append(L_stat_tmp.view(self.light_res**2, 1))
+            L_stat_tmp = F.interpolate(L[i].unsqueeze(0), (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
+            L_stat.append(L_stat_tmp.squeeze(0).view(self.light_res**2, 1))
 
         mask = torch.ones_like(L[0])
         result = {}
