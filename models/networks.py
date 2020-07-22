@@ -168,6 +168,8 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator2Decoder(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256_latent':
         net = UnetLatentGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif netG == 'unet_256_latent_inL':
+        net = UnetLatentInLGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -1068,6 +1070,137 @@ class UnetLatentSkipConnectionBlock(nn.Module):
             y = torch.cat([y, x], 1)
 
             return y, color_s
+
+class UnetLatentInLGenerator(nn.Module):
+    def __init__(self, input_nc, output_nc, num_downs, ngf=64,
+                 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+        super(UnetLatentInLGenerator, self).__init__()
+        self.gpu_ids = gpu_ids
+
+        # currently support only input_nc == output_nc
+        # assert(input_nc == output_nc)
+
+        # construct unet structure
+        unet_block = UnetLatentInLSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, innermost=True)
+        for i in range(num_downs - 5):
+            unet_block = UnetLatentInLSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+        unet_block = UnetLatentInLSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentInLSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentInLSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetLatentInLSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
+
+        self.model = unet_block
+
+    def forward(self, input):
+        return self.model(input)
+
+# Defines the submodule with skip connection.
+# X -------------------identity---------------------- X
+#   |-- downsampling -- |submodule| -- upsampling --|
+class UnetLatentInLSkipConnectionBlock(nn.Module):
+    def __init__(self, outer_nc, inner_nc, input_nc=None,
+                 submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False):
+        super(UnetLatentInLSkipConnectionBlock, self).__init__()
+        self.outermost = outermost
+        self.innermost = innermost
+        if input_nc is None:
+            input_nc = outer_nc
+        # downconv = nn.Conv2d(outer_nc, inner_nc, kernel_size=4,
+        #                      stride=2, padding=1)
+        downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
+                             stride=2, padding=1)
+        downrelu = nn.LeakyReLU(0.2, False)
+        downnorm = norm_layer(inner_nc, affine=True)
+        uprelu = nn.ReLU(False)
+        upnorm = norm_layer(outer_nc, affine=True)
+
+        if outermost:
+            down = [downconv]
+
+            # Shading (1ch out)
+            upconv = nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1)
+
+            # upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2 , outer_nc,
+            #                             kernel_size=4, stride=2,
+            #                             padding=1)]
+
+            if last_relu:
+                upconv_model = [uprelu, upconv, uprelu]
+            else:
+                upconv_model = [uprelu, upconv, nn.Tanh()]
+
+        elif innermost:
+
+            down = [downrelu, downconv]
+            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            #  for rgb shading 
+            int_conv = [nn.AdaptiveAvgPool2d((1,1)) , nn.ReLU(False),  nn.Conv2d(inner_nc, int(inner_nc/2), kernel_size=3, stride=1, padding=1), nn.ReLU(False)]
+            fc = [nn.Linear(256, 3)]
+            self.int_conv = nn.Sequential(* int_conv) 
+            self.fc = nn.Sequential(* fc)
+
+            self.L_fc = [nn.Linear(25, 64), nn.Tanh(),
+                         nn.Linear(64, 128), nn.Tanh(),
+                         nn.Linear(128, 256), nn.Tanh(),                         
+                         nn.Linear(256, 512), nn.Tanh()                 
+                         ]
+
+        else:
+
+            down = [downrelu, downconv, downnorm]
+            # up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+            #                             kernel_size=4, stride=2,
+            #                             padding=1), norm_layer(outer_nc, affine=True)]
+            up = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+
+            if use_dropout:
+                upconv_model = up + [nn.Dropout(0.5)]
+            else:
+                upconv_model = up
+        
+
+        self.downconv_model = nn.Sequential(*down)
+        self.submodule = submodule
+        self.upconv_model = nn.Sequential(*upconv_model)
+
+    def forward(self, x, L):
+
+        if self.outermost:
+            down_x = self.downconv_model(x)
+
+            y, color_s = self.submodule.forward(down_x)
+            y = self.upconv_model(y)
+
+            return y, color_s
+
+        elif self.innermost:
+            down_output = self.downconv_model(x)
+            color_s = self.int_conv(down_output)
+            color_s = color_s.view(color_s.size(0), -1)
+            color_s  = self.fc(color_s)
+
+            Lfc = self.L_fc(L)
+            latent = torch.cat([down_output, Lfc], 1)
+            y = self.upconv_model(latent)
+
+            # y = self.upconv_model(down_output)
+            y = torch.cat([y, x], 1)
+
+            return y, color_s
+        else:
+            down_x = self.downconv_model(x)
+            y, color_s = self.submodule.forward(down_x)
+            y = self.upconv_model(y)
+            y = torch.cat([y, x], 1)
+
+            return y, color_s
+
 
 
 class UnetGenerator2Decoder(nn.Module):
