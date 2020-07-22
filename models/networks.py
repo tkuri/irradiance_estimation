@@ -1091,8 +1091,8 @@ class UnetLatentInLGenerator(nn.Module):
 
         self.model = unet_block
 
-    def forward(self, input):
-        return self.model(input)
+    def forward(self, input, L):
+        return self.model(input, L)
 
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
