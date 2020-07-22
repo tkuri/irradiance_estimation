@@ -67,7 +67,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
 
             Lsrc = ImageOps.flip(ABC.crop((w3*2, h25*tidx, w, h25*(tidx+1))))
             Lsrc = Lsrc.convert("L")
-            _, vmax = Ltmp.getextrema()
+            _, vmax = Lsrc.getextrema()
             Lsrc = Lsrc.point(lambda x: 0 if x < vmax else 255) 
             Ls.append(Lsrc)
 
