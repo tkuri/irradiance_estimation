@@ -52,9 +52,13 @@ class Aligned3TmMaxRndDataset(BaseDataset):
         B = []
         C = []
 
+        tidx_list = list(range(25))
+        random.shuffle(tidx_list)
+
         # tidx = 12
         for i in range(25):
-            tidx = random.randrange(25)
+            # tidx = random.randrange(25)
+            tidx = tidx_list[i]
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
             A.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
             B.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
