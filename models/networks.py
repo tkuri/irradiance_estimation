@@ -1144,9 +1144,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
             self.fc = nn.Sequential(* fc)
 
             L_fc = [nn.Linear(25, 64), nn.Tanh(),
-                         nn.Linear(64, 128), nn.Tanh(),
-                         nn.Linear(128, 256), nn.Tanh(),                         
-                         nn.Linear(256, 512), nn.Tanh()                 
+                         nn.Linear(64, 128), nn.Tanh()
                          ]
             self.L_fc = nn.Sequential(* L_fc)
 
