@@ -1185,6 +1185,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
             color_s  = self.fc(color_s)
 
             print('L.shape', L.shape)
+            print('down_output.shape', down_output.shape)
             Lfc = self.L_fc(L)
             latent = torch.cat([down_output, Lfc], 1)
             y = self.upconv_model(latent)
