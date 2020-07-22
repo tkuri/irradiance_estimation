@@ -1149,7 +1149,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
             self.L_fc = nn.Sequential(* L_fc)
             L_up = [nn.ReLU(False), nn.ConvTranspose2d(128, 128,
                                         kernel_size=4, stride=2,
-                                        padding=1), norm_layer(outer_nc, affine=True)]
+                                        padding=1), norm_layer(128, affine=True)]
             self.L_up = nn.Sequential(* L_up)
 
         else:
