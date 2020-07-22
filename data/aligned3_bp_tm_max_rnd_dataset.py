@@ -51,7 +51,8 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         w3 = int(w / 3)
         srgb_img = []
         gt_SH = []
-        L = []
+        Ls = []
+        Lt = []
 
         tidx_list = list(range(25))
         random.shuffle(tidx_list)
@@ -63,11 +64,18 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
             # A.append(ABC.crop((0, h25*i, w3, h25*(i+1))))
             srgb_img.append(ABC.crop((0, h25*tidx, w3, h25*(tidx+1))))
             gt_SH.append(ABC.crop((w3, h25*i, w3*2, h25*(i+1))))
-            Ltmp = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
-            Ltmp = Ltmp.convert("L")
+
+            Lsrc = ImageOps.flip(ABC.crop((w3*2, h25*tidx, w, h25*(tidx+1))))
+            Lsrc = Lsrc.convert("L")
             _, vmax = Ltmp.getextrema()
-            Ltmp = Ltmp.point(lambda x: 0 if x < vmax else 255) 
-            L.append(Ltmp)
+            Lsrc = Lsrc.point(lambda x: 0 if x < vmax else 255) 
+            Ls.append(Lsrc)
+
+            Ltar = ImageOps.flip(ABC.crop((w3*2, h25*i, w, h25*(i+1))))
+            Ltar = Ltar.convert("L")
+            _, vmax = Ltar.getextrema()
+            Ltar = Ltar.point(lambda x: 0 if x < vmax else 255) 
+            Lt.append(Ltar)
 
         # apply the same transform to both A and B
         transform_params = get_params(self.opt, srgb_img[0].size)
@@ -78,12 +86,16 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         for i in range(25):
             srgb_img[i] = A_transform(srgb_img[i])
             gt_SH[i] = B_transform(gt_SH[i])
-            L[i] = C_transform(L[i])
+            Ls[i] = C_transform(Ls[i])
+            Lt[i] = C_transform(Lt[i])
 
-        L_stat = []
+        Ls_stat = []
+        Lt_stat = []
         for i in range(25):
-            L_stat_tmp = F.interpolate(L[i].unsqueeze(0), (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
-            L_stat.append(L_stat_tmp.squeeze(0).view(self.opt.light_res**2, 1))
+            Ls_stat_tmp = F.interpolate(Ls[i].unsqueeze(0), (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
+            Ls_stat.append(Ls_stat_tmp.squeeze(0).view(self.opt.light_res**2, 1))
+            Lt_stat_tmp = F.interpolate(Lt[i].unsqueeze(0), (self.opt.light_res, self.opt.light_res), mode='bilinear', align_corners=False)
+            Lt_stat.append(Lt_stat_tmp.squeeze(0).view(self.opt.light_res**2, 1))
 
         mask = torch.ones_like(L[0])
         result = {}
@@ -92,30 +104,22 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
             res_tmp = make_bp_data(srgb_img[i], gt_SH[i], mask, self.opt)
             res.append(res_tmp)
 
-        # srgb_img_cat = srgb_img[0]
-        # gt_SH_cat = gt_SH[0]
-        # L_cat = L[0]
-        # gt_BA_cat = res[0]['gt_BA']
-        # gt_BP_cat = res[0]['gt_BP']
-        # gt_BC_cat = res[0]['gt_BC']
-
-        # for i in range(1, 25):
-        #     srgb_img_cat = torch.cat([srgb_img_cat, srgb_img[i]])
-        #     gt_SH_cat = torch.cat([gt_SH_cat, gt_SH[i]])
-        #     L_cat = torch.cat([L_cat, L[i]])
-
         srgb_img_cat = torch.cat([res[i]['A'] for i in range(25)], dim=0)
         gt_SH_cat = torch.cat([res[i]['gt_SH'] for i in range(25)], dim=0)
         gt_BA_cat = torch.cat([res[i]['gt_BA'] for i in range(25)], dim=0)
         # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
-        L_cat = torch.cat([torch.unsqueeze(L[i], 0) for i in range(25)], dim=0)
-        L_stat_cat = torch.cat([torch.unsqueeze(L_stat[i], 0) for i in range(25)], dim=0)
+
+        # Ls_cat = torch.cat([torch.unsqueeze(Ls[i], 0) for i in range(25)], dim=0)
+        Ls_stat_cat = torch.cat([torch.unsqueeze(Ls_stat[i], 0) for i in range(25)], dim=0)
+        # Lt_cat = torch.cat([torch.unsqueeze(Ls[i], 0) for i in range(25)], dim=0)
+        Lt_stat_cat = torch.cat([torch.unsqueeze(Ls_stat[i], 0) for i in range(25)], dim=0)
         
         result['A'] = srgb_img_cat
         result['gt_SH'] = gt_SH_cat
-        result['L'] = L_cat
-        result['L_stat'] = L_stat_cat
+        # result['L'] = Lt_cat
+        result['Ls_stat'] = Ls_stat_cat
+        result['Lt_stat'] = Lt_stat_cat
         result['mask'] = torch.unsqueeze(mask, 0)
 
         result['gt_BA'] = gt_BA_cat
@@ -127,18 +131,6 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         
         result['A_paths'] = ABC_path
 
-        # res['L'] = torch.unsqueeze(L, 0)
-        # res['A_paths'] = ABC_path
-
-        # Acat = torch.unsqueeze(A[0], 0)
-        # Bcat = torch.unsqueeze(B[0], 0)
-        # Ccat = torch.unsqueeze(C[0], 0)
-        # for i in range(1,25):
-        #     Acat = torch.cat([Acat, torch.unsqueeze(A[i], 0)], dim=0) # [25, 3, 256, 256]
-        #     Bcat = torch.cat([Bcat, torch.unsqueeze(B[i], 0)], dim=0)
-        #     Ccat = torch.cat([Ccat, torch.unsqueeze(C[i], 0)], dim=0)
-        
-        # return {'A': Acat, 'B': Bcat, 'C': Ccat, 'A_paths': ABC_path, 'B_paths': ABC_path, 'C_paths': ABC_path}
         return result
 
     def __len__(self):
