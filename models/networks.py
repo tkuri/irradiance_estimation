@@ -1134,7 +1134,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
         elif innermost:
 
             down = [downrelu, downconv]
-            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc, outer_nc,
+            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
                                         kernel_size=4, stride=2,
                                         padding=1), norm_layer(outer_nc, affine=True)]
             #  for rgb shading 
