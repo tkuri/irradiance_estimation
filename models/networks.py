@@ -1134,7 +1134,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
         elif innermost:
 
             down = [downrelu, downconv]
-            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+            upconv_model = [nn.ReLU(False), nn.ConvTranspose2d(inner_nc + 128, outer_nc,
                                         kernel_size=4, stride=2,
                                         padding=1), norm_layer(outer_nc, affine=True)]
             #  for rgb shading 
@@ -1147,6 +1147,10 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
                          nn.Linear(64, 128), nn.Tanh()
                          ]
             self.L_fc = nn.Sequential(* L_fc)
+            L_up = [nn.ReLU(False), nn.ConvTranspose2d(128, 128,
+                                        kernel_size=4, stride=2,
+                                        padding=1), norm_layer(outer_nc, affine=True)]
+            self.L_up = nn.Sequential(* L_up)
 
         else:
 
@@ -1184,10 +1188,12 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
             color_s = color_s.view(color_s.size(0), -1)
             color_s  = self.fc(color_s)
 
-            print('L.shape', L.shape)
-            print('down_output.shape', down_output.shape)
-            Lfc = self.L_fc(L)
-            latent = torch.cat([down_output, Lfc], 1)
+            # print('L.shape', L.shape)
+            # print('down_output.shape', down_output.shape)
+            Lfc = self.L_fc(L) # [bs, 128]
+            Lfc = Lfc.view(Lfc.size(0), Lfc.size(1), 1, 1) # [bs, 128, 1, 1]
+            Lup = self.L_up(Lfc) # [bs, 128, 2, 2]
+            latent = torch.cat([down_output, Lup], 1)
             y = self.upconv_model(latent)
 
             # y = self.upconv_model(down_output)
