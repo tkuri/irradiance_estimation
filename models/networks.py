@@ -1174,7 +1174,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
         if self.outermost:
             down_x = self.downconv_model(x)
 
-            y, color_s = self.submodule.forward(down_x)
+            y, color_s = self.submodule.forward(down_x, L)
             y = self.upconv_model(y)
 
             return y, color_s
@@ -1195,7 +1195,7 @@ class UnetLatentInLSkipConnectionBlock(nn.Module):
             return y, color_s
         else:
             down_x = self.downconv_model(x)
-            y, color_s = self.submodule.forward(down_x)
+            y, color_s = self.submodule.forward(down_x, L)
             y = self.upconv_model(y)
             y = torch.cat([y, x], 1)
 
