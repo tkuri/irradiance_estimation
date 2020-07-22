@@ -108,7 +108,8 @@ class BrightestMulTmCasModel(BaseModel):
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
     def ltm_module(self):
-        ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+        # ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+        ltm, color = self.netG1(self.input, self.Ls_stat) # [25, 25, 256, 256]
         # ltm = self.netG1(self.input) # [25, 25, 256, 256]
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
