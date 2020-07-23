@@ -66,11 +66,14 @@ class BrightestMulTmCasModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
 
-        self.loss_names = ['G_SH', 'G_BA', 'G_BC']
-        self.visual_names = ['input', 'pr_BA', 'gt_BA', 'pr_SH', 'gt_SH']
+        self.loss_names = ['G_SH']
+        self.visual_names = ['input', 'pr_SH', 'gt_SH']
+        self.model_names = ['G1']
 
-        # self.model_names = ['G1', 'G2', 'G3']
-        self.model_names = ['G1', 'G3']
+        if not self.opt.no_brightness:
+            self.loss_names += ['G_BA', 'G_BC']
+            self.visual_names += ['pr_BA', 'gt_BA']
+            self.model_names += ['G3']
 
         self.light_res = opt.light_res
 
