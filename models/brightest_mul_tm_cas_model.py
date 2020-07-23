@@ -51,8 +51,9 @@ class BrightestMulTmCasModel(BaseModel):
         parser.add_argument('--in_Ls', action='store_true', help='Input Ls as Input.')
         parser.add_argument('--in_Lt', action='store_true', help='Input Lt as Input.')
         parser.add_argument('--LTM', action='store_true', help='Use LTM.')
+        parser.add_argument('--no_latent_color', action='store_true', help='Not to extract latent color. (Not to use with LTM)')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
-
+        
         return parser
 
     def __init__(self, opt):
@@ -89,7 +90,11 @@ class BrightestMulTmCasModel(BaseModel):
             self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         else:
-            self.netG1 = networks.define_G(input_nc, 1, opt.ngf, netG1name, opt.norm,
+            if opt.no_latent_color:
+                output_nc = 3
+            else:
+                output_nc = 1
+            self.netG1 = networks.define_G(input_nc, output_nc, opt.ngf, netG1name, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
 
@@ -181,12 +186,12 @@ class BrightestMulTmCasModel(BaseModel):
         else:
             self.pr_SH, color = self.netG1_module()
 
-        # self.pr_SH = self.ltm_module()
-        self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
-        self.pr_SH = self.pr_SH * 0.5 + 0.5
-        color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
-        self.pr_SH = self.pr_SH * color
-        self.pr_SH = self.pr_SH * 2.0 - 1.0
+        if not self.opt.no_latent_color:
+            self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
+            self.pr_SH = self.pr_SH * 0.5 + 0.5
+            color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
+            self.pr_SH = self.pr_SH * color
+            self.pr_SH = self.pr_SH * 2.0 - 1.0
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
