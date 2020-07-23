@@ -44,7 +44,7 @@ class Aligned3BpTmMaxRndDataset(BaseDataset):
         """
         # read a image given a random integer index
         ABC_path = self.ABC_paths[index]
-        print('ABC_path:', ABC_path)
+        # print('ABC_path:', ABC_path)
         ABC = Image.open(ABC_path).convert('RGB')
         # split AB image into A and B
         w, h = ABC.size
