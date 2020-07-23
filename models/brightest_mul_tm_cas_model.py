@@ -208,7 +208,7 @@ class BrightestMulTmCasModel(BaseModel):
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
-        if not opt.no_brightness:
+        if not self.opt.no_brightness:
             self.pr_BC, self.pr_BA = self.brightness_module()
 
     def backward_G(self):
