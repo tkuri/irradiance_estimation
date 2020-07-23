@@ -116,7 +116,7 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
     return net
 
 
-def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, last_relu=False, gpu_ids=[]):
     """Create a generator
 
     Parameters:
@@ -167,9 +167,9 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
     elif netG == 'unet_256_2decoder':
         net = UnetGenerator2Decoder(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256_latent':
-        net = UnetLatentGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        net = UnetLatentGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout, last_relu=last_relu)
     elif netG == 'unet_256_latent_inL':
-        net = UnetLatentInLGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        net = UnetLatentInLGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout, last_relu=last_relu)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -954,7 +954,7 @@ class MultiUnetSkipConnectionBlock(nn.Module):
 
 class UnetLatentGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, num_downs, ngf=64,
-                 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+                 norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False, gpu_ids=[]):
         super(UnetLatentGenerator, self).__init__()
         self.gpu_ids = gpu_ids
 
@@ -968,7 +968,7 @@ class UnetLatentGenerator(nn.Module):
         unet_block = UnetLatentSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
         unet_block = UnetLatentSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
         unet_block = UnetLatentSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-        unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
+        unet_block = UnetLatentSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=last_relu)
 
         self.model = unet_block
 
@@ -1073,7 +1073,7 @@ class UnetLatentSkipConnectionBlock(nn.Module):
 
 class UnetLatentInLGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, num_downs, ngf=64,
-                 norm_layer=nn.BatchNorm2d, use_dropout=False, gpu_ids=[]):
+                 norm_layer=nn.BatchNorm2d, use_dropout=False, last_relu=False, gpu_ids=[]):
         super(UnetLatentInLGenerator, self).__init__()
         self.gpu_ids = gpu_ids
 
@@ -1087,7 +1087,7 @@ class UnetLatentInLGenerator(nn.Module):
         unet_block = UnetLatentInLSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
         unet_block = UnetLatentInLSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
         unet_block = UnetLatentInLSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-        unet_block = UnetLatentInLSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=True)
+        unet_block = UnetLatentInLSkipConnectionBlock(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer, last_relu=False)
 
         self.model = unet_block
 

@@ -90,14 +90,14 @@ class BrightestMulTmCasModel(BaseModel):
 
         if opt.LTM:
             self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
-                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, True, self.gpu_ids)
         else:
             if opt.no_latent_color:
                 output_nc = 3
             else:
                 output_nc = 1
             self.netG1 = networks.define_G(input_nc, output_nc, opt.ngf, netG1name, opt.norm,
-                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, False, self.gpu_ids)
 
 
         g3_input_nc = opt.input_nc
