@@ -47,6 +47,9 @@ class BrightestMulTmCasModel(BaseModel):
             # parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
         parser.add_argument('--latent_Ls', action='store_true', help='Input Ls as latent.')
+        parser.add_argument('--latent_Lt', action='store_true', help='Input Lt as latent.')
+        parser.add_argument('--in_Ls', action='store_true', help='Input Ls as Input.')
+        parser.add_argument('--in_Lt', action='store_true', help='Input Lt as Input.')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
 
         return parser
@@ -70,12 +73,18 @@ class BrightestMulTmCasModel(BaseModel):
 
         self.light_res = opt.light_res
 
-        if opt.latent_Ls:
+        if opt.latent_Ls or opt.latent_Lt:
             netG1name = 'unet_256_latent_inL'
         else:
             netG1name = 'unet_256_latent'
 
-        self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
+        input_nc = opt.input_nc
+        if opt.in_Ls:
+            input_nc += 1
+        if opt.in_Lt:
+            input_nc += 1
+
+        self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
                                     not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
 
@@ -106,7 +115,8 @@ class BrightestMulTmCasModel(BaseModel):
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         # self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
-        # self.L = torch.squeeze(input['L'],0).to(self.device) # [bn, 1, 256, 256]
+        self.Ls = torch.squeeze(input['Ls'],0).to(self.device) # [bn, 1, 256, 256]
+        self.Lt = torch.squeeze(input['Lt'],0).to(self.device) # [bn, 1, 256, 256]
         # self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
         # self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.input.size(-2), self.input.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
         # self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
@@ -114,10 +124,18 @@ class BrightestMulTmCasModel(BaseModel):
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
     def ltm_module(self):
+        input_cat = self.input
+        if self.opt.in_Ls:
+            input_cat = torch.cat((input_cat, self.Ls), 1)
+        if self.opt.in_Lt:
+            input_cat = torch.cat((input_cat, self.Lt), 1)
+
         if self.opt.latent_Ls:
-            ltm, color = self.netG1(self.input, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+            ltm, color = self.netG1(input_cat, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+        elif self.opt.latent_Lt:    
+            ltm, color = self.netG1(input_cat, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
         else:
-            ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+            ltm, color = self.netG1(input_cat) # [25, 25, 256, 256]
 
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
