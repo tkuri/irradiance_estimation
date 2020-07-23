@@ -220,13 +220,13 @@ class MiRndDataset(BaseDataset):
         # gt_BP_cat = torch.cat([res[i]['gt_BP'] for i in range(25)], dim=0)
         # gt_BC_cat = torch.cat([res[i]['gt_BC'] for i in range(25)], dim=0)
 
-        # Ls_cat = torch.cat([torch.unsqueeze(Ls[i], 0) for i in range(25)], dim=0)
+        Ls_cat = torch.cat([torch.unsqueeze(Ls[i], 0) for i in range(25)], dim=0)
         Ls_stat_cat  = torch.cat([Ls_stat[i] for i in range(25)], dim=0)
         Lt_stat_cat  = torch.cat([Lt_stat[i] for i in range(25)], dim=0)
         
         result['A'] = srgb_img_cat
         result['gt_SH'] = gt_SH_cat
-        # result['L'] = L_cat
+        result['Ls'] = Ls_cat
         result['Ls_stat'] = Ls_stat_cat
         result['Lt_stat'] = Lt_stat_cat
         result['mask'] = torch.unsqueeze(mask, 0)
