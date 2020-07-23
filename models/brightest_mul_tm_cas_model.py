@@ -115,11 +115,12 @@ class BrightestMulTmCasModel(BaseModel):
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         # self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
-        self.Ls = torch.squeeze(input['Ls'],0).to(self.device) # [bn, 1, 256, 256]
-        self.Lt = torch.squeeze(input['Lt'],0).to(self.device) # [bn, 1, 256, 256]
-        # self.L = F.interpolate(self.L, (self.light_res, self.light_res), mode='bilinear', align_corners=False) # [bn, 1, 5, 5]
-        # self.L_itp = torch.clamp((F.interpolate(self.L[0].unsqueeze(0), (self.input.size(-2), self.input.size(-1)), mode='nearest')-0.5)/0.5, min=-1.0, max=1.0)  # [bn, 256, 256, 1]
-        # self.L = self.L.view(-1, self.light_res**2, 1) # [bn, 25, 1]
+
+        if self.opt.in_Ls:
+            self.Ls = torch.squeeze(input['Ls'],0).to(self.device) # [bn, 1, 256, 256]
+        if self.opt.in_Lt:
+            self.Lt = torch.squeeze(input['Lt'],0).to(self.device) # [bn, 1, 256, 256]
+
         self.Ls_stat = torch.squeeze(input['Ls_stat'],0).to(self.device) # [bn, 1, 256, 256]
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
