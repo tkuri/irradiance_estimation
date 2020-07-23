@@ -66,11 +66,8 @@ class BrightestMulTmCasModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
 
-        # self.loss_names = ['G_SH', 'G_BA', 'G_BP', 'G_BC']
-        # self.visual_names = ['input', 'pr_BA', 'pr_BA2', 'gt_BA', 'pr_BP', 'pr_BP2', 'gt_BP', 'pr_SH', 'gt_SH', 'mask']
-        self.loss_names = ['G_SH', 'G_BA2', 'G_BC2']
-        self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH']
-        # self.visual_names = ['input', 'pr_BA2', 'gt_BA', 'pr_SH', 'gt_SH', 'L_itp']
+        self.loss_names = ['G_SH', 'G_BA', 'G_BC']
+        self.visual_names = ['input', 'pr_BA', 'gt_BA', 'pr_SH', 'gt_SH']
 
         # self.model_names = ['G1', 'G2', 'G3']
         self.model_names = ['G1', 'G3']
@@ -211,64 +208,24 @@ class BrightestMulTmCasModel(BaseModel):
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
-        self.pr_BC2, self.pr_BA2 = self.brightness_module()
+        self.pr_BC, self.pr_BA = self.brightness_module()
 
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
-        # gt_BC = self.gt_BC[:,:,:2]
-        # condition = int(self.gt_BC[:, 0, 2].item())
-        # bc_num = int(self.gt_BC[:, 0, 3].item())
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
-        # self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
-        # self.loss_G_BP = self.criterionBP(self.pr_BP*mask, self.gt_BP*mask) * self.opt.lambda_BP  
-        self.loss_G_BA2 = self.criterionBA(self.pr_BA2*mask, self.gt_BA*mask) * self.opt.lambda_BA
-        # self.loss_G_BP2 = self.criterionBP(self.pr_BP2*mask, self.gt_BP*mask) * self.opt.lambda_BP  
+        self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
+        self.loss_G = self.loss_G_SH + self.loss_G_BA
 
-        # self.loss_G = self.loss_G_SH + self.loss_G_BA + self.loss_G_BP + self.loss_G_BA2 + self.loss_G_BP2
-        # self.loss_G = self.loss_G_SH + self.loss_G_BA2 + self.loss_G_BP2
-        self.loss_G = self.loss_G_SH + self.loss_G_BA2
-
-        # print('gt_BC.shape 1', self.gt_BC.shape)
-        # print('gt_BC.shape 2', gt_BC.shape)
-        # gt_BC = gt_BC[:,0].squeeze(1)
-        # print('gt_BC.shape 3', gt_BC.shape)
-
-        # gt_BC = torch.cat([gt_BC[i][0].unsqueeze(0) for i in range(25)], dim=0)
-        # loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC)
-
-        # loss_G_BC2 = []
         for i in range(25):
             gt_BC = self.gt_BC[i][:, :2]
             bc_num = int(self.gt_BC[i][0, 3].item())
-            pr_BC2 = self.pr_BC2[i]
-            loss_G_BC2 = util.min_loss_BC_NoBatch(pr_BC2, gt_BC, bc_num, self.criterionBC)
-            self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC / 25.0
-            self.loss_G += self.loss_G_BC2
-
-        # self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
-        # self.loss_G += self.loss_G_BC2
-
-        # print('condition:', condition)
-        # if condition==1:
-        #     # self.loss_G_BC = self.criterionBC(self.pr_BC, gt_BC.squeeze(1)) * self.opt.lambda_BC
-        #     self.loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC.squeeze(1)) * self.opt.lambda_BC
-        #     # self.loss_G += self.loss_G_BC + self.loss_G_BC2
-        #     self.loss_G += self.loss_G_BC2
-        # # else:
-        # elif condition==2:
-        #     # loss_G_BC = util.min_loss_BC(self.pr_BC, gt_BC, bc_num, self.criterionBC)
-        #     # loss_G_BC2 = util.min_loss_BC(self.pr_BC2, gt_BC, bc_num, self.criterionBC)
-        #     loss_G_BC2 = self.criterionBC(self.pr_BC2, gt_BC[:,0].squeeze(1))
-
-        #     # self.loss_G_BC = loss_G_BC * self.opt.lambda_BC
-        #     self.loss_G_BC2 = loss_G_BC2 * self.opt.lambda_BC
-        #     # self.loss_G += self.loss_G_BC + self.loss_G_BC2
-        #     self.loss_G += self.loss_G_BC2
-        # else:
-        #     print('Pass loss_G_BC because condition is {}'.format(condition))
+            pr_BC = self.pr_BC[i]
+            loss_G_BC = util.min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, self.criterionBC)
+            self.loss_G_BC = loss_G_BC * self.opt.lambda_BC / 25.0
+            self.loss_G += self.loss_G_BC
 
         self.loss_G.backward()
 
@@ -289,10 +246,7 @@ class BrightestMulTmCasModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-        # visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BP, self.opt)
-        # visual_ret['pr_BP_BC2'] = util.get_current_BC(self.pr_BC2, self.pr_BP2, self.opt)
-        # visual_ret['pr_BP_BP'] = util.get_current_BP(self.pr_BP, self.opt)
-        # visual_ret['pr_BP_BP2'] = util.get_current_BP(self.pr_BP2, self.opt)
+        visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BA, self.opt)
         return visual_ret
 
     def eval_label(self):
@@ -314,7 +268,7 @@ class BrightestMulTmCasModel(BaseModel):
             res_base = self.eval_bp_base(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.input[i].unsqueeze(0))
             res_sh = self.eval_bp_sh(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_SH[i].unsqueeze(0))
             res_sh.update(self.eval_sh(self.mask, self.gt_SH[i], self.pr_SH[i]))
-            res_pr2 = self.eval_bp_pr(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_BA2[i].unsqueeze(0), None, self.pr_BC2[i].unsqueeze(0), '2')
+            res_pr2 = self.eval_bp_pr(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_BA[i].unsqueeze(0), None, self.pr_BC[i].unsqueeze(0), '2')
 
             label = self.eval_label()
             for l in label:
