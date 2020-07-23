@@ -46,6 +46,7 @@ class BrightestMulTmCasModel(BaseModel):
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             # parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
+        parser.add_argument('--latent_Ls', action='store_true', help='Input Ls as latent.')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
 
         return parser
@@ -68,10 +69,15 @@ class BrightestMulTmCasModel(BaseModel):
         self.model_names = ['G1', 'G3']
 
         self.light_res = opt.light_res
-        # self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_latent', opt.norm,
-        #                               not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, 'unet_256_latent_inL', opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+
+        if opt.latent_Ls:
+            netG1name = 'unet_256_latent_inL'
+        else:
+            netG1name = 'unet_256_latent'
+
+        self.netG1 = networks.define_G(opt.input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
+                                    not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+
 
         g3_input_nc = opt.input_nc
         if opt.cat_In:
@@ -108,9 +114,11 @@ class BrightestMulTmCasModel(BaseModel):
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
     def ltm_module(self):
-        # ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
-        ltm, color = self.netG1(self.input, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
-        # ltm = self.netG1(self.input) # [25, 25, 256, 256]
+        if self.opt.latent_Ls:
+            ltm, color = self.netG1(self.input, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+        else:
+            ltm, color = self.netG1(self.input) # [25, 25, 256, 256]
+
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
         # ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
