@@ -208,24 +208,30 @@ class BrightestMulTmCasModel(BaseModel):
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
-        self.pr_BC, self.pr_BA = self.brightness_module()
-
+        if not opt.no_brightness:
+            self.pr_BC, self.pr_BA = self.brightness_module()
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         mask = self.mask*0.5 + 0.5
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
-        self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
-        self.loss_G = self.loss_G_SH + self.loss_G_BA
 
-        for i in range(25):
-            gt_BC = self.gt_BC[i][:, :2]
-            bc_num = int(self.gt_BC[i][0, 3].item())
-            pr_BC = self.pr_BC[i]
-            loss_G_BC = util.min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, self.criterionBC)
-            self.loss_G_BC = loss_G_BC * self.opt.lambda_BC / 25.0
-            self.loss_G += self.loss_G_BC
+        if not self.opt.no_brightness:
+            self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
+            self.loss_G_BC = 0
+            for i in range(25):
+                gt_BC = self.gt_BC[i][:, :2]
+                bc_num = int(self.gt_BC[i][0, 3].item())
+                pr_BC = self.pr_BC[i]
+                loss_G_BC = util.min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, self.criterionBC)
+                loss_G_BC = loss_G_BC * self.opt.lambda_BC / 25.0
+                self.loss_G_BC += loss_G_BC
+
+            loss_B = self.loss_G_BA + self.loss_G_BC
+            self.loss_G = self.loss_G_SH + loss_B
+        else:
+            self.loss_G = self.loss_G_SH
 
         self.loss_G.backward()
 
