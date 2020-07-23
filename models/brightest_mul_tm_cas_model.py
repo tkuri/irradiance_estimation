@@ -131,6 +131,9 @@ class BrightestMulTmCasModel(BaseModel):
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         # self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
+        self.pr_SH = None
+        self.pr_BA = None
+        self.pr_BC = None
 
         if self.opt.in_Ls:
             self.Ls = torch.squeeze(input['Ls'],0).to(self.device) # [bn, 1, 256, 256]
