@@ -50,6 +50,7 @@ class BrightestMulTmCasModel(BaseModel):
         parser.add_argument('--latent_Lt', action='store_true', help='Input Lt as latent.')
         parser.add_argument('--in_Ls', action='store_true', help='Input Ls as Input.')
         parser.add_argument('--in_Lt', action='store_true', help='Input Lt as Input.')
+        parser.add_argument('--LTM', action='store_true', help='Use LTM.')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
 
         return parser
@@ -84,8 +85,12 @@ class BrightestMulTmCasModel(BaseModel):
         if opt.in_Lt:
             input_nc += 1
 
-        self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
-                                    not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        if opt.LTM:
+            self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        else:
+            self.netG1 = networks.define_G(input_nc, 1, opt.ngf, netG1name, opt.norm,
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
 
         g3_input_nc = opt.input_nc
@@ -124,7 +129,7 @@ class BrightestMulTmCasModel(BaseModel):
         self.Ls_stat = torch.squeeze(input['Ls_stat'],0).to(self.device) # [bn, 1, 256, 256]
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
-    def ltm_module(self):
+    def netG1_module(self):
         input_cat = self.input
         if self.opt.in_Ls:
             input_cat = torch.cat((input_cat, self.Ls), 1)
@@ -132,11 +137,29 @@ class BrightestMulTmCasModel(BaseModel):
             input_cat = torch.cat((input_cat, self.Lt), 1)
 
         if self.opt.latent_Ls:
-            ltm, color = self.netG1(input_cat, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(input_cat, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
         elif self.opt.latent_Lt:    
-            ltm, color = self.netG1(input_cat, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(input_cat, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
         else:
-            ltm, color = self.netG1(input_cat) # [25, 25, 256, 256]
+            dst, color = self.netG1(input_cat) # [25, 25, 256, 256]
+
+        return dst, color
+        
+
+    def ltm_module(self):
+        ltm, color = netG1_module()
+        # input_cat = self.input
+        # if self.opt.in_Ls:
+        #     input_cat = torch.cat((input_cat, self.Ls), 1)
+        # if self.opt.in_Lt:
+        #     input_cat = torch.cat((input_cat, self.Lt), 1)
+
+        # if self.opt.latent_Ls:
+        #     ltm, color = self.netG1(input_cat, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+        # elif self.opt.latent_Lt:    
+        #     ltm, color = self.netG1(input_cat, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
+        # else:
+        #     ltm, color = self.netG1(input_cat) # [25, 25, 256, 256]
 
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
@@ -153,8 +176,11 @@ class BrightestMulTmCasModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
+        if self.opt.LTM:
+            self.pr_SH, color = self.ltm_module()
+        else:
+            self.pr_SH, color = self.netG1_module()
 
-        self.pr_SH, color = self.ltm_module()
         # self.pr_SH = self.ltm_module()
         self.pr_SH = self.pr_SH.repeat(1, 3, 1, 1)
         self.pr_SH = self.pr_SH * 0.5 + 0.5
