@@ -32,8 +32,8 @@ def min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, criterionBC):
     return loss_G_BC
 
 
-def get_current_BC(pr_BC, pr_BP, opt):
-    pr_BP_BC = disp_brightest_coord(pr_BC, pr_BP, opt.bp_tap, opt.bp_sigma)
+def get_current_BC(pr_BC, mask, opt):
+    pr_BP_BC = disp_brightest_coord(pr_BC, mask, opt.bp_tap, opt.bp_sigma)
     pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
     return pr_BP_BC
 
