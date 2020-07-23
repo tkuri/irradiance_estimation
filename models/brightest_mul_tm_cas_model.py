@@ -255,7 +255,8 @@ class BrightestMulTmCasModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-        visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BA, self.opt)
+        if not self.pr_BC==None:
+            visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BA, self.opt)
         return visual_ret
 
     def eval_label(self):
