@@ -271,9 +271,18 @@ class BrightestMulTmCasModel(BaseModel):
 
     def eval_label(self):
         label = ['idx', 'condition', 'gt_BC_num']
-        label += self.label_base()['BC'] + self.label_sh()['BC'] + self.label_pr(False, '')['BC']
-        label += self.label_base()['bcDist'] + self.label_sh()['bcDist'] + self.label_pr(False, '')['bcDist']
-        label += self.label_base()['baMSE'] + self.label_sh()['baMSE'] + self.label_pr(False, '')['baMSE']
+        label += self.label_base()['BC'] + self.label_sh()['BC']
+        if not self.opt.no_brightness:
+            label += self.label_pr(False, '')['BC']
+
+        label += self.label_base()['bcDist'] + self.label_sh()['bcDist']
+        if not self.opt.no_brightness:
+            label += self.label_pr(False, '')['bcDist']
+
+        label += self.label_base()['baMSE'] + self.label_sh()['baMSE']
+        if not self.opt.no_brightness:
+            label += self.label_pr(False, '')['baMSE']
+
         label += self.label_sh()['shEval']
         return label
 
@@ -288,7 +297,8 @@ class BrightestMulTmCasModel(BaseModel):
             res_base = self.eval_bp_base(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.input[i].unsqueeze(0))
             res_sh = self.eval_bp_sh(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_SH[i].unsqueeze(0))
             res_sh.update(self.eval_sh(self.mask, self.gt_SH[i], self.pr_SH[i]))
-            res_pr = self.eval_bp_pr(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_BA[i].unsqueeze(0), None, self.pr_BC[i].unsqueeze(0), '')
+            if not self.opt.no_brightness:
+                res_pr = self.eval_bp_pr(self.mask, self.gt_BA[i].unsqueeze(0), None, self.gt_BC[i].unsqueeze(0), self.pr_BA[i].unsqueeze(0), None, self.pr_BC[i].unsqueeze(0), '')
 
             label = self.eval_label()
             for l in label:
