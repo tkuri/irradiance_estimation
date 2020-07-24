@@ -38,7 +38,7 @@ def get_current_pr_BC(pr_BC, mask, opt):
     return pr_BP_BC
 
 def get_current_gt_BC(gt_BC, mask, opt):
-    gt_BP_BC = disp_brightest_coord(gt_BC, mask, opt.bp_tap, opt.bp_sigma)
+    gt_BP_BC = disp_brightest_coord(gt_BC[0], mask, opt.bp_tap, opt.bp_sigma)
     gt_BP_BC = (gt_BP_BC - 0.5) / 0.5
     return gt_BP_BC
 
