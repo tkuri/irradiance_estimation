@@ -126,7 +126,7 @@ class BrightestMulTmCasModel(BaseModel):
         self.mask = torch.squeeze(input['mask'],0).to(self.device) # [bn, 1, 256, 256]
         self.gt_BA = torch.squeeze(input['gt_BA'],0).to(self.device) # [bn, 1, 256, 256]
         # self.gt_BP = torch.squeeze(input['gt_BP'],0).to(self.device) # [bn, 1, 256, 256]
-        self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] 
+        self.gt_BC = [torch.squeeze(input['gt_BC'][i],0).to(self.device) for i in range(25)] #[bn] [num, 4]
         self.pr_SH = None
         self.pr_BA = None
         self.pr_BC = None
@@ -248,9 +248,9 @@ class BrightestMulTmCasModel(BaseModel):
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
         if not self.pr_BC==None:
-            visual_ret['pr_BP_BC'] = util.get_current_BC(self.pr_BC, self.pr_BA, self.opt)
+            visual_ret['pr_BP_BC'] = util.get_current_prBC(self.pr_BC, self.pr_BA, self.opt)
         if not self.gt_BC==None:
-            visual_ret['gt_BP_BC'] = util.get_current_BC(self.gt_BC, self.gt_BA, self.opt)
+            visual_ret['gt_BP_BC'] = util.get_current_gtBC(self.gt_BC, self.gt_BA, self.opt)
         return visual_ret
 
     def eval_label(self):

@@ -32,10 +32,15 @@ def min_loss_BC_NoBatch(pr_BC, gt_BC, bc_num, criterionBC):
     return loss_G_BC
 
 
-def get_current_BC(pr_BC, mask, opt):
+def get_current_pr_BC(pr_BC, mask, opt):
     pr_BP_BC = disp_brightest_coord(pr_BC, mask, opt.bp_tap, opt.bp_sigma)
     pr_BP_BC = (pr_BP_BC - 0.5) / 0.5
     return pr_BP_BC
+
+def get_current_gt_BC(gt_BC, mask, opt):
+    gt_BP_BC = disp_brightest_coord(gt_BC, mask, opt.bp_tap, opt.bp_sigma)
+    gt_BP_BC = (gt_BP_BC - 0.5) / 0.5
+    return gt_BP_BC
 
 def get_current_BP(pr_BP, opt):
     pr_BP_norm = torch.squeeze(pr_BP, 0)*0.5+0.5
@@ -215,6 +220,25 @@ def disp_brightest_coord(coord, mask, spread_tap=31, spread_sigma=5.0):
     if brightest_max_blur > 0:
         brightest_pixel = brightest_pixel / brightest_max_blur
     return brightest_pixel
+
+def disp_brightest_coords(coords, mask, spread_tap=31, spread_sigma=5.0):
+    brightest_pixel = torch.zeros_like(mask).float()
+    h, w = brightest_pixel.size(-1), brightest_pixel.size(-2)
+    num = coord[0, 3]
+    for i in range(num):
+        coord_int = int(h*coord[i,0].item()) , int(w*coord[i,1].item())
+        brightest_pixel[:, :, coord_int[0], coord_int[1]] = 1.0
+
+    # Spread the points in concentric circles
+    # brightest_pixel = torch.unsqueeze(brightest_pixel, 0) # To 4dim
+    gauss_spread = kornia.filters.GaussianBlur2d((spread_tap, spread_tap), (spread_sigma, spread_sigma))
+    brightest_pixel = gauss_spread(brightest_pixel.float())
+    # brightest_pixel = torch.squeeze(brightest_pixel, 0) # To 3dim
+    brightest_max_blur = torch.max(brightest_pixel)
+    if brightest_max_blur > 0:
+        brightest_pixel = brightest_pixel / brightest_max_blur
+    return brightest_pixel
+
 
 def im2tensor(input_numpy, grayscale=False):
     img = input_numpy.astype(np.float32)/255.0
