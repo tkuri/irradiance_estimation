@@ -250,7 +250,7 @@ class BrightestMulTmCasModel(BaseModel):
         if not self.pr_BC==None:
             visual_ret['pr_BP_BC'] = util.get_current_prBC(self.pr_BC, self.pr_BA, self.opt)
         if not self.gt_BC==None:
-            visual_ret['gt_BP_BC'] = util.get_current_gtBC(self.gt_BC, self.gt_BA, self.opt)
+            visual_ret['gt_BP_BC'] = util.get_current_gtBC(self.gt_BC[0], self.gt_BA, self.opt)
         return visual_ret
 
     def eval_label(self):
