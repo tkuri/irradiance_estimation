@@ -108,7 +108,7 @@ class BrightestMulTmCasModel(BaseModel):
         if opt.in_Lt:
             g3_input_nc += 1
         self.netG3 = networks.define_G(g3_input_nc, 1, opt.ngf, 'resnet_9blocks_latent', opt.norm,
-                                        not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+                                        not opt.no_dropout, opt.init_type, opt.init_gain, False, self.gpu_ids)
         if self.isTrain:
             # define loss functions
             self.criterionS = torch.nn.MSELoss()

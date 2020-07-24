@@ -69,7 +69,7 @@ class Pix2PixTmRegModel(BaseModel):
         G_input = opt.input_nc if self.G_input=='A' else opt.input_nc + opt.input2_nc
         D_input = opt.input_nc if self.D_input=='A' else opt.input_nc + opt.input2_nc
         self.netG = networks.define_G(G_input, (self.light_res**2)*opt.output_nc, opt.ngf, 'unet_256_lastrelu', opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+                                      not opt.no_dropout, opt.init_type, opt.init_gain, True, self.gpu_ids)
 
         if self.isTrain:  # define a discriminator; conditional GANs need to take both input and output images; Therefore, #channels for D is input_nc + output_nc
             self.netD = networks.define_D(D_input + opt.output_nc, opt.ndf, opt.netD,
