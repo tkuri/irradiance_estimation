@@ -306,8 +306,9 @@ class BrightestMulTmCasModel(BaseModel):
                     res.append(res_base[l])
                 if l in res_sh:
                     res.append(res_sh[l])
-                if l in res_pr2:
-                    res.append(res_pr[l])
+                if not self.opt.no_brightness:
+                    if l in res_pr:
+                        res.append(res_pr[l])
 
             result.append(res)
 
