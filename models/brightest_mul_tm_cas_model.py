@@ -46,6 +46,7 @@ class BrightestMulTmCasModel(BaseModel):
             parser.add_argument('--lambda_BA', type=float, default=1.0, help='weight for Brightest area loss')
             # parser.add_argument('--lambda_BP', type=float, default=1.0, help='weight for Brightest pixel loss')
             parser.add_argument('--lambda_BC', type=float, default=1.0, help='weight for Brightest coordinate loss')
+            parser.add_argument('--lambda_regLTM', type=float, default=1.0, help='weight for LTM regularization.')
         parser.add_argument('--latent_Ls', action='store_true', help='Input Ls as latent.')
         parser.add_argument('--latent_Lt', action='store_true', help='Input Lt as latent.')
         parser.add_argument('--in_Ls', action='store_true', help='Input Ls as Input.')
@@ -112,6 +113,7 @@ class BrightestMulTmCasModel(BaseModel):
             self.criterionBA = torch.nn.MSELoss()
             # self.criterionBP = torch.nn.MSELoss()
             self.criterionBC = torch.nn.MSELoss()
+            self.criterionReg = torch.nn.MSELoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G1 = torch.optim.Adam(self.netG1.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             # self.optimizer_G2 = torch.optim.Adam(self.netG2.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -235,7 +237,7 @@ class BrightestMulTmCasModel(BaseModel):
         if self.opt.reg_LTM:
             ltm_mean = torch.mean(self.ltm, dim=0, keepdim=True) # [1, 75, 256, 256]
             ltm_mean = ltm_mean.expand(self.ltm.size(0), ltm_mean.size(1), ltm_mean.size(2), ltm_mean.size(3))  # [25, 75, 256, 256]
-            self.loss_LTMReg = self.criterionL1(self.ltm, ltm_mean) * self.opt.lambda_LTMReg
+            self.loss_LTMReg = self.criterionReg(self.ltm, ltm_mean) * self.opt.lambda_regLTM
             self.loss_G += self.loss_LTMReg
 
 
