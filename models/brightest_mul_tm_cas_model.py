@@ -77,6 +77,9 @@ class BrightestMulTmCasModel(BaseModel):
             self.visual_names += ['pr_BA', 'gt_BA']
             self.model_names += ['G3']
 
+        if self.opt.reg_LTM:
+            self.loss_names += ['LTMReg']
+
         self.light_res = opt.light_res
 
         if opt.latent_Ls or opt.latent_Lt:
