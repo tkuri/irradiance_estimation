@@ -194,7 +194,7 @@ class BrightestMulTmCasModel(BaseModel):
         return pr_SH, color # pr_SH: -1~1
         # return pr_SH
 
-    def apply_shading_color(SH, color):
+    def apply_shading_color(self, SH, color):
         SH = SH.repeat(1, 3, 1, 1)
         SH = SH * 0.5 + 0.5
         color = torch.unsqueeze(torch.unsqueeze(color, 2), 3)
