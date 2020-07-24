@@ -189,7 +189,7 @@ class BrightestMulTmCasModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        input_cat = concatenate_input(self.input)
+        input_cat = self.concatenate_input(self.input)
 
         if self.opt.LTM:
             self.pr_SH, color = self.ltm_module(input_cat)
@@ -200,12 +200,12 @@ class BrightestMulTmCasModel(BaseModel):
             self.pr_SH = self.apply_shading_color(self.pr_SH, color)
 
         if not self.opt.no_brightness:
-            if self.opt.cas:
+            if self.opt.cas: # Use predicted shading
                 input_cas = self.pr_SH
                 if self.opt.cat_In:
                     input_cas = torch.cat((input_cas, self.input), 1)
-            else:
-                input_cas = self.input
+            else: # Use input directly
+                input_cas = self.concatenate_input(self.input)
             self.pr_BC, self.pr_BA = self.brightness_module(input_cas)
 
     def backward_G(self):
