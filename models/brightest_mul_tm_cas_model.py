@@ -55,6 +55,7 @@ class BrightestMulTmCasModel(BaseModel):
         parser.add_argument('--no_brightness', action='store_true', help='No to calc brightness')
         parser.add_argument('--no_latent_color', action='store_true', help='Not to extract latent color. (Not to use with LTM)')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
+        parser.add_argument('--reg_LTM', action='store_true', help='Regularizaiton LTM.')
         
         return parser
 
@@ -149,16 +150,19 @@ class BrightestMulTmCasModel(BaseModel):
 
     def intrinsic_module(self, x):
         if self.opt.latent_Ls:
-            dst, color = self.netG1(x, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(x, self.Ls_stat.squeeze(-1))
         elif self.opt.latent_Lt:    
-            dst, color = self.netG1(x, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(x, self.Lt_stat.squeeze(-1))
         else:
-            dst, color = self.netG1(x) # [25, 25, 256, 256]
+            dst, color = self.netG1(x)
 
         return dst, color
 
     def ltm_module(self, x):
-        ltm, color = self.intrinsic_module(x)
+        ltm, color = self.intrinsic_module(x)  # [25, 25, 256, 256]
+
+        if self.opt.reg_LTM:
+            self.ltm = ltm # Buffer for regularization
 
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
@@ -211,6 +215,7 @@ class BrightestMulTmCasModel(BaseModel):
         mask = self.mask*0.5 + 0.5
 
         self.loss_G_SH = self.criterionS(self.pr_SH*mask, self.gt_SH*mask) * self.opt.lambda_S
+        self.loss_G = self.loss_G_SH
 
         if not self.opt.no_brightness:
             self.loss_G_BA = self.criterionBA(self.pr_BA*mask, self.gt_BA*mask) * self.opt.lambda_BA
@@ -224,9 +229,15 @@ class BrightestMulTmCasModel(BaseModel):
                 self.loss_G_BC += loss_G_BC
 
             loss_B = self.loss_G_BA + self.loss_G_BC
-            self.loss_G = self.loss_G_SH + loss_B
-        else:
-            self.loss_G = self.loss_G_SH
+            self.loss_G += loss_B
+
+        # Third, LTM Regularization
+        if self.opt.reg_LTM:
+            ltm_mean = torch.mean(self.ltm, dim=0, keepdim=True) # [1, 75, 256, 256]
+            ltm_mean = trans_mean.expand(self.ltm.size(0), ltm.size(1), ltm.size(2), ltm.size(3))  # [25, 75, 256, 256]
+            self.loss_LTMReg = self.criterionL1(self.ltm, ltm_mean) * self.opt.lambda_LTMReg
+            self.loss_G += self.loss_LTMReg
+
 
         self.loss_G.backward()
 
