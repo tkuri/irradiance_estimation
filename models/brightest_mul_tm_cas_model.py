@@ -234,7 +234,7 @@ class BrightestMulTmCasModel(BaseModel):
         # Third, LTM Regularization
         if self.opt.reg_LTM:
             ltm_mean = torch.mean(self.ltm, dim=0, keepdim=True) # [1, 75, 256, 256]
-            ltm_mean = trans_mean.expand(self.ltm.size(0), ltm.size(1), ltm.size(2), ltm.size(3))  # [25, 75, 256, 256]
+            ltm_mean = ltm_mean.expand(self.ltm.size(0), ltm_mean.size(1), ltm_mean.size(2), ltm_mean.size(3))  # [25, 75, 256, 256]
             self.loss_LTMReg = self.criterionL1(self.ltm, ltm_mean) * self.opt.lambda_LTMReg
             self.loss_G += self.loss_LTMReg
 
