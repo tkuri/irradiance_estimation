@@ -143,56 +143,41 @@ class BrightestMulTmCasModel(BaseModel):
         self.Ls_stat = torch.squeeze(input['Ls_stat'],0).to(self.device) # [bn, 1, 256, 256]
         self.Lt_stat = torch.squeeze(input['Lt_stat'],0).to(self.device) # [bn, 1, 256, 256]
 
-    def concatenate_input(self):
-        input_cat = self.input
+    def concatenate_input(self, x):
+        input_cat = x
         if self.opt.in_Ls:
             input_cat = torch.cat((input_cat, self.Ls), 1)
         if self.opt.in_Lt:
             input_cat = torch.cat((input_cat, self.Lt), 1)
         return input_cat
 
-    def intrinsic_module(self):
-        input_cat = self.concatenate_input()
-
+    def intrinsic_module(self, x):
         if self.opt.latent_Ls:
-            dst, color = self.netG1(input_cat, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(x, self.Ls_stat.squeeze(-1)) # [25, 25, 256, 256]
         elif self.opt.latent_Lt:    
-            dst, color = self.netG1(input_cat, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
+            dst, color = self.netG1(x, self.Lt_stat.squeeze(-1)) # [25, 25, 256, 256]
         else:
-            dst, color = self.netG1(input_cat) # [25, 25, 256, 256]
+            dst, color = self.netG1(x) # [25, 25, 256, 256]
 
         return dst, color
 
-    def brightness_module(self):
-        input_cat = self.concatenate_input()
-
-        if self.opt.cas:
-            if self.opt.cat_In:
-                g3_input = torch.cat((self.pr_SH, input_cat), 1)
-            else:
-                g3_input = self.pr_SH
-        else:
-            g3_input = input_cat
-
+    def brightness_module(self, x):
         pr_BC, pr_BA = self.netG3(g3_input)
 
         return pr_BC, pr_BA
 
 
-    def ltm_module(self):
-        ltm, color = self.intrinsic_module()
+    def ltm_module(self, x):
+        ltm, color = self.intrinsic_module(x)
 
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
-        # ltm = torch.matmul(ltm, self.L) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
         ltm = torch.matmul(ltm, self.Lt_stat) # L:[25, 25, 1] -> ltm[25, 256x256, 1]
         ltm = torch.transpose(ltm, 1, 2) # [25, 1, 256x256]
         ltm = (ltm - 0.5) / 0.5
         ltm = torch.clamp(ltm, min=-1.0, max=1.0)
-        # pr_SH = buf.view(self.gt_SH.size()) # [25, 1, 256, 256]
         pr_SH = ltm.view(ltm.size(0), ltm.size(1), self.gt_SH.size(-2), self.gt_SH.size(-1)) # [25, 1, 256, 256]
         return pr_SH, color # pr_SH: -1~1
-        # return pr_SH
 
     def apply_shading_color(self, SH, color):
         SH = SH.repeat(1, 3, 1, 1)
@@ -204,18 +189,24 @@ class BrightestMulTmCasModel(BaseModel):
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
+        input_cat = concatenate_input(self.input)
+
         if self.opt.LTM:
-            self.pr_SH, color = self.ltm_module()
+            self.pr_SH, color = self.ltm_module(input_cat)
         else:
-            self.pr_SH, color = self.intrinsic_module()
+            self.pr_SH, color = self.intrinsic_module(input_cat)
 
         if not self.opt.no_latent_color:
             self.pr_SH = self.apply_shading_color(self.pr_SH, color)
 
-        # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
-
         if not self.opt.no_brightness:
-            self.pr_BC, self.pr_BA = self.brightness_module()
+            if self.opt.cas:
+                input_cas = self.pr_SH
+                if self.opt.cat_In:
+                    input_cas = torch.cat((input_cas, self.input), 1)
+            else:
+                input_cas = self.input
+            self.pr_BC, self.pr_BA = self.brightness_module(input_cas)
 
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
