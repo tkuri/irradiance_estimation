@@ -161,12 +161,6 @@ class BrightestMulTmCasModel(BaseModel):
 
         return dst, color
 
-    def brightness_module(self, x):
-        pr_BC, pr_BA = self.netG3(g3_input)
-
-        return pr_BC, pr_BA
-
-
     def ltm_module(self, x):
         ltm, color = self.intrinsic_module(x)
 
@@ -187,6 +181,19 @@ class BrightestMulTmCasModel(BaseModel):
         SH = SH * 2.0 - 1.0
         return SH
 
+    def select_input_cas(self):
+        if self.opt.cas: # Use predicted shading
+            input_cas = self.pr_SH
+            if self.opt.cat_In:
+                input_cas = torch.cat((input_cas, self.input), 1)
+        else: # Use input directly
+            input_cas = self.concatenate_input(self.input)
+        return input_cas
+
+    def brightness_module(self, x):
+        pr_BC, pr_BA = self.netG3(x)
+        return pr_BC, pr_BA
+
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         input_cat = self.concatenate_input(self.input)
@@ -200,12 +207,7 @@ class BrightestMulTmCasModel(BaseModel):
             self.pr_SH = self.apply_shading_color(self.pr_SH, color)
 
         if not self.opt.no_brightness:
-            if self.opt.cas: # Use predicted shading
-                input_cas = self.pr_SH
-                if self.opt.cat_In:
-                    input_cas = torch.cat((input_cas, self.input), 1)
-            else: # Use input directly
-                input_cas = self.concatenate_input(self.input)
+            input_cas = self.select_input_cas()
             self.pr_BC, self.pr_BA = self.brightness_module(input_cas)
 
     def backward_G(self):
