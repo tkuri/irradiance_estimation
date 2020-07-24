@@ -210,7 +210,7 @@ class BrightestMulTmCasModel(BaseModel):
             self.pr_SH, color = self.intrinsic_module()
 
         if not self.opt.no_latent_color:
-            self.pr_SH = apply_shading_color(self.pr_SH, color)
+            self.pr_SH = self.apply_shading_color(self.pr_SH, color)
 
         # self.pr_BC, self.pr_BA, self.pr_BP = self.netG2(self.input)
 
