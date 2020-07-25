@@ -82,6 +82,7 @@ class BrightestMulTmCasModel(BaseModel):
 
         self.light_res = opt.light_res
 
+        # Intrinsic network
         if opt.latent_Ls or opt.latent_Lt:
             netG1name = 'unet_256_latent_inL'
         else:
@@ -104,10 +105,15 @@ class BrightestMulTmCasModel(BaseModel):
             self.netG1 = networks.define_G(input_nc, output_nc, opt.ngf, netG1name, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, False, self.gpu_ids)
 
-
+        # Brightness network
         g3_input_nc = 3
-        if opt.cat_In:
+        if opt.cas and opt.cat_In:
             g3_input_nc = g3_input_nc + opt.input_nc
+        if not opt.cas:
+            if opt.in_Ls:
+                g3_input_nc += 1
+            if opt.in_Lt:
+                g3_input_nc += 1
         self.netG3 = networks.define_G(g3_input_nc, 1, opt.ngf, 'resnet_9blocks_latent', opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, False, self.gpu_ids)
         if self.isTrain:
