@@ -11,7 +11,9 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.measurements import label
 import cv2
 import json
-from skimage.measure import compare_ssim, compare_psnr
+# from skimage.measure import compare_ssim, compare_psnr
+from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import structural_similarity
 
 class BaseModel(ABC):
     """This class is an abstract base class (ABC) for models.
@@ -285,8 +287,10 @@ class BaseModel(ABC):
         gt_SH_np = np.transpose(gt_SH_np, (1, 2, 0))
         pr_SH_np = np.transpose(pr_SH_np, (1, 2, 0))
 
-        result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
-        result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np, multichannel=True)
+        # result['shPSNR'] = compare_psnr(gt_SH_np, pr_SH_np)
+        # result['shSSIM'] = compare_ssim(gt_SH_np, pr_SH_np, multichannel=True)
+        result['shPSNR'] = peak_signal_noise_ratio(gt_SH_np, pr_SH_np)
+        result['shSSIM'] = structural_similarity(gt_SH_np, pr_SH_np, multichannel=True)
 
         return result
 
