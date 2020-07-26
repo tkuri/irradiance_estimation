@@ -100,7 +100,7 @@ def create_probe_mask(xx, yy, xy):
     return mask
 
 def calc_probe_stat(L_np):
-    xx, yy, xy = coordinate_map(L_np.shape[0], L_np.shape[1])
+    xx, yy, xy = coordinate_map(L_np.shape[1], L_np.shape[2])
     mask = create_probe_mask(xx, yy, xy)
 
     L_stat = []
@@ -199,13 +199,11 @@ class MiRndDataset(BaseDataset):
         Lt_stat = []
         for i in range(25):
             Ls_np = Ls[i].to('cpu').detach().numpy().copy() # Tensor to numpy
-            print('Ls_np.shape:', Ls_np.shape)
             Ls_stat_np = calc_probe_stat(Ls_np)
             Ls_stat_pil = Image.fromarray(np.uint8(Ls_stat_np))
             Ls_stat.append(transforms.ToTensor()(Ls_stat_pil))            
 
             Lt_np = Lt[i].to('cpu').detach().numpy().copy() # Tensor to numpy
-            print('Lt_np.shape:', Lt_np.shape)
             Lt_stat_np = calc_probe_stat(Lt_np)
             Lt_stat_pil = Image.fromarray(np.uint8(Lt_stat_np))
             Lt_stat.append(transforms.ToTensor()(Lt_stat_pil))            
