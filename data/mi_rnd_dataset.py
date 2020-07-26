@@ -8,6 +8,7 @@ import torch.nn as nn
 from util import util
 import numpy as np
 import torchvision.transforms as transforms
+import random
 
 # def make_dataset(list_dir, max_dataset_size=float("inf"), phase='train'):
 #     file_name = list_dir + "img_batch_{}.p".format(phase)
