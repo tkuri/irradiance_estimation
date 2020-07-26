@@ -199,13 +199,13 @@ class MiRndDataset(BaseDataset):
         Lt_stat = []
         for i in range(25):
             Ls_np = Ls[i].to('cpu').detach().numpy().copy() # Tensor to numpy
-            Ls_np = Ls_np.transpose(2, 0, 1)
+            Ls_np = Ls_np.transpose(1, 2, 0)
             Ls_stat_np = calc_probe_stat(Ls_np)
             Ls_stat_pil = Image.fromarray(np.uint8(Ls_stat_np))
             Ls_stat.append(transforms.ToTensor()(Ls_stat_pil))            
 
             Lt_np = Lt[i].to('cpu').detach().numpy().copy() # Tensor to numpy
-            Lt_np = Lt_np.transpose(2, 0, 1)
+            Lt_np = Lt_np.transpose(1, 2, 0)
             Lt_stat_np = calc_probe_stat(Lt_np)
             Lt_stat_pil = Image.fromarray(np.uint8(Lt_stat_np))
             Lt_stat.append(transforms.ToTensor()(Lt_stat_pil))            
