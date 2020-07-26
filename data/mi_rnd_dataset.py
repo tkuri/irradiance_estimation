@@ -211,7 +211,7 @@ class MiRndDataset(BaseDataset):
             Lt_stat.append(transforms.ToTensor()(Lt_stat_pil))            
 
 
-        mask = torch.ones_like(L[0])
+        mask = torch.ones_like(Ls[0])
         res = []
         for i in range(25):
             res_tmp = make_bp_data(srgb_img[i], gt_SH[i], mask, self.opt)
