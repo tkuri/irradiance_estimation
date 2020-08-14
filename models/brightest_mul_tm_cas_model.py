@@ -57,6 +57,7 @@ class BrightestMulTmCasModel(BaseModel):
         parser.add_argument('--no_latent_color', action='store_true', help='Not to extract latent color. (Not to use with LTM)')
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
         parser.add_argument('--reg_LTM', action='store_true', help='Regularizaiton LTM.')
+        parser.add_argument('--enc_LTM', action='store_true', help='Encoding LTM.')
         
         return parser
 
@@ -82,6 +83,7 @@ class BrightestMulTmCasModel(BaseModel):
 
         self.light_res = opt.light_res
 
+
         # Intrinsic network
         if opt.latent_Ls or opt.latent_Lt:
             netG1name = 'unet_256_latent_inL'
@@ -95,8 +97,14 @@ class BrightestMulTmCasModel(BaseModel):
             input_nc += 1
 
         if opt.LTM:
-            self.netG1 = networks.define_G(input_nc, self.light_res**2, opt.ngf, netG1name, opt.norm,
+            dim_LTM = self.light_res**2
+            if self.opt.enc_LTM:
+                dim_LTM = 5
+                self.enc_LTM = IlluminationEncoder(self.light_res**2, 64, dim_LTM)
+
+            self.netG1 = networks.define_G(input_nc, dim_LTM, opt.ngf, netG1name, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, True, self.gpu_ids)
+
         else:
             if opt.no_latent_color:
                 output_nc = 3
@@ -175,6 +183,9 @@ class BrightestMulTmCasModel(BaseModel):
         if self.opt.reg_LTM:
             self.ltm = ltm # Buffer for regularization
 
+        if self.opt.enc_LTM:
+            self.Lt_stat = self.enc_LTM(self.Lt_stat)    
+        
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
         ltm = torch.matmul(ltm, self.Lt_stat) # L:[25, 25, 1] -> ltm[25, 256x256, 1]

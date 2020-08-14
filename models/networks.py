@@ -1639,3 +1639,16 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+
+
+class IlluminationEncoder(nn.Module):
+    def __init__(self, input_nc=25, hidden_nc=64, output_nc=25):
+        super(IlluminationEncoder, self).__init__()
+
+        fc1 = nn.Linear(input_nc, hidden_nc)
+        relu = nn.ReLU(False)
+        fc2 = nn.Linear(hidden_nc, output_nc)
+        self.fc = nn.Sequential([fc1, relu, fc2, relu])
+
+    def forward(self, input):
+        return self.model(input)
