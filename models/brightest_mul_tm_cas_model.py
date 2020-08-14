@@ -184,7 +184,9 @@ class BrightestMulTmCasModel(BaseModel):
             self.ltm = ltm # Buffer for regularization
 
         if self.opt.enc_LTM:
+            print('Lt_stat.shape:', Lt_stat.shape)
             self.Lt_stat = self.enc_LTM(self.Lt_stat)    
+            print('Lt_stat.shape after:', Lt_stat.shape)
         
         ltm = ltm.view(-1, self.light_res**2, (ltm.size(-1)*ltm.size(-2)))  # [25, 25, 256x256]
         ltm = torch.transpose(ltm, 1, 2)  # [25, 256x256, 25]
