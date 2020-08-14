@@ -58,6 +58,7 @@ class BrightestMulTmCasModel(BaseModel):
         parser.add_argument('--cat_In', action='store_true', help='Concat Input')
         parser.add_argument('--reg_LTM', action='store_true', help='Regularizaiton LTM.')
         parser.add_argument('--enc_LTM', action='store_true', help='Encoding LTM.')
+        parser.add_argument('--dim_LTM', type='int', default=5, help='Encoding LTM number.')
         
         return parser
 
@@ -73,12 +74,12 @@ class BrightestMulTmCasModel(BaseModel):
         self.visual_names = ['input', 'pr_SH', 'gt_SH']
         self.model_names = ['G1']
 
-        if not self.opt.no_brightness:
+        if not opt.no_brightness:
             self.loss_names += ['G_BA', 'G_BC']
             self.visual_names += ['pr_BA', 'gt_BA']
             self.model_names += ['G3']
 
-        if self.opt.reg_LTM:
+        if opt.reg_LTM:
             self.loss_names += ['LTMReg']
 
         self.light_res = opt.light_res
@@ -99,7 +100,7 @@ class BrightestMulTmCasModel(BaseModel):
         if opt.LTM:
             self.dim_LTM = self.light_res**2
             if self.opt.enc_LTM:
-                self.dim_LTM = 5
+                self.dim_LTM = opt.dim_LTM
                 self.enc_LTM = networks.init_net(networks.IlluminationEncoder(self.light_res**2, 64, self.dim_LTM), opt.init_type, opt.init_gain, self.gpu_ids)
 
             self.netG1 = networks.define_G(input_nc, self.dim_LTM, opt.ngf, netG1name, opt.norm,
