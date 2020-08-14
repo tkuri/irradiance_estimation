@@ -102,7 +102,7 @@ class BrightestMulTmCasModel(BaseModel):
                 self.dim_LTM = 5
                 self.enc_LTM = networks.init_net(networks.IlluminationEncoder(self.light_res**2, 64, self.dim_LTM), opt.init_type, opt.init_gain, self.gpu_ids)
 
-            self.netG1 = networks.define_G(input_nc, dim_LTM, opt.ngf, netG1name, opt.norm,
+            self.netG1 = networks.define_G(input_nc, self.dim_LTM, opt.ngf, netG1name, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, True, self.gpu_ids)
 
         else:
