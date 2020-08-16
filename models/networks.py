@@ -1642,14 +1642,22 @@ class PixelDiscriminator(nn.Module):
 
 
 class IlluminationEncoder(nn.Module):
-    def __init__(self, input_nc=25, hidden_nc=10, output_nc=5):
+    def __init__(self, input_nc=25, hidden_nc=10, output_nc=5, use_hidden=True):
         super(IlluminationEncoder, self).__init__()
 
-        fc1 = nn.Linear(input_nc, hidden_nc)
+        if use_hidden:
+            fc1 = nn.Linear(input_nc, hidden_nc)
+            fc2 = nn.Linear(hidden_nc, output_nc)
+        else:
+            fc = nn.Linear(input_nc, output_nc)
+
         relu = nn.ReLU(False)
-        fc2 = nn.Linear(hidden_nc, output_nc)
         softmax = nn.Softmax()
-        self.net = nn.Sequential(fc1, relu, fc2, softmax)
+
+        if use_hidden:
+            self.net = nn.Sequential(fc1, relu, fc2, softmax)
+        else:
+            self.net = nn.Sequential(fc, softmax)
 
     def forward(self, input):
         return self.net(input)
