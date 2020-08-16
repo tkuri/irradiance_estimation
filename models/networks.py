@@ -1648,8 +1648,8 @@ class IlluminationEncoder(nn.Module):
         fc1 = nn.Linear(input_nc, hidden_nc)
         relu = nn.ReLU(False)
         fc2 = nn.Linear(hidden_nc, output_nc)
-        sigmoid = nn.Sigmoid(False)
-        self.net = nn.Sequential(fc1, relu, fc2, sigmoid)
+        softmax = nn.Softmax()
+        self.net = nn.Sequential(fc1, relu, fc2, softmax)
 
     def forward(self, input):
         return self.net(input)
