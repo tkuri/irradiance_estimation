@@ -1642,7 +1642,7 @@ class PixelDiscriminator(nn.Module):
 
 
 class IlluminationEncoder(nn.Module):
-    def __init__(self, input_nc=25, hidden_nc=64, output_nc=25):
+    def __init__(self, input_nc=25, hidden_nc=10, output_nc=5):
         super(IlluminationEncoder, self).__init__()
 
         fc1 = nn.Linear(input_nc, hidden_nc)
